@@ -9,7 +9,26 @@
     "api:dev": "yarn workspace api dev",
     "api:build": "yarn workspace api build",
     "web:dev": "yarn workspace web dev",
-    "web:build": "yarn workspace web build"
+    "web:build": "yarn workspace web build",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
-  "packageManager": "yarn@1.22.22"
+  "packageManager": "yarn@1.22.22",
+  "dependencies": {
+    "@apollo/server": "^5.4.0",
+    "@nestjs/apollo": "^13.2.4",
+    "@nestjs/graphql": "^13.2.4",
+    "graphql": "^16.13.0"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^8.18.0",
+    "@typescript-eslint/parser": "^8.18.0",
+    "eslint": "^9.17.0",
+    "eslint-config-next": "^15.0.3",
+    "eslint-config-prettier": "^9.1.0",
+    "prettier": "^3.4.2",
+    "typescript": "^5.7.2"
+  }
 }
