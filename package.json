@@ -10,8 +10,8 @@
     "api:build": "yarn workspace api build",
     "web:dev": "yarn workspace web dev",
     "web:build": "yarn workspace web build",
-    "lint": "eslint .",
-    "lint:fix": "eslint . --fix",
+    "lint": "ESLINT_USE_FLAT_CONFIG=false eslint .",
+    "lint:fix": "ESLINT_USE_FLAT_CONFIG=false eslint . --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },

@@ -10,6 +10,12 @@ module.exports = {
     ".yarn/",
   ],
   overrides: [
+    // API plain JS (migrations, seeders, config)
+    {
+      files: ["apps/api/**/*.js"],
+      env: { node: true, es2022: true },
+      parserOptions: { ecmaVersion: 2022, sourceType: "script" },
+    },
     // Next.js app (apps/web): Next + TypeScript + Prettier
     {
       files: ["apps/web/**/*.{js,jsx,ts,tsx}"],
@@ -27,6 +33,9 @@ module.exports = {
       plugins: ["@typescript-eslint"],
       settings: {
         react: { version: "detect" },
+      },
+      rules: {
+        "no-html-link-for-pages": "off",
       },
     },
     // NestJS API (apps/api): TypeScript + Prettier
