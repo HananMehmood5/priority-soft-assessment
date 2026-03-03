@@ -6,6 +6,8 @@
     "apps/web"
   ],
   "scripts": {
+    "resources:up": "docker compose -f docker-compose.local.yml up -d",
+    "resources:down": "docker compose down",
     "api:dev": "yarn workspace api dev",
     "api:build": "yarn workspace api build",
     "web:dev": "yarn workspace web dev",

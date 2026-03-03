@@ -1,16 +1,23 @@
+name: shiftsync-local
+
 services:
   db:
-    image: postgres:15-alpine
+    image: postgres:16-alpine
     container_name: shiftsync-db
     restart: unless-stopped
     ports:
-      - "5432:5432"
+      - "5440:5432"
     environment:
       POSTGRES_USER: shiftsync
       POSTGRES_PASSWORD: shiftsync
       POSTGRES_DB: shiftsync
     volumes:
       - shiftsync_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U shiftsync -d shiftsync"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
 
 volumes:
   shiftsync_pgdata:

@@ -20,10 +20,10 @@ Multi-location staff scheduling platform for Coastal Eats (Priority Soft assessm
 ### 1. Start the database
 
 ```bash
-docker compose up -d
+docker compose -f docker-compose.local.yml up -d
 ```
 
-PostgreSQL runs on `localhost:5432`. Default DB: `shiftsync`, user: `shiftsync`, password: `shiftsync`.
+PostgreSQL runs on host `localhost:5440` (container port 5432). Default DB: `shiftsync`, user: `shiftsync`, password: `shiftsync`.
 
 ### 2. Environment
 
