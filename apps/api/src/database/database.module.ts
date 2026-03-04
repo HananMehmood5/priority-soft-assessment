@@ -19,6 +19,12 @@ import {
 } from './models';
 import { ShiftRepository } from './repositories/shift.repository';
 import { ShiftAssignmentRepository } from './repositories/shift-assignment.repository';
+import { UserRepository } from './repositories/user.repository';
+import { LocationRepository } from './repositories/location.repository';
+import { SkillRepository } from './repositories/skill.repository';
+import { NotificationRepository } from './repositories/notification.repository';
+import { ShiftRequestRepository } from './repositories/shift-request.repository';
+import { AuditLogRepository } from './repositories/audit-log.repository';
 
 @Module({
   imports: [
@@ -40,7 +46,26 @@ import { ShiftAssignmentRepository } from './repositories/shift-assignment.repos
       AuditLog,
     ]),
   ],
-  providers: [ShiftRepository, ShiftAssignmentRepository],
-  exports: [SequelizeModule, ShiftRepository, ShiftAssignmentRepository],
+  providers: [
+    ShiftRepository,
+    ShiftAssignmentRepository,
+    UserRepository,
+    LocationRepository,
+    SkillRepository,
+    NotificationRepository,
+    ShiftRequestRepository,
+    AuditLogRepository,
+  ],
+  exports: [
+    SequelizeModule,
+    ShiftRepository,
+    ShiftAssignmentRepository,
+    UserRepository,
+    LocationRepository,
+    SkillRepository,
+    NotificationRepository,
+    ShiftRequestRepository,
+    AuditLogRepository,
+  ],
 })
 export class DatabaseModule {}
