@@ -9,6 +9,7 @@ import {
   CreatedAt,
   UpdatedAt,
 } from 'sequelize-typescript';
+import type { ShiftAttributesDb, ShiftBaseAttributesDb } from '../db-types';
 import { Location } from './location.model';
 import { ShiftAssignment } from './shift-assignment.model';
 
@@ -16,7 +17,7 @@ import { ShiftAssignment } from './shift-assignment.model';
   tableName: 'shifts',
   underscored: true,
 })
-export class Shift extends Model {
+export class Shift extends Model<ShiftAttributesDb, ShiftBaseAttributesDb> {
   @Column({
     type: DataType.UUID,
     defaultValue: DataType.UUIDV4,

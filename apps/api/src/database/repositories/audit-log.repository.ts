@@ -1,7 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
+import type { AuditLogBaseAttributes } from '@shiftsync/shared';
 import { Op, WhereOptions } from 'sequelize';
-import { AuditLog, AuditAction, AuditEntityType } from '../models/audit-log.model';
+import { AuditAction, AuditEntityType } from '@shiftsync/shared';
+import { AuditLog } from '../models/audit-log.model';
 
 export type AuditLogWhere = WhereOptions<AuditLog>;
 
@@ -12,14 +14,7 @@ export class AuditLogRepository {
     private readonly auditModel: typeof AuditLog,
   ) { }
 
-  async create(data: {
-    userId: string;
-    action: AuditAction;
-    entityType: AuditEntityType;
-    entityId: string;
-    before: Record<string, unknown> | null;
-    after: Record<string, unknown> | null;
-  }): Promise<AuditLog> {
+  async create(data: AuditLogBaseAttributes): Promise<AuditLog> {
     return this.auditModel.create(data);
   }
 

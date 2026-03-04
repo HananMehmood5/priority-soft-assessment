@@ -8,6 +8,8 @@ import {
   CreatedAt,
   UpdatedAt,
 } from 'sequelize-typescript';
+import type { StaffLocationBaseAttributes } from '@shiftsync/shared';
+import type { StaffLocationAttributesDb } from '../db-types';
 import { User } from './user.model';
 import { Location } from './location.model';
 
@@ -16,7 +18,10 @@ import { Location } from './location.model';
   underscored: true,
   indexes: [{ unique: true, fields: ['user_id', 'location_id'] }],
 })
-export class StaffLocation extends Model {
+export class StaffLocation extends Model<
+  StaffLocationAttributesDb,
+  StaffLocationBaseAttributes
+> {
   @Column({
     type: DataType.UUID,
     defaultValue: DataType.UUIDV4,

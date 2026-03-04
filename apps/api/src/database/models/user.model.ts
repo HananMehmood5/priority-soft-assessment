@@ -8,6 +8,9 @@ import {
   HasMany,
   BelongsToMany,
 } from 'sequelize-typescript';
+import type { UserBaseAttributes } from '@shiftsync/shared';
+import { UserRole } from '@shiftsync/shared';
+import type { UserAttributesDb } from '../db-types';
 import { Availability } from './availability.model';
 import { AvailabilityException } from './availability-exception.model';
 import { DesiredHours } from './desired-hours.model';
@@ -17,17 +20,11 @@ import { ManagerLocation } from './manager-location.model';
 import { StaffLocation } from './staff-location.model';
 import { StaffSkill } from './staff-skill.model';
 
-export enum UserRole {
-  Admin = 'Admin',
-  Manager = 'Manager',
-  Staff = 'Staff',
-}
-
 @Table({
   tableName: 'users',
   underscored: true,
 })
-export class User extends Model {
+export class User extends Model<UserAttributesDb, UserBaseAttributes> {
   @Column({
     type: DataType.UUID,
     defaultValue: DataType.UUIDV4,

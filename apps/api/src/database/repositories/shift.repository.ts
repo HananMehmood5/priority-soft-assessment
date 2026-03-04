@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
+import type { ShiftBaseAttributesDb } from '../db-types';
 import { Op } from 'sequelize';
 import { Shift } from '../models/shift.model';
 
@@ -72,16 +73,9 @@ export class ShiftRepository {
     });
   }
 
-  async create(data: {
-    locationId: string;
-    startAt: Date;
-    endAt: Date;
-    published?: boolean;
-  }): Promise<Shift> {
+  async create(data: ShiftBaseAttributesDb): Promise<Shift> {
     return this.shiftModel.create({
-      locationId: data.locationId,
-      startAt: data.startAt,
-      endAt: data.endAt,
+      ...data,
       published: data.published ?? false,
     });
   }

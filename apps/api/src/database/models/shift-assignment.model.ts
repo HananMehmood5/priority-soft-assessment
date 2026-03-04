@@ -8,6 +8,8 @@ import {
   CreatedAt,
   UpdatedAt,
 } from 'sequelize-typescript';
+import type { ShiftAssignmentBaseAttributes } from '@shiftsync/shared';
+import type { ShiftAssignmentAttributesDb } from '../db-types';
 import { Shift } from './shift.model';
 import { User } from './user.model';
 import { Skill } from './skill.model';
@@ -16,7 +18,10 @@ import { Skill } from './skill.model';
   tableName: 'shift_assignments',
   underscored: true,
 })
-export class ShiftAssignment extends Model {
+export class ShiftAssignment extends Model<
+  ShiftAssignmentAttributesDb,
+  ShiftAssignmentBaseAttributes
+> {
   @Column({
     type: DataType.UUID,
     defaultValue: DataType.UUIDV4,

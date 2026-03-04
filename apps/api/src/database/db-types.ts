@@ -14,6 +14,7 @@ import type {
   NotificationAttributes,
   NotificationPreferenceAttributes,
   ShiftAssignmentAttributes,
+  ShiftBaseAttributes,
   ShiftRequestAttributes,
   ShiftAttributes,
   SkillAttributes,
@@ -28,6 +29,14 @@ type WithDates<T, K extends keyof T> = Omit<T, K> &
 export type UserAttributesDb = WithDates<UserAttributes, 'createdAt' | 'updatedAt'>;
 export type LocationAttributesDb = WithDates<LocationAttributes, 'createdAt' | 'updatedAt'>;
 export type SkillAttributesDb = WithDates<SkillAttributes, 'createdAt' | 'updatedAt'>;
+
+/** Creation payload at DB layer: startAt/endAt are Date. */
+export interface ShiftBaseAttributesDb
+  extends Omit<ShiftBaseAttributes, 'startAt' | 'endAt'> {
+  startAt: Date;
+  endAt: Date;
+}
+
 export type ShiftAttributesDb = WithDates<
   ShiftAttributes,
   'createdAt' | 'updatedAt' | 'startAt' | 'endAt'

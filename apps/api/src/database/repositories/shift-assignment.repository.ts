@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
+import type { ShiftAssignmentBaseAttributes } from '@shiftsync/shared';
 import { Op } from 'sequelize';
 import { WhereOptions } from 'sequelize';
 import { ShiftAssignment } from '../models/shift-assignment.model';
@@ -59,17 +60,9 @@ export class ShiftAssignmentRepository {
     });
   }
 
-  async create(data: {
-    shiftId: string;
-    userId: string;
-    skillId: string;
-    version?: number;
-    overtimeOverrideReason?: string | null;
-  }): Promise<ShiftAssignment> {
+  async create(data: ShiftAssignmentBaseAttributes): Promise<ShiftAssignment> {
     return this.assignmentModel.create({
-      shiftId: data.shiftId,
-      userId: data.userId,
-      skillId: data.skillId,
+      ...data,
       version: data.version ?? 1,
       overtimeOverrideReason: data.overtimeOverrideReason ?? null,
     });

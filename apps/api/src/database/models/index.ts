@@ -1,4 +1,4 @@
-export { User, UserRole } from './user.model';
+export { User } from './user.model';
 export { Location } from './location.model';
 export { Skill } from './skill.model';
 export { ManagerLocation } from './manager-location.model';
@@ -9,7 +9,7 @@ export { AvailabilityException } from './availability-exception.model';
 export { DesiredHours } from './desired-hours.model';
 export { Shift } from './shift.model';
 export { ShiftAssignment } from './shift-assignment.model';
-export { ShiftRequest, RequestType, RequestStatus } from './shift-request.model';
+export { ShiftRequest } from './shift-request.model';
 export { Notification } from './notification.model';
 export { NotificationPreference } from './notification-preference.model';
-export { AuditLog, AuditAction, AuditEntityType } from './audit-log.model';
+export { AuditLog } from './audit-log.model';

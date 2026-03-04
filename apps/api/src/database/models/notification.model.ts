@@ -7,13 +7,18 @@ import {
   BelongsTo,
   CreatedAt,
 } from 'sequelize-typescript';
+import type { NotificationBaseAttributes } from '@shiftsync/shared';
+import type { NotificationAttributesDb } from '../db-types';
 import { User } from './user.model';
 
 @Table({
   tableName: 'notifications',
   underscored: true,
 })
-export class Notification extends Model {
+export class Notification extends Model<
+  NotificationAttributesDb,
+  NotificationBaseAttributes
+> {
   @Column({
     type: DataType.UUID,
     defaultValue: DataType.UUIDV4,

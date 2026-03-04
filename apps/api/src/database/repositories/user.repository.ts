@@ -1,7 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
+import type { UserBaseAttributes } from '@shiftsync/shared';
 import { Op } from 'sequelize';
-import { User, UserRole } from '../models/user.model';
+import { UserRole } from '@shiftsync/shared';
+import { User } from '../models/user.model';
 import { Availability } from '../models/availability.model';
 import { AvailabilityException } from '../models/availability-exception.model';
 import { DesiredHours } from '../models/desired-hours.model';
@@ -45,18 +47,8 @@ export class UserRepository {
     return user;
   }
 
-  async create(data: {
-    email: string;
-    passwordHash: string;
-    role: UserRole;
-    name?: string | null;
-  }): Promise<User> {
-    return this.userModel.create({
-      email: data.email,
-      passwordHash: data.passwordHash,
-      role: data.role,
-      name: data.name ?? null,
-    });
+  async create(data: UserBaseAttributes): Promise<User> {
+    return this.userModel.create(data);
   }
 
   async updateName(id: string, name: string | null): Promise<User> {

@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
+import type { SkillBaseAttributes } from '@shiftsync/shared';
 import { Op } from 'sequelize';
 import { Skill } from '../models/skill.model';
 import { StaffSkill } from '../models/staff-skill.model';
@@ -27,7 +28,7 @@ export class SkillRepository {
     return skill;
   }
 
-  async create(data: { name: string }): Promise<Skill> {
+  async create(data: SkillBaseAttributes): Promise<Skill> {
     return this.skillModel.create(data);
   }
 

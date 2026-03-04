@@ -7,6 +7,8 @@ import {
   UpdatedAt,
   BelongsToMany,
 } from 'sequelize-typescript';
+import type { LocationBaseAttributes } from '@shiftsync/shared';
+import type { LocationAttributesDb } from '../db-types';
 import { User } from './user.model';
 import { ManagerLocation } from './manager-location.model';
 import { StaffLocation } from './staff-location.model';
@@ -15,7 +17,7 @@ import { StaffLocation } from './staff-location.model';
   tableName: 'locations',
   underscored: true,
 })
-export class Location extends Model {
+export class Location extends Model<LocationAttributesDb, LocationBaseAttributes> {
   @Column({
     type: DataType.UUID,
     defaultValue: DataType.UUIDV4,

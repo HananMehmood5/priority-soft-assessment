@@ -8,6 +8,8 @@ import {
   CreatedAt,
   UpdatedAt,
 } from 'sequelize-typescript';
+import type { NotificationPreferenceBaseAttributes } from '@shiftsync/shared';
+import type { NotificationPreferenceAttributesDb } from '../db-types';
 import { User } from './user.model';
 
 @Table({
@@ -15,7 +17,10 @@ import { User } from './user.model';
   underscored: true,
   indexes: [{ unique: true, fields: ['user_id', 'channel'] }],
 })
-export class NotificationPreference extends Model {
+export class NotificationPreference extends Model<
+  NotificationPreferenceAttributesDb,
+  NotificationPreferenceBaseAttributes
+> {
   @Column({
     type: DataType.UUID,
     defaultValue: DataType.UUIDV4,

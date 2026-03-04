@@ -8,27 +8,20 @@ import {
   CreatedAt,
   UpdatedAt,
 } from 'sequelize-typescript';
+import type { ShiftRequestBaseAttributes } from '@shiftsync/shared';
+import type { ShiftRequestAttributesDb } from '../db-types';
+import { RequestStatus, RequestType } from '@shiftsync/shared';
 import { ShiftAssignment } from './shift-assignment.model';
 import { User } from './user.model';
-
-export enum RequestType {
-  Swap = 'swap',
-  Drop = 'drop',
-}
-
-export enum RequestStatus {
-  Pending = 'pending',
-  Accepted = 'accepted',
-  Approved = 'approved',
-  Rejected = 'rejected',
-  Cancelled = 'cancelled',
-}
 
 @Table({
   tableName: 'shift_requests',
   underscored: true,
 })
-export class ShiftRequest extends Model {
+export class ShiftRequest extends Model<
+  ShiftRequestAttributesDb,
+  ShiftRequestBaseAttributes
+> {
   @Column({
     type: DataType.UUID,
     defaultValue: DataType.UUIDV4,

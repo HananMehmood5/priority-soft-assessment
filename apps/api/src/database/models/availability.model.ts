@@ -8,6 +8,8 @@ import {
   CreatedAt,
   UpdatedAt,
 } from 'sequelize-typescript';
+import type { AvailabilityBaseAttributes } from '@shiftsync/shared';
+import type { AvailabilityAttributesDb } from '../db-types';
 import { User } from './user.model';
 import { Location } from './location.model';
 
@@ -16,7 +18,10 @@ import { Location } from './location.model';
   tableName: 'availabilities',
   underscored: true,
 })
-export class Availability extends Model {
+export class Availability extends Model<
+  AvailabilityAttributesDb,
+  AvailabilityBaseAttributes
+> {
   @Column({
     type: DataType.UUID,
     defaultValue: DataType.UUIDV4,

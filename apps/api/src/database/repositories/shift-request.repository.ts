@@ -1,7 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Op } from 'sequelize';
-import { ShiftRequest, RequestType, RequestStatus } from '../models/shift-request.model';
+import type { ShiftRequestBaseAttributes } from '@shiftsync/shared';
+import { RequestType, RequestStatus } from '@shiftsync/shared';
+import { ShiftRequest } from '../models/shift-request.model';
 import { ShiftAssignment } from '../models/shift-assignment.model';
 import { Shift } from '../models/shift.model';
 import { User } from '../models/user.model';
@@ -23,12 +25,12 @@ export class ShiftRequestRepository {
     });
   }
 
-  async create(data: {
-    type: RequestType;
-    assignmentId: string;
-    status: RequestStatus;
-  }): Promise<ShiftRequest> {
-    return this.requestModel.create(data);
+  async create(data: Pick<ShiftRequestBaseAttributes, 'type' | 'assignmentId' | 'status'>): Promise<ShiftRequest> {
+    return this.requestModel.create({
+      ...data,
+      counterpartAssignmentId: null,
+      claimerUserId: null,
+    });
   }
 
   async findByPk(id: string): Promise<ShiftRequest | null> {

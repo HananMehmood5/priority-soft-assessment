@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
+import type { NotificationBaseAttributes } from '@shiftsync/shared';
 import { Notification } from '../models/notification.model';
 import { NotificationPreference } from '../models/notification-preference.model';
 
@@ -12,20 +13,9 @@ export class NotificationRepository {
     private readonly preferenceModel: typeof NotificationPreference,
   ) {}
 
-  async create(data: {
-    userId: string;
-    type: string;
-    title: string | null;
-    body: string | null;
-    payload: Record<string, unknown> | null;
-    read?: boolean;
-  }): Promise<Notification> {
+  async create(data: NotificationBaseAttributes): Promise<Notification> {
     return this.notificationModel.create({
-      userId: data.userId,
-      type: data.type,
-      title: data.title,
-      body: data.body,
-      payload: data.payload,
+      ...data,
       read: data.read ?? false,
     });
   }

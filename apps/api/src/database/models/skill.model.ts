@@ -7,6 +7,8 @@ import {
   UpdatedAt,
   BelongsToMany,
 } from 'sequelize-typescript';
+import type { SkillBaseAttributes } from '@shiftsync/shared';
+import type { SkillAttributesDb } from '../db-types';
 import { User } from './user.model';
 import { StaffSkill } from './staff-skill.model';
 
@@ -14,7 +16,7 @@ import { StaffSkill } from './staff-skill.model';
   tableName: 'skills',
   underscored: true,
 })
-export class Skill extends Model {
+export class Skill extends Model<SkillAttributesDb, SkillBaseAttributes> {
   @Column({
     type: DataType.UUID,
     defaultValue: DataType.UUIDV4,

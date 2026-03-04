@@ -7,18 +7,10 @@ import {
   BelongsTo,
   CreatedAt,
 } from 'sequelize-typescript';
+import type { AuditLogBaseAttributes } from '@shiftsync/shared';
+import type { AuditLogAttributesDb } from '../db-types';
+import { AuditAction, AuditEntityType } from '@shiftsync/shared';
 import { User } from './user.model';
-
-export enum AuditAction {
-  Create = 'create',
-  Update = 'update',
-  Delete = 'delete',
-}
-
-export enum AuditEntityType {
-  Shift = 'shift',
-  ShiftAssignment = 'shift_assignment',
-}
 
 @Table({
   tableName: 'audit_logs',
@@ -29,7 +21,7 @@ export enum AuditEntityType {
     { fields: ['user_id'] },
   ],
 })
-export class AuditLog extends Model {
+export class AuditLog extends Model<AuditLogAttributesDb, AuditLogBaseAttributes> {
   @Column({
     type: DataType.UUID,
     defaultValue: DataType.UUIDV4,

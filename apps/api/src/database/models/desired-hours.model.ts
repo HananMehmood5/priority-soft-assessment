@@ -8,13 +8,18 @@ import {
   CreatedAt,
   UpdatedAt,
 } from 'sequelize-typescript';
+import type { DesiredHoursBaseAttributes } from '@shiftsync/shared';
+import type { DesiredHoursAttributesDb } from '../db-types';
 import { User } from './user.model';
 
 @Table({
   tableName: 'desired_hours',
   underscored: true,
 })
-export class DesiredHours extends Model {
+export class DesiredHours extends Model<
+  DesiredHoursAttributesDb,
+  DesiredHoursBaseAttributes
+> {
   @Column({
     type: DataType.UUID,
     defaultValue: DataType.UUIDV4,

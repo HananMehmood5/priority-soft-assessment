@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
+import type { LocationBaseAttributes } from '@shiftsync/shared';
 import { Op } from 'sequelize';
 import { Location } from '../models/location.model';
 import { ManagerLocation } from '../models/manager-location.model';
@@ -68,7 +69,7 @@ export class LocationRepository {
     return location;
   }
 
-  async create(data: { name: string; timezone: string }): Promise<Location> {
+  async create(data: LocationBaseAttributes): Promise<Location> {
     return this.locationModel.create(data);
   }
 
