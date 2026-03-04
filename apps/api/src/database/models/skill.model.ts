@@ -8,7 +8,7 @@ import {
   BelongsToMany,
 } from 'sequelize-typescript';
 import type { SkillBaseAttributes } from '@shiftsync/shared';
-import type { SkillAttributesDb } from '../db-types';
+import type { SkillAttributesDb } from '@shiftsync/shared';
 import { User } from './user.model';
 import { StaffSkill } from './staff-skill.model';
 

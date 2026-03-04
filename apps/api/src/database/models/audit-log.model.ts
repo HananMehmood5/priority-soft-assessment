@@ -8,7 +8,7 @@ import {
   CreatedAt,
 } from 'sequelize-typescript';
 import type { AuditLogBaseAttributes } from '@shiftsync/shared';
-import type { AuditLogAttributesDb } from '../db-types';
+import type { AuditLogAttributesDb } from '@shiftsync/shared';
 import { AuditAction, AuditEntityType } from '@shiftsync/shared';
 import { User } from './user.model';
 

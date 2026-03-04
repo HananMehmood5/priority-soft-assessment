@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import type { ShiftBaseAttributesDb } from '../db-types';
+import type { ShiftBaseAttributesDb } from '@shiftsync/shared';
 import { Op } from 'sequelize';
 import { Shift } from '../models/shift.model';
 

@@ -9,7 +9,7 @@ import {
   UpdatedAt,
 } from 'sequelize-typescript';
 import type { NotificationPreferenceBaseAttributes } from '@shiftsync/shared';
-import type { NotificationPreferenceAttributesDb } from '../db-types';
+import type { NotificationPreferenceAttributesDb } from '@shiftsync/shared';
 import { User } from './user.model';
 
 @Table({

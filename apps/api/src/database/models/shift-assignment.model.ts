@@ -9,7 +9,7 @@ import {
   UpdatedAt,
 } from 'sequelize-typescript';
 import type { ShiftAssignmentBaseAttributes } from '@shiftsync/shared';
-import type { ShiftAssignmentAttributesDb } from '../db-types';
+import type { ShiftAssignmentAttributesDb } from '@shiftsync/shared';
 import { Shift } from './shift.model';
 import { User } from './user.model';
 import { Skill } from './skill.model';

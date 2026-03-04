@@ -8,7 +8,7 @@ import {
   BelongsToMany,
 } from 'sequelize-typescript';
 import type { LocationBaseAttributes } from '@shiftsync/shared';
-import type { LocationAttributesDb } from '../db-types';
+import type { LocationAttributesDb } from '@shiftsync/shared';
 import { User } from './user.model';
 import { ManagerLocation } from './manager-location.model';
 import { StaffLocation } from './staff-location.model';

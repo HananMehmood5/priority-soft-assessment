@@ -9,7 +9,7 @@ import {
   UpdatedAt,
 } from 'sequelize-typescript';
 import type { ManagerLocationBaseAttributes } from '@shiftsync/shared';
-import type { ManagerLocationAttributesDb } from '../db-types';
+import type { ManagerLocationAttributesDb } from '@shiftsync/shared';
 import { User } from './user.model';
 import { Location } from './location.model';
 

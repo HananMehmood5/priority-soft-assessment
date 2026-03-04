@@ -8,7 +8,7 @@ import {
   CreatedAt,
 } from 'sequelize-typescript';
 import type { NotificationBaseAttributes } from '@shiftsync/shared';
-import type { NotificationAttributesDb } from '../db-types';
+import type { NotificationAttributesDb } from '@shiftsync/shared';
 import { User } from './user.model';
 
 @Table({

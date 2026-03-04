@@ -9,7 +9,7 @@ import {
   UpdatedAt,
 } from 'sequelize-typescript';
 import type { DesiredHoursBaseAttributes } from '@shiftsync/shared';
-import type { DesiredHoursAttributesDb } from '../db-types';
+import type { DesiredHoursAttributesDb } from '@shiftsync/shared';
 import { User } from './user.model';
 
 @Table({

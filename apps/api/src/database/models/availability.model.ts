@@ -9,7 +9,7 @@ import {
   UpdatedAt,
 } from 'sequelize-typescript';
 import type { AvailabilityBaseAttributes } from '@shiftsync/shared';
-import type { AvailabilityAttributesDb } from '../db-types';
+import type { AvailabilityAttributesDb } from '@shiftsync/shared';
 import { User } from './user.model';
 import { Location } from './location.model';
 

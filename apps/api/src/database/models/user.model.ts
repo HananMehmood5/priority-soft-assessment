@@ -10,7 +10,7 @@ import {
 } from 'sequelize-typescript';
 import type { UserBaseAttributes } from '@shiftsync/shared';
 import { UserRole } from '@shiftsync/shared';
-import type { UserAttributesDb } from '../db-types';
+import type { UserAttributesDb } from '@shiftsync/shared';
 import { Availability } from './availability.model';
 import { AvailabilityException } from './availability-exception.model';
 import { DesiredHours } from './desired-hours.model';
