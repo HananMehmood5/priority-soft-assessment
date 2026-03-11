@@ -3,7 +3,8 @@
   "private": true,
   "workspaces": [
     "apps/api",
-    "apps/web"
+    "apps/web",
+    "packages/shared"
   ],
   "scripts": {
     "resources:up": "docker compose -f docker-compose.local.yml up -d",
