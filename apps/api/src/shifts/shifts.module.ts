@@ -6,7 +6,7 @@ import { ConstraintsModule } from '../constraints/constraints.module';
 import { RequestsModule } from '../requests/requests.module';
 import { OvertimeModule } from '../overtime/overtime.module';
 import { AuditModule } from '../audit/audit.module';
-import { ShiftsResolver } from './shifts.resolver';
+import { ShiftsResolver, ShiftAssignmentResolver } from './shifts.resolver';
 import { ShiftsService } from './shifts.service';
 
 @Module({
@@ -19,7 +19,7 @@ import { ShiftsService } from './shifts.service';
     OvertimeModule,
     AuditModule,
   ],
-  providers: [ShiftsResolver, ShiftsService],
+  providers: [ShiftsResolver, ShiftAssignmentResolver, ShiftsService],
   exports: [ShiftsService],
 })
 export class ShiftsModule {}

@@ -3,10 +3,12 @@
   "rootDir": ".",
   "testEnvironment": "node",
   "testRegex": ".e2e-spec.ts$",
+  "globalSetup": "<rootDir>/global-setup.e2e.js",
   "watchman": false,
   "transform": {
-    "^.+\\.(t|j)s$": "ts-jest"
+    "^.+\\.ts$": "ts-jest"
   },
+  "transformIgnorePatterns": ["<rootDir>/global-setup.e2e.js"],
   "moduleNameMapper": {
     "^@shiftsync/shared(.*)$": "<rootDir>/../../../packages/shared/src$1"
   },

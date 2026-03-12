@@ -1,6 +1,6 @@
 import { UseGuards } from '@nestjs/common';
-import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
-import { Shift } from '../database/models';
+import { Args, Mutation, Query, Resolver, ResolveField, Parent } from '@nestjs/graphql';
+import { Shift, ShiftAssignment } from '../database/models';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -8,6 +8,7 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { UserRole } from '@shiftsync/shared';
 import { ShiftsService } from './shifts.service';
 import { ShiftEntity } from './entities/shift.entity';
+import { ShiftAssignmentEntity } from './entities/shift-assignment.entity';
 import { AddAssignmentResult } from './entities/add-assignment-result.entity';
 import { CreateShiftInput } from './dto/create-shift.input';
 import { UpdateShiftInput } from './dto/update-shift.input';
@@ -21,6 +22,18 @@ export class ShiftsResolver {
   @Query(() => [ShiftEntity])
   async shifts(@CurrentUser() user: import('../database/models').User): Promise<Shift[]> {
     return this.shiftsService.findForManager(user);
+  }
+
+  @ResolveField(() => [ShiftAssignmentEntity], { name: 'assignments', nullable: 'itemsAndList' })
+  assignments(@Parent() shift: Shift & { assignments?: ShiftAssignment[] }): ShiftAssignment[] | undefined {
+    return shift.assignments;
+  }
+
+  @Query(() => [ShiftAssignmentEntity])
+  async myAssignments(
+    @CurrentUser() user: import('../database/models').User,
+  ): Promise<ShiftAssignment[]> {
+    return this.shiftsService.findMyAssignments(user);
   }
 
   @Query(() => [ShiftEntity])
@@ -124,5 +137,16 @@ export class ShiftsResolver {
     @CurrentUser() user: import('../database/models').User,
   ): Promise<Shift> {
     return this.shiftsService.unpublish(shiftId, user);
+  }
+}
+
+@Resolver(() => ShiftAssignmentEntity)
+@UseGuards(JwtAuthGuard)
+export class ShiftAssignmentResolver {
+  @ResolveField(() => ShiftEntity)
+  shift(
+    @Parent() assignment: ShiftAssignment & { shift?: Shift },
+  ): Shift | undefined {
+    return assignment.shift;
   }
 }

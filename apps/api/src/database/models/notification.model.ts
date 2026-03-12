@@ -14,6 +14,8 @@ import { User } from './user.model';
 @Table({
   tableName: 'notifications',
   underscored: true,
+  timestamps: true,
+  updatedAt: false,
 })
 export class Notification extends Model<
   NotificationAttributesDb,

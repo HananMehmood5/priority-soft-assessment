@@ -31,4 +31,7 @@ export class RequestEntity {
 
   @Field()
   updatedAt: Date;
+
+  @Field(() => ShiftAssignmentEntity, { nullable: true })
+  assignment?: unknown;
 }

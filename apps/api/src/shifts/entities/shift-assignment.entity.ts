@@ -1,4 +1,5 @@
 import { ObjectType, Field } from '@nestjs/graphql';
+import { ShiftEntity } from './shift.entity';
 
 @ObjectType()
 export class ShiftAssignmentEntity {
@@ -22,4 +23,7 @@ export class ShiftAssignmentEntity {
 
   @Field()
   updatedAt: Date;
+
+  @Field(() => ShiftEntity, { nullable: true })
+  shift?: unknown;
 }

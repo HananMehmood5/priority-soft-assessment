@@ -1,5 +1,5 @@
 import { UseGuards } from '@nestjs/common';
-import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
+import { Args, Mutation, Query, Resolver, ResolveField, Parent } from '@nestjs/graphql';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -8,12 +8,20 @@ import { UserRole } from '@shiftsync/shared';
 import { RequestsService } from './requests.service';
 import { RequestEntity } from './entities/request.entity';
 import { AcceptRequestResult } from './entities/accept-result.entity';
+import { ShiftAssignmentEntity } from '../shifts/entities/shift-assignment.entity';
 import { ShiftRequest } from '../database/models';
 
 @Resolver(() => RequestEntity)
 @UseGuards(JwtAuthGuard)
 export class RequestsResolver {
   constructor(private readonly requestsService: RequestsService) {}
+
+  @ResolveField(() => ShiftAssignmentEntity, { nullable: true })
+  assignment(
+    @Parent() request: ShiftRequest & { assignment?: unknown },
+  ): unknown {
+    return request.assignment;
+  }
 
   @Query(() => [RequestEntity])
   async myRequests(@CurrentUser() user: import('../database/models').User): Promise<ShiftRequest[]> {
@@ -25,6 +33,18 @@ export class RequestsResolver {
   @Roles(UserRole.Admin, UserRole.Manager)
   async pendingRequests(@CurrentUser() user: import('../database/models').User): Promise<ShiftRequest[]> {
     return this.requestsService.findPendingForManager(user);
+  }
+
+  @Query(() => [RequestEntity])
+  async availableDrops(): Promise<ShiftRequest[]> {
+    return this.requestsService.findAvailableDrops();
+  }
+
+  @Query(() => [RequestEntity])
+  async availableSwaps(
+    @CurrentUser() user: import('../database/models').User,
+  ): Promise<ShiftRequest[]> {
+    return this.requestsService.findAvailableSwaps(user);
   }
 
   @Mutation(() => RequestEntity)

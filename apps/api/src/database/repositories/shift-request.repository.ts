@@ -112,6 +112,24 @@ export class ShiftRequestRepository {
     });
   }
 
+  /** Pending drop requests with assignment and shift (for staff "Available drops"). */
+  async findAllPendingDrops(): Promise<ShiftRequest[]> {
+    return this.requestModel.findAll({
+      where: { type: RequestType.Drop, status: RequestStatus.Pending },
+      order: [['createdAt', 'DESC']],
+      include: [{ model: ShiftAssignment, as: 'assignment', include: [{ model: Shift, as: 'shift' }] }],
+    });
+  }
+
+  /** Pending swap requests with assignment and shift (for staff "Available swaps"). */
+  async findAllPendingSwaps(): Promise<ShiftRequest[]> {
+    return this.requestModel.findAll({
+      where: { type: RequestType.Swap, status: RequestStatus.Pending },
+      order: [['createdAt', 'DESC']],
+      include: [{ model: ShiftAssignment, as: 'assignment', include: [{ model: Shift, as: 'shift' }] }],
+    });
+  }
+
   async findAllPendingAndAccepted(): Promise<ShiftRequest[]> {
     return this.requestModel.findAll({
       where: { status: [RequestStatus.Pending, RequestStatus.Accepted] },

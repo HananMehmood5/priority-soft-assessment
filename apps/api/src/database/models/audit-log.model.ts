@@ -15,6 +15,8 @@ import { User } from './user.model';
 @Table({
   tableName: 'audit_logs',
   underscored: true,
+  timestamps: true,
+  updatedAt: false,
   indexes: [
     { fields: ['entity_type', 'entity_id'] },
     { fields: ['created_at'] },

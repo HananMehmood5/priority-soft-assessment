@@ -235,6 +235,20 @@ export class RequestsService {
     return this.requestRepository.findAllByAssignmentIds(ids);
   }
 
+  /** Pending drop requests that staff can accept (pick up). */
+  async findAvailableDrops(): Promise<ShiftRequest[]> {
+    return this.requestRepository.findAllPendingDrops();
+  }
+
+  /** Pending swap requests that staff can accept (excludes own requests). */
+  async findAvailableSwaps(user: User): Promise<ShiftRequest[]> {
+    const all = await this.requestRepository.findAllPendingSwaps();
+    return all.filter((r) => {
+      const a = (r as { assignment?: { userId: string } }).assignment;
+      return a && a.userId !== user.id;
+    });
+  }
+
   async findPendingForManager(user: User): Promise<ShiftRequest[]> {
     const locationIds = await this.permissions.getManagerLocationIds(user);
     if (locationIds && locationIds.length === 0) return [];

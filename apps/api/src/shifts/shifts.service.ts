@@ -218,6 +218,11 @@ export class ShiftsService {
     return null;
   }
 
+  /** Assignments for the current user with shift (for staff "My shifts"). */
+  async findMyAssignments(user: User): Promise<ShiftAssignment[]> {
+    return this.assignmentRepository.findAllByUserIdWithShift(user.id);
+  }
+
   /** On-duty: shifts where startAt <= now < endAt (optionally filter by userId or locationId) */
   async findOnDuty(
     user: User,
