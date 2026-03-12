@@ -10,7 +10,7 @@
     "dev": "nest start --watch",
     "start": "nest start",
     "post:build:prod": "yarn migrate && yarn seed",
-    "start:prod": "node dist/apps/api/src/main && yarn post:build:prod",
+    "start:prod": "yarn post:build:prod && node dist/apps/api/src/main",
     "migrate": "npx sequelize-cli db:migrate",
     "migrate:undo": "npx sequelize-cli db:migrate:undo",
     "seed": "npx sequelize-cli db:seed:all",
