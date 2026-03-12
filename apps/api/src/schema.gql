@@ -173,9 +173,12 @@ type PremiumFairnessEntryEntity {
 
 type Query {
   auditExport(end: DateTime!, locationId: String, start: DateTime!): [AuditEntryEntity!]!
+  availableDrops: [RequestEntity!]!
+  availableSwaps: [RequestEntity!]!
   location(id: String!): LocationEntity
   locations: [LocationEntity!]!
   me: UserEntity
+  myAssignments: [ShiftAssignmentEntity!]!
   myRequests: [RequestEntity!]!
   notificationPreferences: [NotificationPreferenceEntity!]!
   notifications(limit: Int, offset: Int, unreadOnly: Boolean): [NotificationEntity!]!
@@ -201,6 +204,7 @@ input RegisterInput {
 }
 
 type RequestEntity {
+  assignment: ShiftAssignmentEntity
   assignmentId: String!
   claimerUserId: String
   counterpartAssignmentId: String
@@ -214,6 +218,7 @@ type RequestEntity {
 type ShiftAssignmentEntity {
   createdAt: DateTime!
   id: String!
+  shift: ShiftEntity
   shiftId: String!
   skillId: String!
   updatedAt: DateTime!
@@ -222,6 +227,7 @@ type ShiftAssignmentEntity {
 }
 
 type ShiftEntity {
+  assignments: [ShiftAssignmentEntity]
   createdAt: DateTime!
   endAt: DateTime!
   id: String!
