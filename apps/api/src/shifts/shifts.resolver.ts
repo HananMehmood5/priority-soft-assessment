@@ -25,8 +25,8 @@ export class ShiftsResolver {
 
   @Query(() => [ShiftEntity])
   async onDutyShifts(
-    @Args('userId', { nullable: true }) userId: string | undefined,
-    @Args('locationId', { nullable: true }) locationId: string | undefined,
+    @Args('userId', { type: () => String, nullable: true }) userId: string | undefined,
+    @Args('locationId', { type: () => String, nullable: true }) locationId: string | undefined,
     @CurrentUser() user: import('../database/models').User,
   ): Promise<Shift[]> {
     return this.shiftsService.findOnDuty(user, { userId, locationId });

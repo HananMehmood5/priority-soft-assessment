@@ -17,10 +17,10 @@ export class RequestEntity {
   @Field()
   assignmentId: string;
 
-  @Field({ nullable: true })
+  @Field(() => String, { nullable: true })
   counterpartAssignmentId: string | null;
 
-  @Field({ nullable: true })
+  @Field(() => String, { nullable: true })
   claimerUserId: string | null;
 
   @Field(() => String)

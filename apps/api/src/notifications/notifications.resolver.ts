@@ -1,5 +1,5 @@
 import { UseGuards } from '@nestjs/common';
-import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
+import { Args, Int, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { NotificationsService } from './notifications.service';
@@ -14,9 +14,9 @@ export class NotificationsResolver {
 
   @Query(() => [NotificationEntity])
   async notifications(
-    @Args('unreadOnly', { nullable: true }) unreadOnly: boolean | undefined,
-    @Args('limit', { nullable: true }) limit: number | undefined,
-    @Args('offset', { nullable: true }) offset: number | undefined,
+    @Args('unreadOnly', { type: () => Boolean, nullable: true }) unreadOnly: boolean | undefined,
+    @Args('limit', { type: () => Int, nullable: true }) limit: number | undefined,
+    @Args('offset', { type: () => Int, nullable: true }) offset: number | undefined,
     @CurrentUser() user: import('../database/models').User,
   ): Promise<Notification[]> {
     return this.notificationsService.list(user.id, { unreadOnly, limit, offset });
@@ -24,7 +24,7 @@ export class NotificationsResolver {
 
   @Mutation(() => NotificationEntity)
   async markNotificationRead(
-    @Args('id') id: string,
+    @Args('id', { type: () => String }) id: string,
     @CurrentUser() user: import('../database/models').User,
   ): Promise<Notification> {
     return this.notificationsService.markRead(id, user.id);
@@ -46,8 +46,8 @@ export class NotificationsResolver {
 
   @Mutation(() => NotificationPreferenceEntity)
   async setNotificationPreference(
-    @Args('channel') channel: string,
-    @Args('enabled') enabled: boolean,
+    @Args('channel', { type: () => String }) channel: string,
+    @Args('enabled', { type: () => Boolean }) enabled: boolean,
     @CurrentUser() user: import('../database/models').User,
   ): Promise<NotificationPreference> {
     return this.notificationsService.setPreference(user.id, channel, enabled);

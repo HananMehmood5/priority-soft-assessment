@@ -17,10 +17,10 @@ export class AuditEntryEntity {
   @Field()
   entityId: string;
 
-  @Field({ nullable: true })
+  @Field(() => String, { nullable: true })
   before: string | null;
 
-  @Field({ nullable: true })
+  @Field(() => String, { nullable: true })
   after: string | null;
 
   @Field()

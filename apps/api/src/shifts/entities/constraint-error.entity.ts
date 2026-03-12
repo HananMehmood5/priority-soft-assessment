@@ -5,7 +5,7 @@ export class EligibleStaffSuggestion {
   @Field()
   id: string;
 
-  @Field({ nullable: true })
+  @Field(() => String, { nullable: true })
   name: string | null;
 }
 

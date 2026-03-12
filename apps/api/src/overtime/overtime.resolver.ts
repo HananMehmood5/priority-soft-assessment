@@ -16,10 +16,10 @@ export class OvertimeResolver {
 
   @Query(() => WhatIfResultEntity)
   async overtimeWhatIf(
-    @Args('userId') userId: string,
-    @Args('assignmentStart') assignmentStart: Date,
-    @Args('assignmentEnd') assignmentEnd: Date,
-    @Args('overtimeOverrideReason', { nullable: true }) overtimeOverrideReason?: string | null,
+    @Args('userId', { type: () => String }) userId: string,
+    @Args('assignmentStart', { type: () => Date }) assignmentStart: Date,
+    @Args('assignmentEnd', { type: () => Date }) assignmentEnd: Date,
+    @Args('overtimeOverrideReason', { type: () => String, nullable: true }) overtimeOverrideReason?: string | null,
   ): Promise<WhatIfResult> {
     return this.overtimeService.whatIf(
       userId,
@@ -33,9 +33,9 @@ export class OvertimeResolver {
   @UseGuards(RolesGuard)
   @Roles(UserRole.Admin, UserRole.Manager)
   async overtimeDashboard(
-    @Args('start') start: Date,
-    @Args('end') end: Date,
-    @Args('locationId', { nullable: true }) locationId?: string | null,
+    @Args('start', { type: () => Date }) start: Date,
+    @Args('end', { type: () => Date }) end: Date,
+    @Args('locationId', { type: () => String, nullable: true }) locationId?: string | null,
   ): Promise<DashboardOvertimeEntry[]> {
     return this.overtimeService.getDashboardData(
       locationId ?? null,

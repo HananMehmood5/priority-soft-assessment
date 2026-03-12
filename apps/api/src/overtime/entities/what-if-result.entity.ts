@@ -32,6 +32,6 @@ export class WhatIfResultEntity {
   @Field()
   canAssign: boolean;
 
-  @Field({ nullable: true })
+  @Field(() => String, { nullable: true })
   message?: string;
 }

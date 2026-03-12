@@ -1,0 +1,288 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+type AcceptRequestResult {
+  constraintError: ConstraintErrorEntity
+  request: RequestEntity
+}
+
+input AddAssignmentInput {
+  overtimeOverrideReason: String
+  skillId: String!
+  userId: String!
+}
+
+type AddAssignmentResult {
+  assignment: ShiftAssignmentEntity
+  constraintError: ConstraintErrorEntity
+}
+
+type AssignmentHoursEntry {
+  endAt: DateTime!
+  hours: Float!
+  shiftId: String!
+  startAt: DateTime!
+}
+
+type AuditEntryEntity {
+  action: String!
+  after: String
+  before: String
+  createdAt: DateTime!
+  entityId: String!
+  entityType: String!
+  id: String!
+  userId: String!
+}
+
+input AvailabilitySlotInput {
+  dayOfWeek: Int!
+  endTime: String!
+  locationId: String
+  startTime: String!
+}
+
+type ConstraintErrorEntity {
+  alternatives: [EligibleStaffSuggestion!]
+  message: String!
+}
+
+input CreateLocationInput {
+  name: String!
+  timezone: String!
+}
+
+input CreateShiftInput {
+  endAt: DateTime!
+  locationId: String!
+  startAt: DateTime!
+}
+
+input CreateSkillInput {
+  name: String!
+}
+
+type DashboardOvertimeEntryEntity {
+  assignments: [AssignmentHoursEntry!]!
+  overtimeHours: Float!
+  userId: String!
+  userName: String
+  weekStart: String!
+  weeklyHours: Float!
+}
+
+"""
+A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+"""
+scalar DateTime
+
+type DesiredHoursEntryEntity {
+  actualHours: Float!
+  desiredWeeklyHours: Float!
+  difference: Float!
+  status: DesiredHoursStatus!
+  userId: String!
+  userName: String
+}
+
+enum DesiredHoursStatus {
+  Ok
+  Over
+  Under
+}
+
+type DistributionEntryEntity {
+  totalHours: Float!
+  userId: String!
+  userName: String
+}
+
+type EligibleStaffSuggestion {
+  id: String!
+  name: String
+}
+
+type LocationEntity {
+  createdAt: DateTime!
+  id: String!
+  name: String!
+  timezone: String!
+  updatedAt: DateTime!
+}
+
+input LoginInput {
+  email: String!
+  password: String!
+}
+
+type Mutation {
+  acceptDropRequest(requestId: String!): AcceptRequestResult!
+  acceptSwapRequest(counterpartAssignmentId: String!, requestId: String!): AcceptRequestResult!
+  addAssignment(input: AddAssignmentInput!, shiftId: String!): AddAssignmentResult!
+  approveRequest(requestId: String!): RequestEntity!
+  cancelRequest(requestId: String!): RequestEntity!
+  createDropRequest(assignmentId: String!): RequestEntity!
+  createLocation(input: CreateLocationInput!): LocationEntity!
+  createShift(input: CreateShiftInput!): ShiftEntity!
+  createSkill(input: CreateSkillInput!): SkillEntity!
+  createSwapRequest(assignmentId: String!): RequestEntity!
+  deleteLocation(id: String!): Boolean!
+  deleteSkill(id: String!): Boolean!
+  login(input: LoginInput!): String
+  markAllNotificationsRead: Float!
+  markNotificationRead(id: String!): NotificationEntity!
+  publishShift(shiftId: String!): ShiftEntity!
+  publishWeek(locationId: String!, weekStart: DateTime!): Float!
+  register(input: RegisterInput!): UserEntity!
+  rejectRequest(requestId: String!): RequestEntity!
+  removeAssignment(assignmentId: String!): Boolean!
+  setNotificationPreference(channel: String!, enabled: Boolean!): NotificationPreferenceEntity!
+  unpublishShift(shiftId: String!): ShiftEntity!
+  updateLocation(id: String!, input: UpdateLocationInput!): LocationEntity!
+  updateMyProfile(input: UpdateProfileInput!): UserEntity!
+  updateShift(id: String!, input: UpdateShiftInput!): ShiftEntity!
+  updateSkill(id: String!, input: UpdateSkillInput!): SkillEntity!
+}
+
+type NotificationEntity {
+  body: String
+  createdAt: DateTime!
+  id: String!
+  read: Boolean
+  title: String
+  type: String!
+  userId: String!
+}
+
+type NotificationPreferenceEntity {
+  channel: String!
+  enabled: Boolean!
+  id: String!
+  userId: String!
+}
+
+type PremiumFairnessEntryEntity {
+  fairnessScore: Float!
+  premiumShiftCount: Float!
+  totalHours: Float!
+  totalShiftCount: Float!
+  userId: String!
+  userName: String
+}
+
+type Query {
+  auditExport(end: DateTime!, locationId: String, start: DateTime!): [AuditEntryEntity!]!
+  location(id: String!): LocationEntity
+  locations: [LocationEntity!]!
+  me: UserEntity
+  myRequests: [RequestEntity!]!
+  notificationPreferences: [NotificationPreferenceEntity!]!
+  notifications(limit: Int, offset: Int, unreadOnly: Boolean): [NotificationEntity!]!
+  onDutyShifts(locationId: String, userId: String): [ShiftEntity!]!
+  overtimeDashboard(end: DateTime!, locationId: String, start: DateTime!): [DashboardOvertimeEntryEntity!]!
+  overtimeWhatIf(assignmentEnd: DateTime!, assignmentStart: DateTime!, overtimeOverrideReason: String, userId: String!): WhatIfResultEntity!
+  pendingRequests: [RequestEntity!]!
+  reportDesiredHours(end: DateTime!, locationId: String, role: UserRole, start: DateTime!): [DesiredHoursEntryEntity!]!
+  reportDistribution(end: DateTime!, locationId: String, start: DateTime!): [DistributionEntryEntity!]!
+  reportPremiumFairness(end: DateTime!, locationId: String, start: DateTime!): [PremiumFairnessEntryEntity!]!
+  shift(id: String!): ShiftEntity
+  shiftHistory(shiftId: String!): [AuditEntryEntity!]!
+  shifts: [ShiftEntity!]!
+  skill(id: String!): SkillEntity
+  skills: [SkillEntity!]!
+}
+
+input RegisterInput {
+  email: String!
+  name: String
+  password: String!
+  role: String!
+}
+
+type RequestEntity {
+  assignmentId: String!
+  claimerUserId: String
+  counterpartAssignmentId: String
+  createdAt: DateTime!
+  id: String!
+  status: String!
+  type: String!
+  updatedAt: DateTime!
+}
+
+type ShiftAssignmentEntity {
+  createdAt: DateTime!
+  id: String!
+  shiftId: String!
+  skillId: String!
+  updatedAt: DateTime!
+  userId: String!
+  version: Float!
+}
+
+type ShiftEntity {
+  createdAt: DateTime!
+  endAt: DateTime!
+  id: String!
+  locationId: String!
+  published: Boolean!
+  startAt: DateTime!
+  updatedAt: DateTime!
+}
+
+type SkillEntity {
+  createdAt: DateTime!
+  id: String!
+  name: String!
+  updatedAt: DateTime!
+}
+
+input UpdateLocationInput {
+  name: String
+  timezone: String
+}
+
+input UpdateProfileInput {
+  availabilities: [AvailabilitySlotInput!]
+  desiredWeeklyHours: Int
+  name: String
+}
+
+input UpdateShiftInput {
+  endAt: DateTime
+  startAt: DateTime
+}
+
+input UpdateSkillInput {
+  name: String
+}
+
+type UserEntity {
+  createdAt: DateTime!
+  email: String!
+  id: String!
+  name: String
+  role: UserRole!
+  updatedAt: DateTime!
+}
+
+enum UserRole {
+  Admin
+  Manager
+  Staff
+}
+
+type WhatIfResultEntity {
+  canAssign: Boolean!
+  consecutiveDays: Float!
+  consecutiveRequireOverride: Boolean!
+  consecutiveWarn: Boolean!
+  dailyBlock: Boolean!
+  dailyWarn: Boolean!
+  message: String
+  projectedDailyHours: Float!
+  projectedWeeklyHours: Float!
+  weeklyBlock: Boolean!
+  weeklyWarn: Boolean!
+}

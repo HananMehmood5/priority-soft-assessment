@@ -16,7 +16,7 @@ export class RegisterInput {
   @IsEnum(UserRole)
   role: UserRole;
 
-  @Field({ nullable: true })
+  @Field(() => String, { nullable: true })
   @IsOptional()
   @IsString()
   name?: string;

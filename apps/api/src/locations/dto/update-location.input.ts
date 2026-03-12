@@ -3,13 +3,13 @@ import { IsOptional, IsString, MaxLength } from 'class-validator';
 
 @InputType()
 export class UpdateLocationInput {
-  @Field({ nullable: true })
+  @Field(() => String, { nullable: true })
   @IsOptional()
   @IsString()
   @MaxLength(255)
   name?: string;
 
-  @Field({ nullable: true })
+  @Field(() => String, { nullable: true })
   @IsOptional()
   @IsString()
   @MaxLength(64)

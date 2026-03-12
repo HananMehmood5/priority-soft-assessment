@@ -19,9 +19,9 @@ export class ReportsResolver {
 
   @Query(() => [DistributionEntryEntity])
   async reportDistribution(
-    @Args('start') start: Date,
-    @Args('end') end: Date,
-    @Args('locationId', { nullable: true }) locationId: string | null,
+    @Args('start', { type: () => Date }) start: Date,
+    @Args('end', { type: () => Date }) end: Date,
+    @Args('locationId', { type: () => String, nullable: true }) locationId: string | null,
     @CurrentUser() user: import('../database/models').User,
   ): Promise<DistributionEntry[]> {
     return this.reportsService.getDistributionReport(new Date(start), new Date(end), locationId, user);
@@ -29,9 +29,9 @@ export class ReportsResolver {
 
   @Query(() => [PremiumFairnessEntryEntity])
   async reportPremiumFairness(
-    @Args('start') start: Date,
-    @Args('end') end: Date,
-    @Args('locationId', { nullable: true }) locationId: string | null,
+    @Args('start', { type: () => Date }) start: Date,
+    @Args('end', { type: () => Date }) end: Date,
+    @Args('locationId', { type: () => String, nullable: true }) locationId: string | null,
     @CurrentUser() user: import('../database/models').User,
   ): Promise<PremiumFairnessEntry[]> {
     return this.reportsService.getPremiumFairnessReport(new Date(start), new Date(end), locationId, user);
@@ -39,10 +39,10 @@ export class ReportsResolver {
 
   @Query(() => [DesiredHoursEntryEntity])
   async reportDesiredHours(
-    @Args('start') start: Date,
-    @Args('end') end: Date,
-    @Args('locationId', { nullable: true }) locationId: string | null,
-    @Args('role', { nullable: true }) role: UserRole | null,
+    @Args('start', { type: () => Date }) start: Date,
+    @Args('end', { type: () => Date }) end: Date,
+    @Args('locationId', { type: () => String, nullable: true }) locationId: string | null,
+    @Args('role', { type: () => UserRole, nullable: true }) role: UserRole | null,
     @CurrentUser() user: import('../database/models').User,
   ): Promise<DesiredHoursEntry[]> {
     return this.reportsService.getDesiredHoursReport(new Date(start), new Date(end), locationId, role, user);

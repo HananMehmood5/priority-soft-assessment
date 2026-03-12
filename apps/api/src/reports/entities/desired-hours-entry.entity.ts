@@ -13,7 +13,7 @@ export class DesiredHoursEntryEntity {
   @Field()
   userId: string;
 
-  @Field({ nullable: true })
+  @Field(() => String, { nullable: true })
   userName: string | null;
 
   @Field()

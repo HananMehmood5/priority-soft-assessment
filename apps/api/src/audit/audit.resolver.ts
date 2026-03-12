@@ -17,7 +17,7 @@ export class AuditResolver {
   @UseGuards(RolesGuard)
   @Roles(UserRole.Admin, UserRole.Manager)
   async shiftHistory(
-    @Args('shiftId') shiftId: string,
+    @Args('shiftId', { type: () => String }) shiftId: string,
     @CurrentUser() user: import('../database/models').User,
   ): Promise<AuditEntryEntity[]> {
     const entries = await this.auditService.getShiftHistory(shiftId, user);
@@ -37,9 +37,9 @@ export class AuditResolver {
   @UseGuards(RolesGuard)
   @Roles(UserRole.Admin)
   async auditExport(
-    @Args('start') start: Date,
-    @Args('end') end: Date,
-    @Args('locationId', { nullable: true }) locationId: string | null,
+    @Args('start', { type: () => Date }) start: Date,
+    @Args('end', { type: () => Date }) end: Date,
+    @Args('locationId', { type: () => String, nullable: true }) locationId: string | null,
     @CurrentUser() user: import('../database/models').User,
   ): Promise<AuditEntryEntity[]> {
     const entries = await this.auditService.export(new Date(start), new Date(end), locationId, user);

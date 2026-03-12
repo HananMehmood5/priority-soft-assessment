@@ -18,7 +18,7 @@ export class AvailabilitySlotInput {
   @IsString()
   endTime: string;
 
-  @Field({ nullable: true })
+  @Field(() => String, { nullable: true })
   @IsOptional()
   @IsString()
   locationId?: string;
@@ -26,7 +26,7 @@ export class AvailabilitySlotInput {
 
 @InputType()
 export class UpdateProfileInput {
-  @Field({ nullable: true })
+  @Field(() => String, { nullable: true })
   @IsOptional()
   @IsString()
   name?: string;
@@ -38,7 +38,7 @@ export class UpdateProfileInput {
   @Type(() => AvailabilitySlotInput)
   availabilities?: AvailabilitySlotInput[];
 
-  @Field({ nullable: true })
+  @Field(() => Int, { nullable: true })
   @IsOptional()
   @IsNumber()
   @Min(0)

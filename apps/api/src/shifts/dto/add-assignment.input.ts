@@ -11,7 +11,7 @@ export class AddAssignmentInput {
   @IsUUID()
   skillId: string;
 
-  @Field({ nullable: true })
+  @Field(() => String, { nullable: true })
   @IsOptional()
   @IsString()
   overtimeOverrideReason?: string | null;

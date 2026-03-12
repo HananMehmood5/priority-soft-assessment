@@ -14,7 +14,7 @@ export class UserEntity {
   @Field(() => UserRole)
   role: UserRole;
 
-  @Field({ nullable: true })
+  @Field(() => String, { nullable: true })
   name: string | null;
 
   @Field()

@@ -4,13 +4,13 @@ import { Type } from 'class-transformer';
 
 @InputType()
 export class UpdateShiftInput {
-  @Field({ nullable: true })
+  @Field(() => Date, { nullable: true })
   @IsOptional()
   @IsDate()
   @Type(() => Date)
   startAt?: Date;
 
-  @Field({ nullable: true })
+  @Field(() => Date, { nullable: true })
   @IsOptional()
   @IsDate()
   @Type(() => Date)

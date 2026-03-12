@@ -11,13 +11,13 @@ export class NotificationEntity {
   @Field()
   type: string;
 
-  @Field({ nullable: true })
+  @Field(() => String, { nullable: true })
   title: string | null;
 
-  @Field({ nullable: true })
+  @Field(() => String, { nullable: true })
   body: string | null;
 
-  @Field({ nullable: true })
+  @Field(() => Boolean, { nullable: true })
   read: boolean;
 
   @Field()
