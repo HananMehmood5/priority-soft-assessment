@@ -17,6 +17,8 @@ Multi-location staff scheduling platform for Coastal Eats (Priority Soft assessm
 
 ## Local setup
 
+For full evaluator-focused local setup (including test accounts and scenarios), see `docs/README.md`.
+
 ### 1. Start the database
 
 ```bash
@@ -50,7 +52,22 @@ yarn install
 
 **Real-time**: The API serves WebSocket (Socket.io) on the same host and port as HTTP. Set `WS_URL` in `.env` (e.g. `ws://localhost:3001`) for the frontend to connect for real-time updates (Phase 2+).
 
+## Deployment (summary)
+
+See `docs/ASSUMPTIONS_AND_DECISIONS.md` for full deployment assumptions.
+
+- **Backend (Railway)**:
+  - Build: `yarn build:api`
+  - Start: `yarn start`
+  - Env: `DATABASE_URL`, `JWT_SECRET`, `PORT` (injected by Railway), `CORS_ORIGIN`.
+
+- **Frontend (Vercel)**:
+  - Build: `yarn workspace web build`
+  - Env: `NEXT_PUBLIC_GRAPHQL_URL`, `NEXT_PUBLIC_WS_URL`.
+
 ## Project layout
 
 - `apps/api` — NestJS backend (Sequelize, REST + Socket.io WebSocket; events/rooms in Phase 2)
 - `apps/web` — Next.js frontend
+- `docs/README.md` — evaluator-facing run + usage instructions
+- `docs/ASSUMPTIONS_AND_DECISIONS.md` — key product/technical decisions and deployment assumptions

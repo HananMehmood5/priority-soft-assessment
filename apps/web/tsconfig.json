@@ -16,6 +16,7 @@
     "plugins": [{ "name": "next" }],
     "paths": {
       "@/*": ["./*"],
+      "@/features/*": ["./src/features/*"],
       "@shiftsync/shared": ["../../packages/shared/src"]
     }
   },

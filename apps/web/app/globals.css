@@ -1,0 +1,89 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/**
+ * ShiftSync — Theme aligned with Priority Soft (https://prioritysoft.io/)
+ * Dark base, purple accent, high-contrast light sections.
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap');
+
+:root {
+  /* Backgrounds */
+  --ps-bg: #0c0c10;
+  --ps-bg-elevated: #14141a;
+  --ps-bg-card: #1a1a22;
+  --ps-surface: #22222e;
+  --ps-surface-hover: #2a2a38;
+
+  /* Foreground */
+  --ps-fg: #f4f4f6;
+  --ps-fg-muted: #a0a0b0;
+  --ps-fg-subtle: #6b6b7a;
+
+  /* Primary — purple accent (Priority Soft “Purple Ring” / brand accent) */
+  --ps-primary: #a855f7;
+  --ps-primary-hover: #9333ea;
+  --ps-primary-muted: rgba(168, 85, 247, 0.15);
+  --ps-primary-foreground: #ffffff;
+
+  /* Semantic */
+  --ps-success: #22c55e;
+  --ps-warning: #eab308;
+  --ps-error: #ef4444;
+  --ps-info: #3b82f6;
+
+  /* Borders & dividers */
+  --ps-border: #2e2e3a;
+  --ps-border-focus: var(--ps-primary);
+
+  /* Typography */
+  --ps-font-sans: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --ps-font-mono: ui-monospace, 'SF Mono', monospace;
+
+  --ps-text-xs: 0.75rem;
+  --ps-text-sm: 0.875rem;
+  --ps-text-base: 1rem;
+  --ps-text-lg: 1.125rem;
+  --ps-text-xl: 1.25rem;
+  --ps-text-2xl: 1.5rem;
+  --ps-text-3xl: 1.875rem;
+
+  /* Spacing (optional, for consistency) */
+  --ps-radius: 0.5rem;
+  --ps-radius-lg: 0.75rem;
+  --ps-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+  --ps-shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.5);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  font-family: var(--ps-font-sans);
+  font-size: var(--ps-text-base);
+  line-height: 1.5;
+  background: var(--ps-bg);
+  color: var(--ps-fg);
+}
+
+/* Base link and button styles for the theme */
+a {
+  color: var(--ps-primary);
+  text-decoration: none;
+}
+a:hover {
+  color: var(--ps-primary-hover);
+  text-decoration: underline;
+}
+

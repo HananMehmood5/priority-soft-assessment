@@ -36,6 +36,7 @@ module.exports = {
       },
       rules: {
         "no-html-link-for-pages": "off",
+        "@typescript-eslint/triple-slash-reference": "off",
       },
     },
     // NestJS API (apps/api): TypeScript + Prettier
