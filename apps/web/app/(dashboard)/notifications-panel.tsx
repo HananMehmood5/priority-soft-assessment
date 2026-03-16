@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { Dialog, DialogPanel } from '@headlessui/react';
 import { useQuery, useMutation } from '@apollo/client';
 import { useAuth } from '@/lib/auth-context';
 import type { NotificationAttributes } from '@/app/types';
@@ -10,13 +11,16 @@ import {
   MARK_READ_MUTATION,
   MARK_ALL_MUTATION,
 } from '@/lib/apollo/operations';
+import { BellIcon } from '@/src/components/icons/BellIcon';
+
+type Placement = 'header' | 'sidebar';
 
 function formatDate(value: string | Date): string {
   const d = typeof value === 'string' ? new Date(value) : value;
   return d.toLocaleString();
 }
 
-export function NotificationsPanel() {
+export function NotificationsPanel({ placement = 'header' }: { placement?: Placement }) {
   const { token } = useAuth();
   const socket = useSocket();
   const [open, setOpen] = useState(false);
@@ -70,45 +74,65 @@ export function NotificationsPanel() {
     }
   };
 
-  const btnSecondary =
-    'inline-flex items-center justify-center rounded-ps border border-ps-border px-4 py-2 text-sm font-medium text-ps-fg transition-colors hover:border-ps-fg-subtle hover:bg-ps-surface-hover disabled:cursor-not-allowed disabled:opacity-60';
-
   return (
-    <div className="relative">
+    <>
       <button
         type="button"
-        className={`${btnSecondary} relative`}
-        onClick={() => setOpen((v) => !v)}
+        className="relative inline-flex items-center justify-center gap-2 rounded-ps border border-ps-border px-3 py-1.5 text-sm font-medium text-ps-fg transition-colors hover:border-ps-fg-subtle hover:bg-ps-surface-hover disabled:cursor-not-allowed disabled:opacity-60"
+        onClick={() => setOpen(true)}
       >
-        Notifications
+        <BellIcon className="h-4 w-4" />
+        <span>Notifications</span>
         {unreadCount > 0 && (
           <span className="absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-ps-primary px-1 text-[0.65rem] text-white">
             {unreadCount}
           </span>
         )}
       </button>
-      {open && (
-        <div className="absolute right-0 z-40 mt-2 max-h-[420px] w-[360px] overflow-auto rounded-ps border border-ps-border bg-ps-bg-card shadow-ps-lg">
-          <div className="flex items-center justify-between gap-2 border-b border-ps-border p-3">
-            <span className="text-ps-sm font-semibold">Notifications</span>
-            <div className="flex gap-2">
+      <Dialog
+        open={open}
+        onClose={() => setOpen(false)}
+        className="relative z-50"
+      >
+        <div className="fixed inset-0 bg-transparent" aria-hidden="true" />
+        <div
+          className={`fixed max-h-[420px] w-[360px] overflow-auto rounded-ps border border-ps-border bg-ps-bg-card shadow-ps-lg ${
+            placement === 'sidebar'
+              ? 'left-[15rem] top-20'
+              : 'right-6 top-16'
+          }`}
+        >
+          <DialogPanel className="w-full">
+          <div className="flex flex-col border-b border-ps-border px-3 pt-3">
+            <span className="mb-2 text-ps-sm font-semibold">Notifications</span>
+            <div className="flex items-center justify-between gap-3">
+              <div className="inline-flex gap-4 text-ps-xs font-medium">
+                <button
+                  type="button"
+                  onClick={() => setUnreadOnly(true)}
+                  className={
+                    unreadOnly
+                      ? 'border-b-2 border-ps-primary pb-1 text-ps-primary'
+                      : 'pb-1 text-ps-fg-muted hover:text-ps-fg'
+                  }
+                >
+                  Unread
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setUnreadOnly(false)}
+                  className={
+                    !unreadOnly
+                      ? 'border-b-2 border-ps-primary pb-1 text-ps-primary'
+                      : 'pb-1 text-ps-fg-muted hover:text-ps-fg'
+                  }
+                >
+                  All
+                </button>
+              </div>
               <button
                 type="button"
-                className={`${btnSecondary} px-2 py-0.5 text-ps-xs`}
-                onClick={() => setUnreadOnly(true)}
-              >
-                Unread
-              </button>
-              <button
-                type="button"
-                className={`${btnSecondary} px-2 py-0.5 text-ps-xs`}
-                onClick={() => setUnreadOnly(false)}
-              >
-                All
-              </button>
-              <button
-                type="button"
-                className={`${btnSecondary} px-2 py-0.5 text-ps-xs`}
+                className="text-ps-xs font-medium text-ps-primary hover:underline"
                 onClick={handleMarkAll}
               >
                 Mark all read
@@ -146,8 +170,9 @@ export function NotificationsPanel() {
               </button>
             ))}
           </div>
+          </DialogPanel>
         </div>
-      )}
-    </div>
+      </Dialog>
+    </>
   );
 }

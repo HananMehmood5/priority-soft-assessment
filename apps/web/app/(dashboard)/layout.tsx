@@ -7,16 +7,32 @@ import { useAuth } from '@/lib/auth-context';
 import { UserRole } from '@shiftsync/shared';
 import { useEffect } from 'react';
 import { NotificationsPanel } from './notifications-panel';
+import {
+  HomeIcon,
+  LocationIcon,
+  SkillsIcon,
+  CalendarIcon,
+  MyShiftsIcon,
+  RequestIcon,
+  DropIcon,
+  SwapIcon,
+  ShiftsIcon,
+  OnDutyIcon,
+  FairnessIcon,
+  ApprovalsIcon,
+  OvertimeIcon,
+  AuditIcon,
+} from '@/src/components/icons/NavIcons';
 
 const NAV = [
-  { href: '/', label: 'Home' },
-  { href: '/locations', label: 'Locations' },
-  { href: '/skills', label: 'Skills' },
-  { href: '/calendar', label: 'Calendar' },
-  { href: '/my-shifts', label: 'My shifts' },
-  { href: '/requests', label: 'Requests' },
-  { href: '/drops', label: 'Available drops' },
-  { href: '/swaps', label: 'Available swaps' },
+  { href: '/', label: 'Home', Icon: HomeIcon },
+  { href: '/locations', label: 'Locations', Icon: LocationIcon },
+  { href: '/skills', label: 'Skills', Icon: SkillsIcon },
+  { href: '/calendar', label: 'Calendar', Icon: CalendarIcon },
+  { href: '/my-shifts', label: 'My shifts', Icon: MyShiftsIcon },
+  { href: '/requests', label: 'Requests', Icon: RequestIcon },
+  { href: '/drops', label: 'Available drops', Icon: DropIcon },
+  { href: '/swaps', label: 'Available swaps', Icon: SwapIcon },
 ] as const;
 
 export default function DashboardLayout({
@@ -51,7 +67,7 @@ export default function DashboardLayout({
   return (
     <div className="flex min-h-screen">
       <aside className="flex w-60 flex-col gap-4 border-r border-ps-border bg-ps-bg-card p-6">
-        <div className="mb-4">
+        <div className="mb-3">
           <Link href="/" className="inline-flex items-center gap-3">
             <Image
               src="/priority-soft-logo.png"
@@ -63,13 +79,16 @@ export default function DashboardLayout({
             />
           </Link>
         </div>
+        <div className="mb-4">
+          <NotificationsPanel placement="sidebar" />
+        </div>
         <nav className="flex flex-col gap-1">
-          {NAV.map(({ href, label }) => (
+          {NAV.map(({ href, label, Icon }) => (
             <Link
               key={href}
               href={href}
               className={[
-                'rounded-ps px-3 py-2 text-sm',
+                'flex items-center gap-2 rounded-ps px-3 py-2 text-sm',
                 pathname === href
                   ? 'bg-ps-primary-muted font-semibold text-ps-primary'
                   : 'text-ps-fg',
@@ -77,6 +96,7 @@ export default function DashboardLayout({
                 .filter(Boolean)
                 .join(' ')}
             >
+              <Icon className="h-4 w-4" />
               {label}
             </Link>
           ))}
@@ -85,7 +105,7 @@ export default function DashboardLayout({
               <Link
                 href="/shifts"
                 className={[
-                  'rounded-ps px-3 py-2 text-sm',
+                  'flex items-center gap-2 rounded-ps px-3 py-2 text-sm',
                   pathname === '/shifts'
                     ? 'bg-ps-primary-muted font-semibold text-ps-primary'
                     : 'text-ps-fg',
@@ -93,12 +113,13 @@ export default function DashboardLayout({
                   .filter(Boolean)
                   .join(' ')}
               >
+                <ShiftsIcon className="h-4 w-4" />
                 Shifts
               </Link>
               <Link
                 href="/on-duty"
                 className={[
-                  'rounded-ps px-3 py-2 text-sm',
+                  'flex items-center gap-2 rounded-ps px-3 py-2 text-sm',
                   pathname === '/on-duty'
                     ? 'bg-ps-primary-muted font-semibold text-ps-primary'
                     : 'text-ps-fg',
@@ -106,12 +127,13 @@ export default function DashboardLayout({
                   .filter(Boolean)
                   .join(' ')}
               >
+                <OnDutyIcon className="h-4 w-4" />
                 On-duty
               </Link>
               <Link
                 href="/fairness"
                 className={[
-                  'rounded-ps px-3 py-2 text-sm',
+                  'flex items-center gap-2 rounded-ps px-3 py-2 text-sm',
                   pathname === '/fairness'
                     ? 'bg-ps-primary-muted font-semibold text-ps-primary'
                     : 'text-ps-fg',
@@ -119,12 +141,13 @@ export default function DashboardLayout({
                   .filter(Boolean)
                   .join(' ')}
               >
+                <FairnessIcon className="h-4 w-4" />
                 Fairness
               </Link>
               <Link
                 href="/approvals"
                 className={[
-                  'rounded-ps px-3 py-2 text-sm',
+                  'flex items-center gap-2 rounded-ps px-3 py-2 text-sm',
                   pathname === '/approvals'
                     ? 'bg-ps-primary-muted font-semibold text-ps-primary'
                     : 'text-ps-fg',
@@ -132,12 +155,13 @@ export default function DashboardLayout({
                   .filter(Boolean)
                   .join(' ')}
               >
+                <ApprovalsIcon className="h-4 w-4" />
                 Approvals
               </Link>
               <Link
                 href="/overtime"
                 className={[
-                  'rounded-ps px-3 py-2 text-sm',
+                  'flex items-center gap-2 rounded-ps px-3 py-2 text-sm',
                   pathname === '/overtime'
                     ? 'bg-ps-primary-muted font-semibold text-ps-primary'
                     : 'text-ps-fg',
@@ -145,12 +169,13 @@ export default function DashboardLayout({
                   .filter(Boolean)
                   .join(' ')}
               >
+                <OvertimeIcon className="h-4 w-4" />
                 Overtime
               </Link>
               <Link
                 href="/audit"
                 className={[
-                  'rounded-ps px-3 py-2 text-sm',
+                  'flex items-center gap-2 rounded-ps px-3 py-2 text-sm',
                   pathname === '/audit'
                     ? 'bg-ps-primary-muted font-semibold text-ps-primary'
                     : 'text-ps-fg',
@@ -158,6 +183,7 @@ export default function DashboardLayout({
                   .filter(Boolean)
                   .join(' ')}
               >
+                <AuditIcon className="h-4 w-4" />
                 Audit
               </Link>
             </>
@@ -186,9 +212,6 @@ export default function DashboardLayout({
         </div>
       </aside>
       <main className="flex-1 bg-ps-bg p-6">
-        <div className="mb-4 flex justify-end">
-          <NotificationsPanel />
-        </div>
         {children}
       </main>
     </div>
