@@ -51,14 +51,15 @@ export default function DashboardLayout({
   return (
     <div className="flex min-h-screen">
       <aside className="flex w-60 flex-col gap-4 border-r border-ps-border bg-ps-bg-card p-6">
-        <div className="mb-2">
-          <Link href="/" className="inline-flex items-center gap-2">
+        <div className="mb-4">
+          <Link href="/" className="inline-flex items-center gap-3">
             <Image
-              src="https://prioritysoft.io/wp-content/uploads/2023/06/Priority-Soft-Logo-White.png"
+              src="/priority-soft-logo.png"
               alt="Priority Soft"
               width={160}
               height={32}
-              className="h-auto w-auto max-w-full"
+              className="h-8 w-auto"
+              priority
             />
           </Link>
         </div>

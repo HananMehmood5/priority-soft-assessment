@@ -3,12 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useQuery, useMutation } from '@apollo/client';
 import { useAuth } from '@/lib/auth-context';
-import type { UserAttributes } from '@shiftsync/shared';
 import { ME_PROFILE_QUERY, UPDATE_PROFILE_MUTATION } from '@/lib/apollo/operations';
-
-type MeResult = Pick<UserAttributes, 'id' | 'name'> & {
-  desiredHours?: Array<{ weeklyHours: number; createdAt: string }>;
-};
 
 export default function ProfilePage() {
   const { token } = useAuth();
@@ -16,7 +11,7 @@ export default function ProfilePage() {
   const [desiredWeeklyHours, setDesiredWeeklyHours] = useState<string>('');
   const [success, setSuccess] = useState<string | null>(null);
 
-  const { data, loading, error } = useQuery<{ me: MeResult | null }>(
+  const { data, loading, error } = useQuery<{ me: { id: string; name: string | null } | null }>(
     ME_PROFILE_QUERY,
     { skip: !token }
   );
@@ -33,12 +28,7 @@ export default function ProfilePage() {
   useEffect(() => {
     if (me) {
       setName(me.name ?? '');
-      const latestDesired = me.desiredHours?.[0];
-      if (latestDesired) {
-        setDesiredWeeklyHours(String(latestDesired.weeklyHours));
-      } else {
-        setDesiredWeeklyHours('');
-      }
+      setDesiredWeeklyHours('');
     }
   }, [me]);
 
@@ -66,16 +56,33 @@ export default function ProfilePage() {
 
   const displayError = error?.message ?? mutateError?.message ?? null;
 
-  if (loading) return <p className="text-ps-fg-muted">Loading…</p>;
-  if (error) return <p className="text-ps-error">{error.message}</p>;
+  if (loading) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <p className="text-ps-fg-muted">Loading…</p>
+      </div>
+    );
+  }
+  if (error) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <p className="text-ps-error">{error.message}</p>
+      </div>
+    );
+  }
 
   return (
-    <div>
-      <h1 className="mb-3 text-2xl font-bold">My profile</h1>
+    <div className="flex h-full items-start justify-center">
       <form
         onSubmit={handleSubmit}
-        className="flex max-w-[420px] flex-col gap-4"
+        className="mt-4 w-full max-w-lg rounded-ps bg-ps-bg-card p-6 shadow-ps flex flex-col gap-4"
       >
+        <div>
+          <h1 className="text-2xl font-bold">My profile</h1>
+          <p className="mt-1 text-ps-sm text-ps-fg-muted">
+            Update your name and preferred weekly hours.
+          </p>
+        </div>
         <div>
           <label htmlFor="name" className="mb-1.5 block text-sm font-medium">
             Name
@@ -118,3 +125,4 @@ export default function ProfilePage() {
     </div>
   );
 }
+
