@@ -1,8 +1,10 @@
 import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { Op } from 'sequelize';
 import { UserRole } from '@shiftsync/shared';
-import { Location, User } from '../database/models';
+import { Location, User, User as UserModel } from '../database/models';
 import { LocationRepository } from '../database/repositories/location.repository';
+import { ManagerLocation } from '../database/models/manager-location.model';
+import { StaffLocation } from '../database/models/staff-location.model';
 
 @Injectable()
 export class LocationsService {
@@ -57,5 +59,53 @@ export class LocationsService {
     }
     await this.locationRepository.remove(id);
     return true;
+  }
+
+  private ensureAdmin(user: User) {
+    if (user.role !== UserRole.Admin) {
+      throw new ForbiddenException('Only Admin can manage location assignments');
+    }
+  }
+
+  async assignManagerToLocation(managerId: string, locationId: string, user: User): Promise<void> {
+    this.ensureAdmin(user);
+    const manager = await UserModel.findByPk(managerId);
+    if (!manager || manager.role !== UserRole.Manager) {
+      throw new NotFoundException('Manager not found');
+    }
+    await this.locationRepository.findByIdOrFail(locationId);
+    const existing = await ManagerLocation.findOne({ where: { userId: managerId, locationId } });
+    if (existing) return;
+    await ManagerLocation.create({ userId: managerId, locationId });
+  }
+
+  async removeManagerFromLocation(
+    managerId: string,
+    locationId: string,
+    user: User,
+  ): Promise<void> {
+    this.ensureAdmin(user);
+    const existing = await ManagerLocation.findOne({ where: { userId: managerId, locationId } });
+    if (!existing) return;
+    await existing.destroy();
+  }
+
+  async certifyStaffForLocation(staffId: string, locationId: string, user: User): Promise<void> {
+    this.ensureAdmin(user);
+    const staff = await UserModel.findByPk(staffId);
+    if (!staff || staff.role !== UserRole.Staff) {
+      throw new NotFoundException('Staff member not found');
+    }
+    await this.locationRepository.findByIdOrFail(locationId);
+    const existing = await StaffLocation.findOne({ where: { userId: staffId, locationId } });
+    if (existing) return;
+    await StaffLocation.create({ userId: staffId, locationId });
+  }
+
+  async removeStaffFromLocation(staffId: string, locationId: string, user: User): Promise<void> {
+    this.ensureAdmin(user);
+    const existing = await StaffLocation.findOne({ where: { userId: staffId, locationId } });
+    if (!existing) return;
+    await existing.destroy();
   }
 }

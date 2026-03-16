@@ -63,4 +63,52 @@ export class LocationsResolver {
   ): Promise<boolean> {
     return this.locationsService.remove(id, user);
   }
+
+  @Mutation(() => Boolean)
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.Admin)
+  async assignManagerToLocation(
+    @Args('managerId') managerId: string,
+    @Args('locationId') locationId: string,
+    @CurrentUser() user: import('../database/models').User,
+  ): Promise<boolean> {
+    await this.locationsService.assignManagerToLocation(managerId, locationId, user);
+    return true;
+  }
+
+  @Mutation(() => Boolean)
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.Admin)
+  async removeManagerFromLocation(
+    @Args('managerId') managerId: string,
+    @Args('locationId') locationId: string,
+    @CurrentUser() user: import('../database/models').User,
+  ): Promise<boolean> {
+    await this.locationsService.removeManagerFromLocation(managerId, locationId, user);
+    return true;
+  }
+
+  @Mutation(() => Boolean)
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.Admin)
+  async certifyStaffForLocation(
+    @Args('staffId') staffId: string,
+    @Args('locationId') locationId: string,
+    @CurrentUser() user: import('../database/models').User,
+  ): Promise<boolean> {
+    await this.locationsService.certifyStaffForLocation(staffId, locationId, user);
+    return true;
+  }
+
+  @Mutation(() => Boolean)
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.Admin)
+  async removeStaffFromLocation(
+    @Args('staffId') staffId: string,
+    @Args('locationId') locationId: string,
+    @CurrentUser() user: import('../database/models').User,
+  ): Promise<boolean> {
+    await this.locationsService.removeStaffFromLocation(staffId, locationId, user);
+    return true;
+  }
 }

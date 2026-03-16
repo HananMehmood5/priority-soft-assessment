@@ -121,7 +121,9 @@ type Mutation {
   acceptSwapRequest(counterpartAssignmentId: String!, requestId: String!): AcceptRequestResult!
   addAssignment(input: AddAssignmentInput!, shiftId: String!): AddAssignmentResult!
   approveRequest(requestId: String!): RequestEntity!
+  assignManagerToLocation(locationId: String!, managerId: String!): Boolean!
   cancelRequest(requestId: String!): RequestEntity!
+  certifyStaffForLocation(locationId: String!, staffId: String!): Boolean!
   createDropRequest(assignmentId: String!): RequestEntity!
   createLocation(input: CreateLocationInput!): LocationEntity!
   createShift(input: CreateShiftInput!): ShiftEntity!
@@ -137,6 +139,8 @@ type Mutation {
   register(input: RegisterInput!): UserEntity!
   rejectRequest(requestId: String!): RequestEntity!
   removeAssignment(assignmentId: String!): Boolean!
+  removeManagerFromLocation(locationId: String!, managerId: String!): Boolean!
+  removeStaffFromLocation(locationId: String!, staffId: String!): Boolean!
   setNotificationPreference(channel: String!, enabled: Boolean!): NotificationPreferenceEntity!
   unpublishShift(shiftId: String!): ShiftEntity!
   updateLocation(id: String!, input: UpdateLocationInput!): LocationEntity!
