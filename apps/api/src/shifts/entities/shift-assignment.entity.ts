@@ -1,5 +1,7 @@
 import { ObjectType, Field } from '@nestjs/graphql';
 import { ShiftEntity } from './shift.entity';
+import { UserEntity } from '../../auth/entities/user.entity';
+import { SkillEntity } from '../../skills/entities/skill.entity';
 
 @ObjectType()
 export class ShiftAssignmentEntity {
@@ -26,4 +28,10 @@ export class ShiftAssignmentEntity {
 
   @Field(() => ShiftEntity, { nullable: true })
   shift?: unknown;
+
+  @Field(() => UserEntity, { nullable: true })
+  user?: unknown;
+
+  @Field(() => SkillEntity, { nullable: true })
+  skill?: unknown;
 }

@@ -1,6 +1,6 @@
 import { UseGuards } from '@nestjs/common';
 import { Args, Mutation, Query, Resolver, ResolveField, Parent } from '@nestjs/graphql';
-import { Shift, ShiftAssignment } from '../database/models';
+import { Shift, ShiftAssignment, Location, User, Skill } from '../database/models';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -13,11 +13,18 @@ import { AddAssignmentResult } from './entities/add-assignment-result.entity';
 import { CreateShiftInput } from './dto/create-shift.input';
 import { UpdateShiftInput } from './dto/update-shift.input';
 import { AddAssignmentInput } from './dto/add-assignment.input';
+import { LocationRepository, UserRepository, SkillRepository } from '../database/repositories';
+import { LocationEntity } from '../locations/entities/location.entity';
+import { UserEntity } from '../auth/entities/user.entity';
+import { SkillEntity } from '../skills/entities/skill.entity';
 
 @Resolver(() => ShiftEntity)
 @UseGuards(JwtAuthGuard)
 export class ShiftsResolver {
-  constructor(private readonly shiftsService: ShiftsService) {}
+  constructor(
+    private readonly shiftsService: ShiftsService,
+    private readonly locationRepository: LocationRepository,
+  ) {}
 
   @Query(() => [ShiftEntity])
   async shifts(@CurrentUser() user: import('../database/models').User): Promise<Shift[]> {
@@ -27,6 +34,12 @@ export class ShiftsResolver {
   @ResolveField(() => [ShiftAssignmentEntity], { name: 'assignments', nullable: 'itemsAndList' })
   assignments(@Parent() shift: Shift & { assignments?: ShiftAssignment[] }): ShiftAssignment[] | undefined {
     return shift.assignments;
+  }
+
+  @ResolveField(() => LocationEntity, { nullable: true })
+  async location(@Parent() shift: Shift & { locationId: string }): Promise<Location | null> {
+    const loc = await this.locationRepository.findById(shift.locationId);
+    return (loc as Location) ?? null;
   }
 
   @Query(() => [ShiftAssignmentEntity])
@@ -138,15 +151,49 @@ export class ShiftsResolver {
   ): Promise<Shift> {
     return this.shiftsService.unpublish(shiftId, user);
   }
+
+  @Mutation(() => Boolean)
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.Admin)
+  async deleteShift(
+    @Args('id') id: string,
+    @CurrentUser() user: import('../database/models').User,
+  ): Promise<boolean> {
+    await this.shiftsService.delete(id, user);
+    return true;
+  }
 }
 
 @Resolver(() => ShiftAssignmentEntity)
 @UseGuards(JwtAuthGuard)
 export class ShiftAssignmentResolver {
+  constructor(
+    private readonly userRepository: UserRepository,
+    private readonly skillRepository: SkillRepository,
+  ) {}
+
   @ResolveField(() => ShiftEntity)
   shift(
     @Parent() assignment: ShiftAssignment & { shift?: Shift },
   ): Shift | undefined {
     return assignment.shift;
+  }
+
+  @ResolveField(() => UserEntity, { nullable: true })
+  async user(
+    @Parent() assignment: ShiftAssignment & { userId: string },
+  ): Promise<User | null> {
+    const user = await this.userRepository.findById(assignment.userId, {
+      excludePassword: true,
+    });
+    return (user as User) ?? null;
+  }
+
+  @ResolveField(() => SkillEntity, { nullable: true })
+  async skill(
+    @Parent() assignment: ShiftAssignment & { skillId: string },
+  ): Promise<Skill | null> {
+    const skill = await this.skillRepository.findById(assignment.skillId);
+    return (skill as Skill) ?? null;
   }
 }

@@ -34,6 +34,7 @@ type AuditEntryEntity {
   entityName: String
   entityType: String!
   id: String!
+  user: UserEntity
   userId: String!
   userName: String
   what: String
@@ -134,6 +135,7 @@ type Mutation {
   createSkill(input: CreateSkillInput!): SkillEntity!
   createSwapRequest(assignmentId: String!): RequestEntity!
   deleteLocation(id: String!): Boolean!
+  deleteShift(id: String!): Boolean!
   deleteSkill(id: String!): Boolean!
   login(input: LoginInput!): String
   markAllNotificationsRead: Float!
@@ -231,8 +233,10 @@ type ShiftAssignmentEntity {
   id: String!
   shift: ShiftEntity
   shiftId: String!
+  skill: SkillEntity
   skillId: String!
   updatedAt: DateTime!
+  user: UserEntity
   userId: String!
   version: Float!
 }
@@ -242,6 +246,7 @@ type ShiftEntity {
   createdAt: DateTime!
   endAt: DateTime!
   id: String!
+  location: LocationEntity
   locationId: String!
   published: Boolean!
   startAt: DateTime!

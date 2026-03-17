@@ -200,6 +200,35 @@ export class ShiftsService {
     return this.shiftRepository.updatePublished(shiftId, false);
   }
 
+  async delete(id: string, user: User): Promise<void> {
+    const shift = await this.shiftRepository.findByIdOrFail(id);
+    if (user.role !== UserRole.Admin) {
+      throw new ForbiddenException('Only Admin can delete shifts');
+    }
+    const assignments = await this.assignmentRepository.findAllByShiftId(id);
+    for (const a of assignments) {
+      await this.assignmentRepository.delete(a.id);
+      await this.auditService.log(
+        user.id,
+        AuditAction.Delete,
+        AuditEntityType.ShiftAssignment,
+        a.id,
+        a.toJSON() as unknown as Record<string, unknown>,
+        null,
+      );
+    }
+    const before = shift.toJSON() as unknown as Record<string, unknown>;
+    await shift.destroy();
+    await this.auditService.log(
+      user.id,
+      AuditAction.Delete,
+      AuditEntityType.Shift,
+      id,
+      before,
+      null,
+    );
+  }
+
   async findForManager(user: User): Promise<Shift[]> {
     const locationIds = await this.permissions.getManagerLocationIds(user);
     if (locationIds && locationIds.length === 0) return [];
