@@ -20,16 +20,25 @@ export const LOGIN_MUTATION = gql`
   }
 `;
 
+export const REGISTER_MUTATION = gql`
+  mutation Register($input: RegisterInput!) {
+    register(input: $input) {
+      id
+      email
+      name
+      role
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
 // Profile
 export const ME_PROFILE_QUERY = gql`
   query MeProfile {
     me {
       id
       name
-      desiredHours {
-        weeklyHours
-        createdAt
-      }
     }
   }
 `;
@@ -39,11 +48,74 @@ export const UPDATE_PROFILE_MUTATION = gql`
     updateMyProfile(input: $input) {
       id
       name
-      desiredHours {
-        weeklyHours
-        createdAt
+    }
+  }
+`;
+
+// People / Staff
+export const STAFF_QUERY = gql`
+  query Staff($locationId: String, $skillId: String, $role: UserRole) {
+    staff(locationId: $locationId, skillId: $skillId, role: $role) {
+      id
+      email
+      name
+      role
+      createdAt
+      updatedAt
+      skills {
+        id
+        name
+      }
+      certifiedLocations {
+        id
+        name
       }
     }
+  }
+`;
+
+export const USER_QUERY = gql`
+  query User($id: String!) {
+    user(id: $id) {
+      id
+      email
+      name
+      role
+      createdAt
+      updatedAt
+      skills {
+        id
+        name
+      }
+      certifiedLocations {
+        id
+        name
+      }
+    }
+  }
+`;
+
+export const CERTIFY_STAFF_MUTATION = gql`
+  mutation CertifyStaffForLocation($locationId: String!, $staffId: String!) {
+    certifyStaffForLocation(locationId: $locationId, staffId: $staffId)
+  }
+`;
+
+export const REMOVE_STAFF_FROM_LOCATION_MUTATION = gql`
+  mutation RemoveStaffFromLocation($locationId: String!, $staffId: String!) {
+    removeStaffFromLocation(locationId: $locationId, staffId: $staffId)
+  }
+`;
+
+export const ASSIGN_SKILL_TO_STAFF_MUTATION = gql`
+  mutation AssignSkillToStaff($staffId: String!, $skillId: String!) {
+    assignSkillToStaff(staffId: $staffId, skillId: $skillId)
+  }
+`;
+
+export const REMOVE_SKILL_FROM_STAFF_MUTATION = gql`
+  mutation RemoveSkillFromStaff($staffId: String!, $skillId: String!) {
+    removeSkillFromStaff(staffId: $staffId, skillId: $skillId)
   }
 `;
 
@@ -55,6 +127,32 @@ export const LOCATIONS_QUERY = gql`
       name
       timezone
     }
+  }
+`;
+
+export const CREATE_LOCATION_MUTATION = gql`
+  mutation CreateLocation($input: CreateLocationInput!) {
+    createLocation(input: $input) {
+      id
+      name
+      timezone
+    }
+  }
+`;
+
+export const UPDATE_LOCATION_MUTATION = gql`
+  mutation UpdateLocation($id: String!, $input: UpdateLocationInput!) {
+    updateLocation(id: $id, input: $input) {
+      id
+      name
+      timezone
+    }
+  }
+`;
+
+export const DELETE_LOCATION_MUTATION = gql`
+  mutation DeleteLocation($id: String!) {
+    deleteLocation(id: $id)
   }
 `;
 
@@ -130,6 +228,7 @@ export const SHIFT_HISTORY_QUERY = gql`
     shiftHistory(shiftId: $shiftId) {
       id
       userId
+      userName
       entityId
       entityType
       action
@@ -143,8 +242,8 @@ export const SHIFT_HISTORY_QUERY = gql`
 export const OVERTIME_WHAT_IF_QUERY = gql`
   query OvertimeWhatIf(
     $userId: String!
-    $assignmentStart: Date!
-    $assignmentEnd: Date!
+    $assignmentStart: DateTime!
+    $assignmentEnd: DateTime!
   ) {
     overtimeWhatIf(
       userId: $userId
@@ -175,6 +274,34 @@ export const SKILLS_QUERY = gql`
       createdAt
       updatedAt
     }
+  }
+`;
+
+export const CREATE_SKILL_MUTATION = gql`
+  mutation CreateSkill($input: CreateSkillInput!) {
+    createSkill(input: $input) {
+      id
+      name
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
+export const UPDATE_SKILL_MUTATION = gql`
+  mutation UpdateSkill($id: String!, $input: UpdateSkillInput!) {
+    updateSkill(id: $id, input: $input) {
+      id
+      name
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
+export const DELETE_SKILL_MUTATION = gql`
+  mutation DeleteSkill($id: String!) {
+    deleteSkill(id: $id)
   }
 `;
 
@@ -413,12 +540,15 @@ export const MARK_ALL_MUTATION = gql`
 
 // Reports
 export const AUDIT_EXPORT_QUERY = gql`
-  query AuditExport($start: Date!, $end: Date!, $locationId: String) {
+  query AuditExport($start: DateTime!, $end: DateTime!, $locationId: String) {
     auditExport(start: $start, end: $end, locationId: $locationId) {
       id
       userId
+      userName
       entityId
       entityType
+      entityName
+      what
       action
       createdAt
       before
@@ -429,8 +559,8 @@ export const AUDIT_EXPORT_QUERY = gql`
 
 export const DISTRIBUTION_QUERY = gql`
   query Distribution(
-    $start: Date!
-    $end: Date!
+    $start: DateTime!
+    $end: DateTime!
     $locationId: String
   ) {
     reportDistribution(
@@ -447,8 +577,8 @@ export const DISTRIBUTION_QUERY = gql`
 
 export const PREMIUM_FAIRNESS_QUERY = gql`
   query PremiumFairness(
-    $start: Date!
-    $end: Date!
+    $start: DateTime!
+    $end: DateTime!
     $locationId: String
   ) {
     reportPremiumFairness(
@@ -468,8 +598,8 @@ export const PREMIUM_FAIRNESS_QUERY = gql`
 
 export const DESIRED_HOURS_QUERY = gql`
   query DesiredHours(
-    $start: Date!
-    $end: Date!
+    $start: DateTime!
+    $end: DateTime!
     $locationId: String
     $role: UserRole
   ) {
@@ -491,8 +621,8 @@ export const DESIRED_HOURS_QUERY = gql`
 
 export const OVERTIME_DASHBOARD_QUERY = gql`
   query OvertimeDashboard(
-    $start: Date!
-    $end: Date!
+    $start: DateTime!
+    $end: DateTime!
     $locationId: String
   ) {
     overtimeDashboard(

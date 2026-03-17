@@ -12,9 +12,11 @@ import { ShiftAuditTimeline } from "@/features/shifts/components/ShiftAuditTimel
 import type { OvertimeWhatIf } from "@/features/shifts/types/OvertimeWhatIf";
 import type { ConstraintError } from "@/features/shifts/types/ConstraintError";
 import type { AuditEntry } from "@/features/shifts/types/AuditEntry";
+import { UserRole } from "@shiftsync/shared";
 import {
   SHIFT_QUERY,
   SKILLS_QUERY_MINIMAL,
+  STAFF_QUERY,
   ADD_ASSIGNMENT_MUTATION,
   OVERTIME_WHAT_IF_QUERY,
   SHIFT_HISTORY_QUERY,
@@ -44,6 +46,16 @@ export function ShiftDetailsContainer() {
     SKILLS_QUERY_MINIMAL,
     { skip: !token }
   );
+  const staffQuery = useQuery<{
+    staff: Array<{ id: string; name: string | null; email: string }>;
+  }>(STAFF_QUERY, {
+    variables: {
+      locationId: shift?.locationId ?? null,
+      skillId: skillId || null,
+      role: UserRole.Staff,
+    },
+    skip: !token || !shift?.locationId || !skillId,
+  });
   const historyQuery = useQuery<{ shiftHistory: AuditEntry[] }>(
     SHIFT_HISTORY_QUERY,
     { variables: { shiftId: id }, skip: !token || !id }
@@ -54,6 +66,13 @@ export function ShiftDetailsContainer() {
     () => skillsQuery.data?.skills ?? [],
     [skillsQuery.data?.skills]
   );
+  const staffOptions = useMemo(() => {
+    const list = staffQuery.data?.staff ?? [];
+    return list.map((s) => ({
+      id: s.id,
+      name: s.name ?? s.email,
+    }));
+  }, [staffQuery.data?.staff]);
 
   const overtimeWhatIfQuery = useQuery<{ overtimeWhatIf: OvertimeWhatIf }>(
     OVERTIME_WHAT_IF_QUERY,
@@ -128,6 +147,7 @@ export function ShiftDetailsContainer() {
           setUserId(value);
           setConstraintError(null);
         }}
+        staffOptions={staffOptions}
         skills={skills}
         skillId={skillId}
         onSkillIdChange={setSkillId}

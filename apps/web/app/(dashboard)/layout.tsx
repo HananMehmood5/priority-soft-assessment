@@ -22,6 +22,7 @@ import {
   ApprovalsIcon,
   OvertimeIcon,
   AuditIcon,
+  PeopleIcon,
 } from '@/src/components/icons/NavIcons';
 
 const NAV = [
@@ -102,6 +103,20 @@ export default function DashboardLayout({
           ))}
           {(user?.role === UserRole.Admin || user?.role === UserRole.Manager) && (
             <>
+              <Link
+                href="/people"
+                className={[
+                  'flex items-center gap-2 rounded-ps px-3 py-2 text-sm',
+                  pathname === '/people'
+                    ? 'bg-ps-primary-muted font-semibold text-ps-primary'
+                    : 'text-ps-fg',
+                ]
+                  .filter(Boolean)
+                  .join(' ')}
+              >
+                <PeopleIcon className="h-4 w-4" />
+                People
+              </Link>
               <Link
                 href="/shifts"
                 className={[

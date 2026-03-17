@@ -289,3 +289,26 @@ export function AuditIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
+export function PeopleIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" {...props}>
+      <circle
+        cx="8"
+        cy="7"
+        r="3"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.6"
+      />
+      <path
+        d="M4 19a4 4 0 0 1 8 0M14 7a3 3 0 1 1 6 0M16 19a3 3 0 0 1 6 0"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+

@@ -6,10 +6,12 @@ import { OvertimeWhatIfPanel } from "@/features/shifts/components/OvertimeWhatIf
 import type { OvertimeWhatIf } from "@/features/shifts/types/OvertimeWhatIf";
 
 type SkillOption = { id: string; name: string };
+type StaffOption = { id: string; name: string };
 
 type Props = {
   userId: string;
   onUserIdChange: (value: string) => void;
+  staffOptions?: StaffOption[];
   skills: SkillOption[];
   skillId: string;
   onSkillIdChange: (value: string) => void;
@@ -28,6 +30,7 @@ type Props = {
 export function ShiftAssignmentsSection({
   userId,
   onUserIdChange,
+  staffOptions = [],
   skills,
   skillId,
   onSkillIdChange,
@@ -42,17 +45,35 @@ export function ShiftAssignmentsSection({
   onSubmit,
   onSelectSuggestedUser,
 }: Props) {
+  const hasStaffPicker = staffOptions.length > 0;
+
   return (
     <section>
       <h2 className="mb-3 text-ps-lg font-semibold">Add assignment</h2>
       <form onSubmit={onSubmit} className="flex max-w-[400px] flex-col gap-4">
-        <Input
-          id="userId"
-          label="Staff user ID (UUID)"
-          value={userId}
-          onChange={(e) => onUserIdChange(e.target.value)}
-          placeholder="e.g. 550e8400-e29b-41d4-a716-446655440000"
-        />
+        {hasStaffPicker ? (
+          <Select
+            id="userId"
+            label="Staff"
+            value={userId}
+            onChange={(e) => onUserIdChange(e.target.value)}
+          >
+            <option value="">Select staff…</option>
+            {staffOptions.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
+            ))}
+          </Select>
+        ) : (
+          <Input
+            id="userId"
+            label="Staff user ID (UUID)"
+            value={userId}
+            onChange={(e) => onUserIdChange(e.target.value)}
+            placeholder="e.g. 550e8400-e29b-41d4-a716-446655440000"
+          />
+        )}
 
         <OvertimeWhatIfPanel
           overtime={overtime}

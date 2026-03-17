@@ -31,13 +31,22 @@ export default function LocationsPage() {
   const [name, setName] = useState('');
   const [timezone, setTimezone] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
 
   const isAdmin = useMemo(() => user?.role === ('Admin' as UserRole), [user]);
 
   const { data, loading, error } = useQuery<{
     locations: LocationAttributes[];
   }>(LOCATIONS_QUERY, { skip: !token });
-  const locations = data?.locations ?? [];
+  const allLocations = data?.locations ?? [];
+  const locations = allLocations.filter((loc) => {
+    const q = search.trim().toLowerCase();
+    if (!q) return true;
+    return (
+      loc.name.toLowerCase().includes(q) ||
+      loc.timezone.toLowerCase().includes(q)
+    );
+  });
 
   const [createLocation, { loading: creating }] = useMutation(CREATE_LOCATION_MUTATION, {
     refetchQueries: [{ query: LOCATIONS_QUERY }],
@@ -115,7 +124,7 @@ export default function LocationsPage() {
 
   return (
     <div>
-      <div className="mb-4 flex items-center justify-between gap-3">
+      <div className="mb-3 flex items-center justify-between gap-3">
         <h1 className="text-2xl font-bold">Locations</h1>
         {isAdmin && (
           <button
@@ -127,6 +136,20 @@ export default function LocationsPage() {
             <span>Add location</span>
           </button>
         )}
+      </div>
+      <div className="mb-6 flex flex-col gap-3">
+        <p className="max-w-2xl text-ps-sm text-ps-fg-muted">
+          Coastal Eats currently operates four locations across two time zones. Admins can use this
+          page to manage the official list of locations.
+        </p>
+        <div className="flex justify-end">
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search by name or timezone"
+            className="w-full max-w-xs rounded-ps border border-ps-border bg-ps-bg-card px-3 py-2 text-sm text-ps-fg outline-none focus:border-ps-border-focus focus:ring-2 focus:ring-ps-border-focus"
+          />
+        </div>
       </div>
       <ul className="m-0 flex list-none flex-col gap-3 p-0">
         {locations.map((loc) => (
