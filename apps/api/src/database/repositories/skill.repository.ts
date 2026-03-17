@@ -59,4 +59,38 @@ export class SkillRepository {
       attributes: ['userId'],
     });
   }
+
+  async findAllUserIdsBySkillId(skillId: string): Promise<string[]> {
+    const rows = await this.staffSkillModel.findAll({
+      where: { skillId },
+      attributes: ['userId'],
+    });
+    return rows.map((r) => r.userId);
+  }
+
+  async findAllSkillIdsByUserId(userId: string): Promise<string[]> {
+    const rows = await this.staffSkillModel.findAll({
+      where: { userId },
+      attributes: ['skillId'],
+    });
+    return rows.map((r) => r.skillId);
+  }
+
+  async findAllByIds(ids: string[]): Promise<Skill[]> {
+    if (ids.length === 0) return [];
+    return this.skillModel.findAll({
+      where: { id: { [Op.in]: ids } },
+      order: [['name', 'ASC']],
+    });
+  }
+
+  async createStaffSkill(userId: string, skillId: string): Promise<StaffSkill> {
+    return this.staffSkillModel.create({ userId, skillId });
+  }
+
+  async removeStaffSkill(userId: string, skillId: string): Promise<void> {
+    await this.staffSkillModel.destroy({
+      where: { userId, skillId },
+    });
+  }
 }

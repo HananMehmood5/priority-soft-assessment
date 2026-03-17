@@ -31,9 +31,12 @@ type AuditEntryEntity {
   before: String
   createdAt: DateTime!
   entityId: String!
+  entityName: String
   entityType: String!
   id: String!
   userId: String!
+  userName: String
+  what: String
 }
 
 input AvailabilitySlotInput {
@@ -122,6 +125,7 @@ type Mutation {
   addAssignment(input: AddAssignmentInput!, shiftId: String!): AddAssignmentResult!
   approveRequest(requestId: String!): RequestEntity!
   assignManagerToLocation(locationId: String!, managerId: String!): Boolean!
+  assignSkillToStaff(skillId: String!, staffId: String!): Boolean!
   cancelRequest(requestId: String!): RequestEntity!
   certifyStaffForLocation(locationId: String!, staffId: String!): Boolean!
   createDropRequest(assignmentId: String!): RequestEntity!
@@ -140,6 +144,7 @@ type Mutation {
   rejectRequest(requestId: String!): RequestEntity!
   removeAssignment(assignmentId: String!): Boolean!
   removeManagerFromLocation(locationId: String!, managerId: String!): Boolean!
+  removeSkillFromStaff(skillId: String!, staffId: String!): Boolean!
   removeStaffFromLocation(locationId: String!, staffId: String!): Boolean!
   setNotificationPreference(channel: String!, enabled: Boolean!): NotificationPreferenceEntity!
   unpublishShift(shiftId: String!): ShiftEntity!
@@ -198,6 +203,8 @@ type Query {
   shifts: [ShiftEntity!]!
   skill(id: String!): SkillEntity
   skills: [SkillEntity!]!
+  staff(locationId: String, role: UserRole, skillId: String): [UserEntity!]!
+  user(id: String!): UserEntity
 }
 
 input RegisterInput {
@@ -269,11 +276,13 @@ input UpdateSkillInput {
 }
 
 type UserEntity {
+  certifiedLocations: [LocationEntity!]
   createdAt: DateTime!
   email: String!
   id: String!
   name: String
   role: UserRole!
+  skills: [SkillEntity!]
   updatedAt: DateTime!
 }
 

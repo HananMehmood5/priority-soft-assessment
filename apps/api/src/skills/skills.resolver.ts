@@ -60,4 +60,26 @@ export class SkillsResolver {
   ): Promise<boolean> {
     return this.skillsService.remove(id, user);
   }
+
+  @Mutation(() => Boolean)
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.Admin, UserRole.Manager)
+  async assignSkillToStaff(
+    @Args('staffId') staffId: string,
+    @Args('skillId') skillId: string,
+    @CurrentUser() user: import('../database/models').User,
+  ): Promise<boolean> {
+    return this.skillsService.assignSkillToStaff(staffId, skillId, user);
+  }
+
+  @Mutation(() => Boolean)
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.Admin, UserRole.Manager)
+  async removeSkillFromStaff(
+    @Args('staffId') staffId: string,
+    @Args('skillId') skillId: string,
+    @CurrentUser() user: import('../database/models').User,
+  ): Promise<boolean> {
+    return this.skillsService.removeSkillFromStaff(staffId, skillId, user);
+  }
 }

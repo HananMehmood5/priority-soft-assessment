@@ -1,5 +1,7 @@
 import { ObjectType, Field, registerEnumType } from '@nestjs/graphql';
 import { UserRole } from '@shiftsync/shared';
+import { SkillEntity } from '../../skills/entities/skill.entity';
+import { LocationEntity } from '../../locations/entities/location.entity';
 
 registerEnumType(UserRole, { name: 'UserRole' });
 
@@ -22,4 +24,10 @@ export class UserEntity {
 
   @Field()
   updatedAt: Date;
+
+  @Field(() => [SkillEntity], { nullable: true })
+  skills?: unknown;
+
+  @Field(() => [LocationEntity], { nullable: true })
+  certifiedLocations?: unknown;
 }

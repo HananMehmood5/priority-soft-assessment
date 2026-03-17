@@ -52,6 +52,20 @@ export class LocationRepository {
     });
   }
 
+  async getStaffUserIdsByLocationId(locationId: string): Promise<string[]> {
+    const rows = await this.findAllStaffLocationsByLocationId(locationId);
+    return [...new Set(rows.map((r) => r.userId))];
+  }
+
+  async getStaffUserIdsByLocationIds(locationIds: string[]): Promise<string[]> {
+    if (locationIds.length === 0) return [];
+    const rows = await this.staffLocationModel.findAll({
+      where: { locationId: { [Op.in]: locationIds } },
+      attributes: ['userId'],
+    });
+    return [...new Set(rows.map((r) => r.userId))];
+  }
+
   async findAll(where?: { id?: { [Op.in]: string[] } }): Promise<Location[]> {
     return this.locationModel.findAll({
       where: where ?? {},

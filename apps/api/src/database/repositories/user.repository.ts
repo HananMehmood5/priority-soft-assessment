@@ -142,4 +142,17 @@ export class UserRepository {
       attributes: attributes ?? ['id'],
     });
   }
+
+  async findAllByIdsAndRole(
+    ids: string[],
+    role: UserRole,
+    attributes?: string[],
+  ): Promise<User[]> {
+    if (ids.length === 0) return [];
+    const attrs = attributes ?? ['id', 'email', 'name', 'role', 'createdAt', 'updatedAt'];
+    return this.userModel.findAll({
+      where: { id: { [Op.in]: ids }, role },
+      attributes: attrs,
+    });
+  }
 }
