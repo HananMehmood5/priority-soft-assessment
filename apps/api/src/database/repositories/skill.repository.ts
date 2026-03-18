@@ -93,4 +93,10 @@ export class SkillRepository {
       where: { userId, skillId },
     });
   }
+
+  async countStaffForSkill(skillId: string): Promise<number> {
+    return this.staffSkillModel.count({
+      where: { skillId },
+    });
+  }
 }

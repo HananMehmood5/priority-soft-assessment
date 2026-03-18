@@ -17,6 +17,10 @@ export class SkillsService {
     return this.skillRepository.findAll();
   }
 
+  async countStaffForSkill(skillId: string): Promise<number> {
+    return this.skillRepository.countStaffForSkill(skillId);
+  }
+
   async findOne(id: string): Promise<Skill> {
     return this.skillRepository.findByIdOrFail(id);
   }

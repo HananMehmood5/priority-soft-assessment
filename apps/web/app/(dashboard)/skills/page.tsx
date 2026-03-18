@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react';
 import { useMutation, useQuery } from '@apollo/client';
 import { useAuth } from '@/lib/auth-context';
 import type { SkillAttributes, UserRole } from '@shiftsync/shared';
+import Link from 'next/link';
 import {
   SKILLS_QUERY,
   CREATE_SKILL_MUTATION,
@@ -164,7 +165,15 @@ export default function SkillsPage() {
                     )}
                   </form>
                 ) : (
-                  <div className="font-semibold">{skill.name}</div>
+                  <Link
+                    href={`/people?skillId=${encodeURIComponent(skill.id)}`}
+                    className="font-semibold hover:underline"
+                  >
+                    {skill.name}{' '}
+                    <span className="text-ps-xs font-normal text-ps-fg-muted">
+                      — {skill.staffCount ?? 0} staff
+                    </span>
+                  </Link>
                 )}
               </div>
               {isAdmin && (
@@ -291,8 +300,8 @@ export default function SkillsPage() {
           }
         >
           <p className="text-ps-sm text-ps-fg">
-            Delete skill “{skillToDelete.name}”? This action cannot be undone and may affect
-            existing staff assignments and shifts.
+            Delete skill “{skillToDelete.name}”? This action cannot be undone and may affect existing
+            staff assignments and shifts (currently applied to {skillToDelete.staffCount ?? 0} staff).
           </p>
         </Modal>
       )}

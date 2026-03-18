@@ -12,4 +12,5 @@ export interface SkillBaseAttributesWithId extends SkillBaseAttributes {
 
 export interface SkillAttributes extends SkillBaseAttributes, ModelAttributes {
   staff?: UserLiteAttributes[];
+  staffCount?: number;
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery } from '@apollo/client';
 import { useAuth } from '@/lib/auth-context';
 import { UserRole } from '@shiftsync/shared';
@@ -17,6 +17,7 @@ import {
 import { Modal } from '@/src/components/Modal';
 import { EditIcon } from '@/src/components/icons/EditIcon';
 import { PlusIcon } from '@/src/components/icons/PlusIcon';
+import { useSearchParams } from 'next/navigation';
 
 type StaffMember = {
   id: string;
@@ -29,9 +30,10 @@ type StaffMember = {
 
 export default function PeoplePage() {
   const { token, user } = useAuth();
+  const searchParams = useSearchParams();
   const [search, setSearch] = useState('');
   const [locationFilter, setLocationFilter] = useState('');
-  const [skillFilter, setSkillFilter] = useState('');
+  const [skillFilter, setSkillFilter] = useState(() => searchParams.get('skillId') ?? '');
   const [roleFilter, setRoleFilter] = useState<UserRole | ''>('');
   const [detailUser, setDetailUser] = useState<StaffMember | null>(null);
   const [addLocationId, setAddLocationId] = useState('');
@@ -46,6 +48,11 @@ export default function PeoplePage() {
 
   const canAccess =
     user?.role === UserRole.Admin || user?.role === UserRole.Manager;
+
+  useEffect(() => {
+    const skillId = searchParams.get('skillId');
+    setSkillFilter(skillId ?? '');
+  }, [searchParams]);
 
   const { data: staffData, loading: staffLoading, error: staffError } = useQuery<{
     staff: StaffMember[];

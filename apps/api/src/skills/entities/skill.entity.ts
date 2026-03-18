@@ -1,4 +1,4 @@
-import { ObjectType, Field } from '@nestjs/graphql';
+import { ObjectType, Field, Int } from '@nestjs/graphql';
 
 @ObjectType()
 export class SkillEntity {
@@ -7,6 +7,9 @@ export class SkillEntity {
 
   @Field()
   name: string;
+
+  @Field(() => Int)
+  staffCount: number;
 
   @Field()
   createdAt: Date;

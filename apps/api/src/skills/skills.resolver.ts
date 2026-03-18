@@ -1,5 +1,5 @@
 import { UseGuards } from '@nestjs/common';
-import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
+import { Args, Mutation, Parent, Query, ResolveField, Resolver, Int } from '@nestjs/graphql';
 import { Skill } from '../database/models';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -19,6 +19,11 @@ export class SkillsResolver {
   @Query(() => [SkillEntity])
   async skills(): Promise<Skill[]> {
     return this.skillsService.findAll();
+  }
+
+  @ResolveField(() => Int)
+  async staffCount(@Parent() skill: Skill): Promise<number> {
+    return this.skillsService.countStaffForSkill(skill.id);
   }
 
   @Query(() => SkillEntity, { nullable: true })
