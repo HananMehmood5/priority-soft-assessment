@@ -25,7 +25,7 @@ export class AuditService {
     private readonly shiftRepository: ShiftRepository,
     private readonly assignmentRepository: ShiftAssignmentRepository,
     private readonly permissions: PermissionsService,
-  ) {}
+  ) { }
 
   async log(
     userId: string,
@@ -52,12 +52,15 @@ export class AuditService {
     if (user.role !== UserRole.Admin && user.role !== UserRole.Manager) {
       throw new ForbiddenException('Only managers and admins can view shift history');
     }
+
     if (user.role === UserRole.Manager) {
       const shift = await this.shiftRepository.findById(shiftId);
       if (!shift) throw new ForbiddenException('Shift not found');
+
       const can = await this.permissions.canManageLocation(user, shift.locationId);
       if (!can) throw new ForbiddenException('Access denied to this shift history');
     }
+
     const assignmentIds = await this.assignmentRepository.getAssignmentIdsForShift(shiftId);
     const logs = await this.auditRepository.findAllForShiftHistory(assignmentIds, shiftId);
     return logs.map((l) => this.toEntry(l));
@@ -103,6 +106,6 @@ export class AuditService {
       };
     }
     const logs = await this.auditRepository.findAllByWhere(where, { limit: 5000 });
-    return logs.map((l) => this.toEntry(l));
+    return logs.map((log) => this.toEntry(log));
   }
 }

@@ -1,5 +1,5 @@
 import { UseGuards } from '@nestjs/common';
-import { Args, Query, Resolver } from '@nestjs/graphql';
+import { Args, Query, Resolver, ResolveField, Parent } from '@nestjs/graphql';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -7,11 +7,13 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { UserRole } from '@shiftsync/shared';
 import { AuditService, AuditEntry } from './audit.service';
 import { AuditEntryEntity } from './entities/audit-entry.entity';
+import { UserEntity } from '../auth/entities/user.entity';
+import { User } from '../database/models';
 
 @Resolver(() => AuditEntryEntity)
 @UseGuards(JwtAuthGuard)
 export class AuditResolver {
-  constructor(private readonly auditService: AuditService) {}
+  constructor(private readonly auditService: AuditService) { }
 
   @Query(() => [AuditEntryEntity])
   @UseGuards(RolesGuard)
@@ -53,5 +55,22 @@ export class AuditResolver {
       after: e.after ? JSON.stringify(e.after) : null,
       createdAt: e.createdAt,
     }));
+  }
+
+  @ResolveField(() => UserEntity, { nullable: true })
+  async user(@Parent() entry: AuditEntryEntity): Promise<UserEntity | null> {
+    const user = await User.findByPk(entry.userId);
+    if (!user) return null;
+
+    return {
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      name: user.name,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+      skills: [],
+      certifiedLocations: [],
+    };
   }
 }

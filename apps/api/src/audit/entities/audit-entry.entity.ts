@@ -1,4 +1,5 @@
 import { ObjectType, Field } from '@nestjs/graphql';
+import { UserEntity } from '../../auth/entities/user.entity';
 
 @ObjectType()
 export class AuditEntryEntity {
@@ -25,4 +26,7 @@ export class AuditEntryEntity {
 
   @Field()
   createdAt: Date;
+
+  @Field(() => UserEntity, { nullable: true })
+  user?: UserEntity | null;
 }

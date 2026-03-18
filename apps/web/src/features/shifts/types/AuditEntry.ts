@@ -7,5 +7,6 @@ export type AuditEntry = {
   createdAt: string;
   before?: string | null;
   after?: string | null;
+  user?: { id: string; name: string | null; email: string | null } | null;
 };
 

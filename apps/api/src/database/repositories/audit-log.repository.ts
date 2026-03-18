@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import type { AuditLogBaseAttributes } from '@shiftsync/shared';
 import { Op, WhereOptions } from 'sequelize';
-import { AuditAction, AuditEntityType } from '@shiftsync/shared';
+import { AuditEntityType } from '@shiftsync/shared';
 import { AuditLog } from '../models/audit-log.model';
 
 export type AuditLogWhere = WhereOptions<AuditLog>;
