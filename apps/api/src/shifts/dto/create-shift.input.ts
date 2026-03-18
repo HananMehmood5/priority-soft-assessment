@@ -1,6 +1,5 @@
 import { Field, InputType } from '@nestjs/graphql';
-import { IsDate, IsUUID } from 'class-validator';
-import { Type } from 'class-transformer';
+import { IsUUID, IsString } from 'class-validator';
 
 @InputType()
 export class CreateShiftInput {
@@ -9,12 +8,18 @@ export class CreateShiftInput {
   locationId: string;
 
   @Field()
-  @IsDate()
-  @Type(() => Date)
-  startAt: Date;
+  @IsString()
+  startDate: string;
 
   @Field()
-  @IsDate()
-  @Type(() => Date)
-  endAt: Date;
+  @IsString()
+  endDate: string;
+
+  @Field()
+  @IsString()
+  dailyStartTime: string;
+
+  @Field()
+  @IsString()
+  dailyEndTime: string;
 }

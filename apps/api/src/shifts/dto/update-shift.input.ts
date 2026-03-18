@@ -1,18 +1,25 @@
 import { Field, InputType } from '@nestjs/graphql';
-import { IsOptional, IsDate } from 'class-validator';
-import { Type } from 'class-transformer';
+import { IsOptional, IsString } from 'class-validator';
 
 @InputType()
 export class UpdateShiftInput {
-  @Field(() => Date, { nullable: true })
+  @Field({ nullable: true })
   @IsOptional()
-  @IsDate()
-  @Type(() => Date)
-  startAt?: Date;
+  @IsString()
+  startDate?: string;
 
-  @Field(() => Date, { nullable: true })
+  @Field({ nullable: true })
   @IsOptional()
-  @IsDate()
-  @Type(() => Date)
-  endAt?: Date;
+  @IsString()
+  endDate?: string;
+
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsString()
+  dailyStartTime?: string;
+
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsString()
+  dailyEndTime?: string;
 }

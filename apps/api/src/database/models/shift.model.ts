@@ -29,12 +29,17 @@ export class Shift extends Model<ShiftAttributesDb, ShiftBaseAttributesDb> {
   @Column({ type: DataType.UUID, allowNull: false })
   locationId: string;
 
-  /** UTC */
-  @Column({ type: DataType.DATE, allowNull: false })
-  startAt: Date;
+  @Column({ type: DataType.DATEONLY, allowNull: false })
+  startDate?: Date | null;
 
-  @Column({ type: DataType.DATE, allowNull: false })
-  endAt: Date;
+  @Column({ type: DataType.DATEONLY, allowNull: false })
+  endDate?: Date | null;
+
+  @Column({ type: DataType.STRING, allowNull: false })
+  dailyStartTime?: string | null;
+
+  @Column({ type: DataType.STRING, allowNull: false })
+  dailyEndTime?: string | null;
 
   @Column({ type: DataType.BOOLEAN, defaultValue: false })
   published: boolean;
