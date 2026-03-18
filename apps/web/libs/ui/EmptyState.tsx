@@ -10,13 +10,13 @@ export type EmptyStateProps = {
 export const EmptyState = ({ message, emptyMessage, emptyDescription }: EmptyStateProps) => {
   if (emptyMessage != null) {
     return (
-      <div className="rounded-xl border border-brand-muted bg-brand-surface p-6 shadow-card">
-        <div className="text-sm font-semibold text-brand-text">{emptyMessage}</div>
+      <div className="rounded-ps border border-ps-border bg-ps-bg-card p-6 shadow-ps">
+        <div className="text-sm font-semibold text-ps-fg">{emptyMessage}</div>
         {emptyDescription != null && emptyDescription !== "" && (
-          <div className="mt-1 text-sm text-brand-subtle">{emptyDescription}</div>
+          <div className="mt-1 text-sm text-ps-fg-muted">{emptyDescription}</div>
         )}
       </div>
     );
   }
-  return <p className="text-sm text-brand-subtle">{message ?? "No items found"}</p>;
+  return <p className="text-sm text-ps-fg-muted">{message ?? "No items found"}</p>;
 };

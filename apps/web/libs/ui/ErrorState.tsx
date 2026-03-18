@@ -10,15 +10,15 @@ export type ErrorStateProps = {
 export const ErrorState = ({ message, onRetry, variant = "inline" }: ErrorStateProps) => {
   if (variant === "card") {
     return (
-      <div className="rounded-xl border border-brand-muted bg-brand-surface p-6 shadow-card">
-        <div className="text-sm font-semibold text-brand-text">{message}</div>
-        <div className="mt-1 text-sm text-brand-subtle">
+      <div className="rounded-xl border border-ps-primary-muted bg-ps-surface p-6 shadow-ps">
+        <div className="text-sm font-semibold text-ps-fg">{message}</div>
+        <div className="mt-1 text-sm text-ps-fg-muted">
           Please retry. If this keeps happening, check the API is running.
         </div>
         {onRetry != null && (
           <button
             type="button"
-            className="mt-4 rounded-lg bg-brand-accent px-3 py-2 text-sm font-semibold text-brand-bg hover:brightness-110"
+            className="mt-4 rounded-lg bg-ps-primary px-3 py-2 text-sm font-semibold text-ps-primary-foreground hover:bg-ps-primary-hover"
             onClick={onRetry}
           >
             Retry
@@ -28,7 +28,7 @@ export const ErrorState = ({ message, onRetry, variant = "inline" }: ErrorStateP
     );
   }
   return (
-    <div className="flex flex-wrap items-center gap-2 text-sm text-brand-subtle">
+    <div className="flex flex-wrap items-center gap-2 text-sm text-ps-fg-muted">
       <span>{message}</span>
       {onRetry != null && (
         <Button type="button" variant="secondary" size="sm" onClick={onRetry}>

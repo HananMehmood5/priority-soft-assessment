@@ -7,11 +7,9 @@ interface TableHeaderProps<T> {
 /**
  * Table header component
  */
-export const TableHeader = <T,>({
-  columns,
-}: TableHeaderProps<T>) => {
+export const TableHeader = <T,>({ columns }: TableHeaderProps<T>) => {
   return (
-    <thead className="bg-brand-muted text-xs uppercase tracking-wide text-brand-subtle">
+    <thead className="bg-ps-primary-muted text-xs uppercase tracking-wide text-ps-fg-muted">
       <tr>
         {columns.map((column, index) => (
           <th key={index} className={`px-4 py-3 ${column.className || ""}`}>

@@ -41,17 +41,17 @@ export function Table<T extends object = Record<string, unknown>>({
 
   return (
     <div className={className}>
-      <div className="overflow-hidden rounded-xl border border-brand-muted bg-brand-surface shadow-card">
+      <div className="overflow-hidden rounded-ps border border-ps-border bg-ps-bg-card shadow-ps">
         {(title || headerAction) && (
-          <div className="border-b border-brand-muted p-4">
+          <div className="border-b border-ps-border p-4">
             <div className="flex items-center justify-between gap-3">
-              {title && <div className="text-sm font-semibold text-brand-text">{title}</div>}
+              {title && <div className="text-sm font-semibold text-ps-fg">{title}</div>}
               {headerAction && <div className="shrink-0">{headerAction}</div>}
             </div>
           </div>
         )}
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
+          <table className="w-full text-left text-sm text-ps-fg">
             <TableHeader columns={columns} />
             <Body columns={columns} data={data} getRowId={getRowId} />
           </table>

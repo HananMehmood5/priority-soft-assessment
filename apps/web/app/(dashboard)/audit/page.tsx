@@ -1,22 +1,14 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useQuery } from '@apollo/client';
-import { useAuth } from '@/lib/auth-context';
-import { formatDateTime } from '@/lib/format-date';
-import { UserRole } from '@shiftsync/shared';
-import { AUDIT_EXPORT_QUERY } from '@/lib/apollo/operations';
+import { useEffect, useState } from "react";
+import { useQuery } from "@apollo/client";
+import { useAuth } from "@/lib/auth-context";
+import { formatDateTime } from "@/lib/format-date";
+import { UserRole } from "@shiftsync/shared";
+import { AUDIT_EXPORT_QUERY } from "@/lib/apollo/operations";
 
-type AuditEntry = {
-  id: string;
-  userId: string;
-  entityId: string;
-  entityType: string;
-  action: string;
-  createdAt: string;
-  before?: string | null;
-  after?: string | null;
-};
+import type { AuditEntry } from "@/features/shifts/types/AuditEntry";
+import { Table } from "@/libs/ui/Table/Table";
 
 function getDefaultRange() {
   const now = new Date();
@@ -32,31 +24,47 @@ function getDefaultRange() {
 
 export default function AuditPage() {
   const { token, user } = useAuth();
-  const [locationId, setLocationId] = useState('');
-  const [dateStart, setDateStart] = useState(getDefaultRange().start);
-  const [dateEnd, setDateEnd] = useState(getDefaultRange().end);
+  // Avoid SSR/client mismatch by computing defaults only on the client.
+  const [dateStart, setDateStart] = useState<string>("");
+  const [dateEnd, setDateEnd] = useState<string>("");
+
+  useEffect(() => {
+    const range = getDefaultRange();
+    setDateStart(range.start);
+    setDateEnd(range.end);
+  }, []);
 
   const { data, loading, error, refetch } = useQuery<{
     auditExport: AuditEntry[];
   }>(AUDIT_EXPORT_QUERY, {
     variables: {
-      start: new Date(dateStart).toISOString(),
-      end: new Date(dateEnd).toISOString(),
-      locationId: locationId || null,
+      // These are only used when the query runs, but we keep them safe for render.
+      start: dateStart ? new Date(dateStart).toISOString() : new Date(0).toISOString(),
+      end: dateEnd ? new Date(dateEnd).toISOString() : new Date(0).toISOString(),
+      locationId: null,
     },
-    skip: !token,
+    skip: !token || !dateStart || !dateEnd,
   });
 
   const entries = data?.auditExport ?? [];
 
   const handleDownload = () => {
-    const blob = new Blob([JSON.stringify(entries, null, 2)], {
-      type: 'application/json',
+    const downloadEntries = entries.map(({ userId, user, ...rest }) => {
+      const userLabel =
+        user?.name && user?.email ? `${user.name} (${user.email})` : user?.name ?? userId;
+      return {
+        ...rest,
+        user: userLabel,
+      };
+    });
+
+    const blob = new Blob([JSON.stringify(downloadEntries, null, 2)], {
+      type: "application/json",
     });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
-    a.download = 'audit-export.json';
+    a.download = "audit-export.json";
     document.body.appendChild(a);
     a.click();
     a.remove();
@@ -67,62 +75,62 @@ export default function AuditPage() {
     return <p className="text-ps-error">Only admins can access the audit export.</p>;
   }
 
+  if (!dateStart || !dateEnd) {
+    return (
+      <div>
+        <h1 className="mb-3 text-2xl font-bold">Audit logs</h1>
+        <p className="text-ps-fg-muted">Loading…</p>
+      </div>
+    );
+  }
+
   return (
     <div>
       <h1 className="mb-3 text-2xl font-bold">Audit logs</h1>
       <p className="mb-4 text-ps-fg-muted">
-        Export and review audit entries by date range and location.
+        Export and review audit entries by date range.
       </p>
       <form
         onSubmit={(e) => {
           e.preventDefault();
           refetch();
         }}
-        className="mb-5 flex flex-wrap gap-3"
+        className="mb-5 flex flex-wrap items-end justify-between gap-4"
       >
-        <div>
-          <label htmlFor="start" className="mb-1 block text-ps-sm">
-            Start date
-          </label>
-          <input
-            id="start"
-            type="date"
-            value={dateStart}
-            onChange={(e) => setDateStart(e.target.value)}
-            className="rounded-ps border border-ps-border bg-ps-bg-card px-3 py-2 text-sm text-ps-fg outline-none focus:border-ps-border-focus focus:ring-2 focus:ring-ps-border-focus"
-          />
+        <div className="flex flex-wrap gap-3">
+          <div>
+            <label htmlFor="start" className="mb-1 block text-ps-sm">
+              Start date
+            </label>
+            <input
+              id="start"
+              type="date"
+              value={dateStart}
+              onChange={(e) => setDateStart(e.target.value)}
+              className="rounded-ps border border-ps-border bg-ps-bg-card px-3 py-2 text-sm text-ps-fg outline-none focus:border-ps-border-focus focus:ring-2 focus:ring-ps-border-focus"
+            />
+          </div>
+          <div>
+            <label htmlFor="end" className="mb-1 block text-ps-sm">
+              End date
+            </label>
+            <input
+              id="end"
+              type="date"
+              value={dateEnd}
+              onChange={(e) => setDateEnd(e.target.value)}
+              className="rounded-ps border border-ps-border bg-ps-bg-card px-3 py-2 text-sm text-ps-fg outline-none focus:border-ps-border-focus focus:ring-2 focus:ring-ps-border-focus"
+            />
+          </div>
         </div>
-        <div>
-          <label htmlFor="end" className="mb-1 block text-ps-sm">
-            End date
-          </label>
-          <input
-            id="end"
-            type="date"
-            value={dateEnd}
-            onChange={(e) => setDateEnd(e.target.value)}
-            className="rounded-ps border border-ps-border bg-ps-bg-card px-3 py-2 text-sm text-ps-fg outline-none focus:border-ps-border-focus focus:ring-2 focus:ring-ps-border-focus"
-          />
-        </div>
-        <div>
-          <label htmlFor="locationId" className="mb-1 block text-ps-sm">
-            Location ID (optional)
-          </label>
-          <input
-            id="locationId"
-            value={locationId}
-            onChange={(e) => setLocationId(e.target.value)}
-            placeholder="Filter by location…"
-            className="rounded-ps border border-ps-border bg-ps-bg-card px-3 py-2 text-sm text-ps-fg outline-none focus:border-ps-border-focus focus:ring-2 focus:ring-ps-border-focus"
-          />
-        </div>
-        <div className="flex gap-2 self-end">
+
+        <div className="flex gap-2">
           <button
             type="submit"
             disabled={loading}
             className="inline-flex items-center justify-center rounded-ps border border-ps-border px-4 py-2 text-sm font-medium text-ps-fg transition-colors hover:border-ps-fg-subtle hover:bg-ps-surface-hover disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {loading ? 'Loading…' : 'Refresh'}
+            {loading ? "Loading…" : "Refresh"}
           </button>
           <button
             type="button"
@@ -134,37 +142,44 @@ export default function AuditPage() {
           </button>
         </div>
       </form>
-      {error && <p className="mb-3 text-ps-error">{error.message}</p>}
-      {loading ? (
-        <p className="text-ps-fg-muted">Loading…</p>
-      ) : entries.length === 0 ? (
-        <p className="text-ps-fg-muted">No audit entries for this range.</p>
-      ) : (
-        <div className="overflow-hidden rounded-ps border border-ps-border bg-ps-bg-card">
-          <table className="min-w-full border-collapse text-left text-sm">
-            <thead>
-              <tr className="border-b border-ps-border text-left">
-                <th className="px-2 py-2 font-semibold">When</th>
-                <th className="px-2 py-2 font-semibold">Entity</th>
-                <th className="px-2 py-2 font-semibold">Action</th>
-                <th className="px-2 py-2 font-semibold">User</th>
-              </tr>
-            </thead>
-            <tbody>
-              {entries.map((e) => (
-                <tr key={e.id} className="border-b border-ps-border">
-                  <td className="px-2 py-2 text-ps-xs">{formatDateTime(e.createdAt)}</td>
-                  <td className="px-2 py-2 text-ps-xs">
-                    {e.entityType} {e.entityId}
-                  </td>
-                  <td className="px-2 py-2 text-ps-xs">{e.action}</td>
-                  <td className="px-2 py-2 text-ps-xs">{e.userId}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+      <Table<AuditEntry>
+        title=""
+        data={entries}
+        isLoading={loading}
+        isError={!!error}
+        errorMessage={error?.message ?? "Unable to load audit entries."}
+        emptyMessage="No audit entries for this range."
+        onRetry={() => refetch()}
+        columns={[
+          {
+            header: "When",
+            className: "text-ps-xs text-ps-fg-muted",
+            render: (row) => formatDateTime(row.createdAt),
+          },
+          {
+            header: "Entity",
+            className: "text-ps-xs text-ps-fg",
+            render: (row) => <span className="text-ps-xs text-ps-fg">{row.entityType}</span>,
+          },
+          {
+            header: "Action",
+            className: "text-ps-xs text-ps-fg",
+            render: (row) => <span className="text-ps-xs text-ps-fg">{row.action}</span>,
+          },
+          {
+            header: "User",
+            className: "text-ps-xs text-ps-fg",
+            render: (row) => (
+              <span className="text-ps-xs text-ps-fg">
+                {row.user?.name && row.user?.email
+                  ? `${row.user.name} (${row.user.email})`
+                  : row.user?.name ?? row.userId}
+              </span>
+            ),
+          },
+        ]}
+        getRowId={(row) => row.id}
+      />
     </div>
   );
 }
