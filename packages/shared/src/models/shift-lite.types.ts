@@ -4,7 +4,9 @@ import type { Id } from '../common';
 export interface ShiftLiteAttributes {
   id: Id;
   locationId: Id;
-  startAt: string;
-  endAt: string;
+  startDate: string;
+  endDate: string;
+  dailyStartTime: string;
+  dailyEndTime: string;
   published: boolean;
 }

@@ -58,9 +58,11 @@ input CreateLocationInput {
 }
 
 input CreateShiftInput {
-  endAt: DateTime!
   locationId: String!
-  startAt: DateTime!
+  startDate: String!
+  endDate: String!
+  dailyStartTime: String!
+  dailyEndTime: String!
 }
 
 input CreateSkillInput {
@@ -244,12 +246,14 @@ type ShiftAssignmentEntity {
 type ShiftEntity {
   assignments: [ShiftAssignmentEntity]
   createdAt: DateTime!
-  endAt: DateTime!
   id: String!
   location: LocationEntity
   locationId: String!
   published: Boolean!
-  startAt: DateTime!
+  startDate: String!
+  endDate: String!
+  dailyStartTime: String!
+  dailyEndTime: String!
   updatedAt: DateTime!
 }
 
@@ -272,8 +276,10 @@ input UpdateProfileInput {
 }
 
 input UpdateShiftInput {
-  endAt: DateTime
-  startAt: DateTime
+  startDate: String
+  endDate: String
+  dailyStartTime: String
+  dailyEndTime: String
 }
 
 input UpdateSkillInput {

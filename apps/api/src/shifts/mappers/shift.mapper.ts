@@ -5,8 +5,10 @@ export function toShiftAttributes(shift: Shift): ShiftAttributes {
   const json = shift.toJSON() as unknown as {
     id: string;
     locationId: string;
-    startAt: Date;
-    endAt: Date;
+    startDate: Date;
+    endDate: Date;
+    dailyStartTime: string;
+    dailyEndTime: string;
     published: boolean;
     createdAt: Date;
     updatedAt: Date;
@@ -15,8 +17,10 @@ export function toShiftAttributes(shift: Shift): ShiftAttributes {
   return {
     id: json.id,
     locationId: json.locationId,
-    startAt: json.startAt.toISOString(),
-    endAt: json.endAt.toISOString(),
+    startDate: json.startDate.toISOString().slice(0, 10),
+    endDate: json.endDate.toISOString().slice(0, 10),
+    dailyStartTime: json.dailyStartTime,
+    dailyEndTime: json.dailyEndTime,
     published: json.published,
     createdAt: json.createdAt.toISOString(),
     updatedAt: json.updatedAt.toISOString(),

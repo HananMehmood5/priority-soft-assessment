@@ -11,10 +11,16 @@ export class ShiftEntity {
   locationId: string;
 
   @Field()
-  startAt: Date;
+  startDate: string;
 
   @Field()
-  endAt: Date;
+  endDate: string;
+
+  @Field()
+  dailyStartTime: string;
+
+  @Field()
+  dailyEndTime: string;
 
   @Field()
   published: boolean;
