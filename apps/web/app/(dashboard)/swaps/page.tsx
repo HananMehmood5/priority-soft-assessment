@@ -13,6 +13,8 @@ import { useSocket } from '@/lib/use-socket';
 import { PageHeader } from '@/libs/ui/PageHeader';
 import { ErrorState } from '@/libs/ui/ErrorState';
 import { PageSkeleton } from '@/libs/ui/PageSkeleton';
+import { Button } from '@/libs/ui/Button';
+import { Select } from '@/libs/ui/Select';
 
 const SWAPS_DESCRIPTION =
   'Accept open swap requests and offer one of your assignments as the trade counterpart.';
@@ -184,9 +186,9 @@ export default function SwapsPage() {
                 )}
               </div>
               <div className="flex flex-wrap items-center gap-3">
-                <label className="text-sm">
-                  Swap with my shift:
-                  <select
+                <div className="flex flex-wrap items-end gap-2 text-sm">
+                  <span className="self-center text-ps-fg">Swap with my shift:</span>
+                  <Select
                     value={selectedCounterpart[s.id] ?? ''}
                     onChange={(e) =>
                       setSelectedCounterpart((prev) => ({
@@ -194,7 +196,8 @@ export default function SwapsPage() {
                         [s.id]: e.target.value,
                       }))
                     }
-                    className="ml-2 rounded-ps border border-ps-border bg-ps-bg-card px-2 py-1 text-sm text-ps-fg outline-none focus:border-ps-border-focus focus:ring-2 focus:ring-ps-border-focus"
+                    className="min-w-[12rem] w-auto"
+                    aria-label="Your shift to offer in swap"
                   >
                     <option value="">Select…</option>
                     {myAssignments.map((a) => (
@@ -204,19 +207,21 @@ export default function SwapsPage() {
                           : a.id.slice(0, 8)}
                       </option>
                     ))}
-                  </select>
-                </label>
-                <button
+                  </Select>
+                </div>
+                <Button
                   type="button"
-                  className="inline-flex items-center justify-center rounded-ps bg-ps-primary px-4 py-2 text-sm font-semibold text-ps-primary-foreground shadow-ps transition-colors hover:bg-ps-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
+                  variant="primary"
                   disabled={!!accepting || !selectedCounterpart[s.id]}
+                  loading={accepting === s.id}
+                  loadingLabel="Accepting…"
                   onClick={() =>
                     selectedCounterpart[s.id] &&
                     handleAccept(s.id, selectedCounterpart[s.id])
                   }
                 >
-                  {accepting === s.id ? 'Accepting…' : 'Accept swap'}
-                </button>
+                  Accept swap
+                </Button>
               </div>
             </div>
           ))}

@@ -1,4 +1,6 @@
 import type { TablePaginationConfig } from "./types";
+import { Button } from "../Button";
+import { Select } from "../Select";
 
 interface PaginationProps {
   pagination: TablePaginationConfig;
@@ -35,37 +37,41 @@ export const Pagination = ({ pagination }: PaginationProps) => {
           {pagination.total} total
         </div>
         {pagination.onPageSizeChange && (
-          <div className="flex items-center gap-2">
-            <label className="text-sm text-ps-fg-muted">Show:</label>
-            <select
-              value={pagination.limit}
+          <div className="flex items-end gap-2">
+            <Select
+              value={String(pagination.limit)}
               onChange={handlePageSizeChange}
-              className="rounded-lg border border-ps-primary-muted bg-ps-surface px-2 py-1.5 text-sm text-ps-fg focus:outline-none focus:ring-2 focus:ring-ps-border-focus"
+              label="Show"
+              className="w-auto min-w-[4.5rem]"
             >
               {pageSizeOptions.map((size) => (
                 <option key={size} value={size}>
                   {size}
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
         )}
       </div>
       <div className="flex gap-2">
-        <button
-          className="rounded-lg border border-ps-primary-muted bg-ps-surface px-3 py-2 text-sm text-ps-fg hover:bg-ps-primary-muted disabled:opacity-50"
+        <Button
+          type="button"
+          variant="secondary"
+          size="sm"
           disabled={isFirstPage}
           onClick={() => pagination.onPageChange(pagination.page - 1)}
         >
           Prev
-        </button>
-        <button
-          className="rounded-lg border border-ps-primary-muted bg-ps-surface px-3 py-2 text-sm text-ps-fg hover:bg-ps-primary-muted disabled:opacity-50"
+        </Button>
+        <Button
+          type="button"
+          variant="secondary"
+          size="sm"
           disabled={isLastPage}
           onClick={() => pagination.onPageChange(pagination.page + 1)}
         >
           Next
-        </button>
+        </Button>
       </div>
     </div>
   );

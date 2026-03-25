@@ -110,21 +110,24 @@ export function ShiftsListContainer() {
           maxWidth="md"
           footer={
             <div className="flex items-center justify-between gap-2">
-              <button
+              <Button
                 type="button"
+                variant="ghost"
                 onClick={() => !creating && setCreateOpen(false)}
-                className="text-ps-sm text-ps-fg-muted underline-offset-2 hover:underline"
+                className="font-normal text-ps-sm text-ps-fg-muted underline-offset-2 hover:underline"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 type="submit"
                 form="create-shift-form"
+                variant="primary"
                 disabled={creating}
-                className="inline-flex items-center justify-center rounded-ps bg-ps-primary px-4 py-2 text-sm font-semibold text-ps-primary-foreground shadow-ps transition-colors hover:bg-ps-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
+                loading={creating}
+                loadingLabel="Creating…"
               >
-                {creating ? "Creating…" : "Create shift"}
-              </button>
+                Create shift
+              </Button>
             </div>
           }
         >

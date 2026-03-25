@@ -21,6 +21,9 @@ import { useSearchParams } from 'next/navigation';
 import { PageHeader } from '@/libs/ui/PageHeader';
 import { ErrorState } from '@/libs/ui/ErrorState';
 import { PageSkeleton } from '@/libs/ui/PageSkeleton';
+import { Button } from '@/libs/ui/Button';
+import { Input } from '@/libs/ui/Input';
+import { Select } from '@/libs/ui/Select';
 
 const PEOPLE_DESCRIPTION =
   'View and manage staff: certify them for locations and assign skills so they can be scheduled.';
@@ -277,8 +280,9 @@ export default function PeoplePage() {
         description={PEOPLE_DESCRIPTION}
         action={
           user?.role === UserRole.Admin ? (
-            <button
+            <Button
               type="button"
+              variant="primary"
               onClick={() => {
                 setCreateError(null);
                 setNewEmail('');
@@ -287,36 +291,38 @@ export default function PeoplePage() {
                 setNewRole(UserRole.Staff);
                 setCreateOpen(true);
               }}
-              className="inline-flex items-center gap-2 rounded-ps bg-ps-primary px-4 py-2 text-sm font-semibold text-ps-primary-foreground shadow-ps transition-colors hover:bg-ps-primary-hover"
             >
               <PlusIcon className="h-3.5 w-3.5" />
               <span>Add person</span>
-            </button>
+            </Button>
           ) : undefined
         }
       />
       <div className="mb-6 flex flex-col gap-3">
-        <div className="flex flex-wrap items-center gap-3">
-          <input
+        <div className="flex flex-wrap items-end gap-3">
+          <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by name or email"
-            className="w-full max-w-xs rounded-ps border border-ps-border bg-ps-bg-card px-3 py-2 text-sm text-ps-fg outline-none focus:border-ps-border-focus focus:ring-2 focus:ring-ps-border-focus"
+            className="w-full max-w-xs"
+            aria-label="Search staff by name or email"
           />
-          <select
+          <Select
             value={roleFilter}
             onChange={(e) => setRoleFilter(e.target.value as UserRole | '')}
-            className="rounded-ps border border-ps-border bg-ps-bg-card px-3 py-2 text-sm text-ps-fg outline-none focus:border-ps-border-focus"
+            className="w-auto min-w-[10rem]"
+            aria-label="Filter by role"
           >
             <option value="">All roles</option>
             <option value={UserRole.Admin}>Admin</option>
             <option value={UserRole.Manager}>Manager</option>
             <option value={UserRole.Staff}>Staff</option>
-          </select>
-          <select
+          </Select>
+          <Select
             value={locationFilter}
             onChange={(e) => setLocationFilter(e.target.value)}
-            className="rounded-ps border border-ps-border bg-ps-bg-card px-3 py-2 text-sm text-ps-fg outline-none focus:border-ps-border-focus"
+            className="w-auto min-w-[10rem]"
+            aria-label="Filter by location"
           >
             <option value="">All locations</option>
             {locations.map((loc) => (
@@ -324,11 +330,12 @@ export default function PeoplePage() {
                 {loc.name}
               </option>
             ))}
-          </select>
-          <select
+          </Select>
+          <Select
             value={skillFilter}
             onChange={(e) => setSkillFilter(e.target.value)}
-            className="rounded-ps border border-ps-border bg-ps-bg-card px-3 py-2 text-sm text-ps-fg outline-none focus:border-ps-border-focus"
+            className="w-auto min-w-[10rem]"
+            aria-label="Filter by skill"
           >
             <option value="">All skills</option>
             {skills.map((sk) => (
@@ -336,7 +343,7 @@ export default function PeoplePage() {
                 {sk.name}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
       </div>
 
@@ -367,14 +374,16 @@ export default function PeoplePage() {
                 )}
               </div>
             </div>
-            <button
+            <Button
               type="button"
+              variant="secondary"
+              size="sm"
               onClick={() => openDetail(s)}
-              className="inline-flex items-center gap-1.5 rounded-ps border border-ps-border px-3 py-1.5 text-xs font-medium text-ps-fg transition-colors hover:bg-ps-surface-hover"
+              className="gap-1.5"
             >
               <EditIcon className="h-3.5 w-3.5" />
               Manage
-            </button>
+            </Button>
           </li>
         ))}
       </ul>
@@ -391,13 +400,14 @@ export default function PeoplePage() {
           title={`${detailUser.name ?? detailUser.email}`}
           maxWidth="lg"
           footer={
-            <button
+            <Button
               type="button"
+              variant="ghost"
               onClick={() => setDetailUser(null)}
-              className="text-ps-sm text-ps-fg-muted underline-offset-2 hover:underline"
+              className="font-normal text-ps-sm text-ps-fg-muted underline-offset-2 hover:underline"
             >
               Close
-            </button>
+            </Button>
           }
         >
           <div className="flex flex-col gap-6">
@@ -417,22 +427,25 @@ export default function PeoplePage() {
                   detailUser.certifiedLocations?.map((l) => (
                     <li key={l.id} className="flex items-center gap-2">
                       {l.name}
-                      <button
+                      <Button
                         type="button"
+                        variant="ghost"
+                        size="sm"
                         onClick={() => handleUncertify(l.id)}
-                        className="text-ps-error text-ps-xs hover:underline"
+                        className="min-h-0 px-0 py-0 text-ps-xs font-normal text-ps-error hover:bg-transparent hover:underline"
                       >
                         Remove
-                      </button>
+                      </Button>
                     </li>
                   ))
                 )}
               </ul>
               <div className="flex gap-2">
-                <select
+                <Select
                   value={addLocationId}
                   onChange={(e) => setAddLocationId(e.target.value)}
-                  className="rounded-ps border border-ps-border bg-ps-bg px-2 py-1.5 text-sm"
+                  className="min-w-0 flex-1"
+                  aria-label="Location to certify"
                 >
                   <option value="">Add location…</option>
                   {locations
@@ -445,15 +458,16 @@ export default function PeoplePage() {
                         {l.name}
                       </option>
                     ))}
-                </select>
-                <button
+                </Select>
+                <Button
                   type="button"
+                  variant="primary"
+                  size="sm"
                   onClick={handleCertify}
                   disabled={!addLocationId}
-                  className="rounded-ps bg-ps-primary px-3 py-1.5 text-sm font-medium text-ps-primary-foreground disabled:opacity-50"
                 >
                   Certify
-                </button>
+                </Button>
               </div>
             </div>
 
@@ -468,22 +482,25 @@ export default function PeoplePage() {
                   detailUser.skills?.map((sk) => (
                     <li key={sk.id} className="flex items-center gap-2">
                       {sk.name}
-                      <button
+                      <Button
                         type="button"
+                        variant="ghost"
+                        size="sm"
                         onClick={() => handleRemoveSkill(sk.id)}
-                        className="text-ps-error text-ps-xs hover:underline"
+                        className="min-h-0 px-0 py-0 text-ps-xs font-normal text-ps-error hover:bg-transparent hover:underline"
                       >
                         Remove
-                      </button>
+                      </Button>
                     </li>
                   ))
                 )}
               </ul>
               <div className="flex gap-2">
-                <select
+                <Select
                   value={addSkillId}
                   onChange={(e) => setAddSkillId(e.target.value)}
-                  className="rounded-ps border border-ps-border bg-ps-bg px-2 py-1.5 text-sm"
+                  className="min-w-0 flex-1"
+                  aria-label="Skill to assign"
                 >
                   <option value="">Add skill…</option>
                   {skills
@@ -495,15 +512,16 @@ export default function PeoplePage() {
                         {s.name}
                       </option>
                     ))}
-                </select>
-                <button
+                </Select>
+                <Button
                   type="button"
+                  variant="primary"
+                  size="sm"
                   onClick={handleAssignSkill}
                   disabled={!addSkillId}
-                  className="rounded-ps bg-ps-primary px-3 py-1.5 text-sm font-medium text-ps-primary-foreground disabled:opacity-50"
                 >
                   Assign
-                </button>
+                </Button>
               </div>
             </div>
 
@@ -522,21 +540,24 @@ export default function PeoplePage() {
           maxWidth="md"
           footer={
             <div className="flex items-center justify-between gap-2">
-              <button
+              <Button
                 type="button"
+                variant="ghost"
                 onClick={() => !registering && setCreateOpen(false)}
-                className="text-ps-sm text-ps-fg-muted underline-offset-2 hover:underline"
+                className="font-normal text-ps-sm text-ps-fg-muted underline-offset-2 hover:underline"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 type="submit"
                 form="create-user-form"
+                variant="primary"
                 disabled={registering}
-                className="inline-flex items-center justify-center rounded-ps bg-ps-primary px-4 py-2 text-sm font-semibold text-ps-primary-foreground shadow-ps transition-colors hover:bg-ps-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
+                loading={registering}
+                loadingLabel="Creating…"
               >
-                {registering ? 'Creating…' : 'Create'}
-              </button>
+                Create
+              </Button>
             </div>
           }
         >
@@ -545,56 +566,36 @@ export default function PeoplePage() {
             onSubmit={handleCreateUser}
             className="flex flex-col gap-3"
           >
-            <div>
-              <label htmlFor="new-user-email" className="mb-1.5 block text-sm font-medium">
-                Email
-              </label>
-              <input
-                id="new-user-email"
-                type="email"
-                value={newEmail}
-                onChange={(e) => setNewEmail(e.target.value)}
-                className="w-full rounded-ps border border-ps-border bg-ps-bg px-3 py-2.5 text-sm text-ps-fg outline-none focus:border-ps-border-focus focus:ring-2 focus:ring-ps-border-focus"
-              />
-            </div>
-            <div>
-              <label htmlFor="new-user-name" className="mb-1.5 block text-sm font-medium">
-                Name (optional)
-              </label>
-              <input
-                id="new-user-name"
-                value={newName}
-                onChange={(e) => setNewName(e.target.value)}
-                className="w-full rounded-ps border border-ps-border bg-ps-bg px-3 py-2.5 text-sm text-ps-fg outline-none focus:border-ps-border-focus focus:ring-2 focus:ring-ps-border-focus"
-              />
-            </div>
-            <div>
-              <label htmlFor="new-user-password" className="mb-1.5 block text-sm font-medium">
-                Temporary password
-              </label>
-              <input
-                id="new-user-password"
-                type="password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                className="w-full rounded-ps border border-ps-border bg-ps-bg px-3 py-2.5 text-sm text-ps-fg outline-none focus:border-ps-border-focus focus:ring-2 focus:ring-ps-border-focus"
-              />
-            </div>
-            <div>
-              <label htmlFor="new-user-role" className="mb-1.5 block text-sm font-medium">
-                Role
-              </label>
-              <select
-                id="new-user-role"
-                value={newRole}
-                onChange={(e) => setNewRole(e.target.value as UserRole)}
-                className="w-full rounded-ps border border-ps-border bg-ps-bg px-3 py-2.5 text-sm text-ps-fg outline-none focus:border-ps-border-focus focus:ring-2 focus:ring-ps-border-focus"
-              >
-                <option value={UserRole.Staff}>Staff</option>
-                <option value={UserRole.Manager}>Manager</option>
-                <option value={UserRole.Admin}>Admin</option>
-              </select>
-            </div>
+            <Input
+              id="new-user-email"
+              label="Email"
+              type="email"
+              value={newEmail}
+              onChange={(e) => setNewEmail(e.target.value)}
+            />
+            <Input
+              id="new-user-name"
+              label="Name (optional)"
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+            />
+            <Input
+              id="new-user-password"
+              label="Temporary password"
+              type="password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+            />
+            <Select
+              id="new-user-role"
+              label="Role"
+              value={newRole}
+              onChange={(e) => setNewRole(e.target.value as UserRole)}
+            >
+              <option value={UserRole.Staff}>Staff</option>
+              <option value={UserRole.Manager}>Manager</option>
+              <option value={UserRole.Admin}>Admin</option>
+            </Select>
             {createError && (
               <p className="text-ps-sm text-ps-error">{createError}</p>
             )}

@@ -10,6 +10,8 @@ import { LOCATIONS_QUERY, ON_DUTY_QUERY } from '@/lib/apollo/operations';
 import { PageHeader } from '@/libs/ui/PageHeader';
 import { ErrorState } from '@/libs/ui/ErrorState';
 import { PageSkeleton } from '@/libs/ui/PageSkeleton';
+import { Button } from '@/libs/ui/Button';
+import { Select } from '@/libs/ui/Select';
 
 const ON_DUTY_DESCRIPTION =
   'Who is currently on duty, by location. Updates automatically as the schedule changes.';
@@ -184,32 +186,30 @@ export default function OnDutyPage() {
         }}
         className="mb-6 flex flex-col gap-3 rounded-ps border border-ps-border bg-ps-bg-card p-4 sm:flex-row sm:items-end"
       >
-        <div className="min-w-0 flex-1">
-          <label htmlFor="locationId" className="mb-1 block text-ps-sm">
-            Location
-          </label>
-          <select
-            id="locationId"
-            value={locationId}
-            onChange={(e) => setLocationId(e.target.value)}
-            className="w-full rounded-ps border border-ps-border bg-ps-bg px-3 py-2 text-sm text-ps-fg outline-none focus:border-ps-border-focus focus:ring-2 focus:ring-ps-border-focus"
-          >
-            <option value="">All locations</option>
-            {locations.map((location) => (
-              <option key={location.id} value={location.id}>
-                {location.name}
-              </option>
-            ))}
-          </select>
-        </div>
+        <Select
+          id="locationId"
+          label="Location"
+          value={locationId}
+          onChange={(e) => setLocationId(e.target.value)}
+          className="min-w-0 flex-1"
+        >
+          <option value="">All locations</option>
+          {locations.map((location) => (
+            <option key={location.id} value={location.id}>
+              {location.name}
+            </option>
+          ))}
+        </Select>
         <div>
-          <button
+          <Button
             type="submit"
+            variant="primary"
             disabled={isLoading}
-            className="inline-flex items-center justify-center rounded-ps bg-ps-primary px-4 py-2 text-sm font-semibold text-ps-primary-foreground shadow-ps transition-colors hover:bg-ps-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
+            loading={isLoading}
+            loadingLabel="Loading…"
           >
-            {isLoading ? 'Loading…' : 'Refresh'}
-          </button>
+            Refresh
+          </Button>
         </div>
       </form>
 

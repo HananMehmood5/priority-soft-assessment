@@ -15,6 +15,7 @@ import {
 import { PageHeader } from '@/libs/ui/PageHeader';
 import { ErrorState } from '@/libs/ui/ErrorState';
 import { PageSkeleton } from '@/libs/ui/PageSkeleton';
+import { Button } from '@/libs/ui/Button';
 
 const APPROVALS_DESCRIPTION =
   'Review accepted swap and drop requests before they are finalized on the schedule.';
@@ -153,23 +154,28 @@ export default function ApprovalsPage() {
                   <td className="px-3 py-3 text-ps-fg-muted">{formatDateTime(r.createdAt)}</td>
                   <td className="px-3 py-3">
                     {canApprove(r) && (
-                      <button
+                      <Button
                         type="button"
-                        className="mr-2 inline-flex items-center justify-center rounded-ps bg-ps-primary px-4 py-2 text-sm font-semibold text-ps-primary-foreground shadow-ps transition-colors hover:bg-ps-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
+                        variant="primary"
+                        className="mr-2"
                         disabled={!!acting}
+                        loading={acting === r.id}
+                        loadingLabel="…"
                         onClick={() => handleApprove(r.id)}
                       >
-                        {acting === r.id ? '…' : 'Approve'}
-                      </button>
+                        Approve
+                      </Button>
                     )}
-                    <button
+                    <Button
                       type="button"
-                      className="inline-flex items-center justify-center rounded-ps border border-ps-border px-4 py-2 text-sm font-medium text-ps-fg transition-colors hover:border-ps-fg-subtle hover:bg-ps-surface-hover disabled:cursor-not-allowed disabled:opacity-60"
+                      variant="secondary"
                       disabled={!!acting}
+                      loading={acting === r.id}
+                      loadingLabel="…"
                       onClick={() => handleReject(r.id)}
                     >
-                      {acting === r.id ? '…' : 'Reject'}
-                    </button>
+                      Reject
+                    </Button>
                   </td>
                 </tr>
               ))}

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ComponentProps, ReactNode } from "react";
 
-type ButtonVariant = "primary" | "secondary" | "ghost";
+type ButtonVariant = "primary" | "secondary" | "ghost" | "danger" | "destructive";
 type ButtonSize = "sm" | "md";
 
 type CommonProps = {
@@ -27,20 +27,25 @@ type LinkButtonProps = CommonProps &
 export type Props = ButtonProps | LinkButtonProps;
 
 const baseClasses =
-  "inline-flex items-center justify-center rounded-ps px-3 py-2 text-sm font-medium transition-colors disabled:opacity-60 disabled:cursor-not-allowed";
+  "inline-flex items-center justify-center gap-2 rounded-ps text-sm transition-colors disabled:opacity-60 disabled:cursor-not-allowed";
 
 const variantClasses: Record<ButtonVariant, string> = {
   primary:
-    "bg-ps-primary hover:bg-ps-primary-hover text-ps-primary-foreground shadow-ps",
+    "font-semibold bg-ps-primary hover:bg-ps-primary-hover text-ps-primary-foreground shadow-ps",
   secondary:
-    "border border-ps-border hover:border-ps-fg-subtle hover:bg-ps-surface-hover text-ps-fg",
+    "font-medium border border-ps-border hover:border-ps-fg-subtle hover:bg-ps-surface-hover text-ps-fg",
   ghost:
-    "bg-transparent hover:bg-ps-surface-hover text-ps-fg-muted border border-transparent",
+    "font-medium bg-transparent hover:bg-ps-surface-hover text-ps-fg-muted border border-transparent",
+  danger:
+    "font-semibold border border-ps-error text-ps-error hover:bg-ps-error/10",
+  destructive:
+    "font-semibold border border-transparent bg-ps-error text-white shadow-ps hover:bg-ps-error/90",
 };
 
+/** Padding lives here so `sm` overrides cleanly without conflicting utilities. */
 const sizeClasses: Record<ButtonSize, string> = {
-  sm: "text-xs px-2 py-1",
-  md: "",
+  sm: "px-2 py-1 text-xs",
+  md: "px-4 py-2",
 };
 
 export function Button(props: Props) {
@@ -85,4 +90,3 @@ export function Button(props: Props) {
     </button>
   );
 }
-

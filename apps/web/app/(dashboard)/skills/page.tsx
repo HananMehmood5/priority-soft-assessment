@@ -18,6 +18,8 @@ import { Modal } from '@/src/components/Modal';
 import { PageHeader } from '@/libs/ui/PageHeader';
 import { ErrorState } from '@/libs/ui/ErrorState';
 import { PageSkeleton } from '@/libs/ui/PageSkeleton';
+import { Button } from '@/libs/ui/Button';
+import { Input } from '@/libs/ui/Input';
 
 const SKILLS_DESCRIPTION =
   'Skills represent the roles staff can work (e.g. bartender, line cook, server) and are used to match staff to shift requirements.';
@@ -132,28 +134,29 @@ export default function SkillsPage() {
         description={SKILLS_DESCRIPTION}
         action={
           isAdmin ? (
-            <button
+            <Button
               type="button"
+              variant="primary"
               onClick={() => {
                 setCreateError(null);
                 setNewName('');
                 setCreateOpen(true);
               }}
-              className="inline-flex items-center gap-2 rounded-ps bg-ps-primary px-4 py-2 text-sm font-semibold text-ps-primary-foreground shadow-ps transition-colors hover:bg-ps-primary-hover"
             >
               <PlusIcon className="h-3.5 w-3.5" />
               <span>Add skill</span>
-            </button>
+            </Button>
           ) : undefined
         }
       />
       <div className="mb-6 flex flex-col gap-3">
         <div className="flex justify-end">
-          <input
+          <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search skills"
-            className="w-full max-w-xs rounded-ps border border-ps-border bg-ps-bg-card px-3 py-2 text-sm text-ps-fg outline-none focus:border-ps-border-focus focus:ring-2 focus:ring-ps-border-focus"
+            className="w-full max-w-xs"
+            aria-label="Search skills"
           />
         </div>
       </div>
@@ -172,19 +175,21 @@ export default function SkillsPage() {
             >
               <div className="flex-1">
                 {isEditing ? (
-                  <form onSubmit={handleEditSave} className="flex flex-col gap-2">
-                    <input
+                  <form
+                    id={`edit-skill-form-${skill.id}`}
+                    onSubmit={handleEditSave}
+                    className="flex flex-col gap-2"
+                  >
+                    <Input
                       value={editState.name}
                       onChange={(e) =>
                         setEditState((prev) =>
                           prev ? { ...prev, name: e.target.value } : prev
                         )
                       }
-                      className="w-full rounded-ps border border-ps-border bg-ps-bg px-3 py-2 text-sm text-ps-fg outline-none focus:border-ps-border-focus focus:ring-2 focus:ring-ps-border-focus"
+                      error={editError}
+                      aria-label="Skill name"
                     />
-                    {editError && (
-                      <p className="text-ps-xs text-ps-error">{editError}</p>
-                    )}
                   </form>
                 ) : (
                   <Link
@@ -202,41 +207,49 @@ export default function SkillsPage() {
                 <div className="flex items-center gap-2">
                   {isEditing ? (
                     <>
-                      <button
-                        type="button"
-                        onClick={handleEditSave}
+                      <Button
+                        type="submit"
+                        form={`edit-skill-form-${skill.id}`}
+                        variant="primary"
+                        size="sm"
                         disabled={updating}
-                        className="rounded-ps bg-ps-primary px-3 py-1.5 text-xs font-semibold text-ps-primary-foreground shadow-ps transition-colors hover:bg-ps-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
+                        loading={updating}
                       >
                         Save
-                      </button>
-                      <button
+                      </Button>
+                      <Button
                         type="button"
+                        variant="ghost"
+                        size="sm"
                         onClick={() => setEditState(null)}
-                        className="text-ps-xs text-ps-fg-muted underline-offset-2 hover:underline"
+                        className="font-normal text-ps-xs text-ps-fg-muted underline-offset-2 hover:underline"
                       >
                         Cancel
-                      </button>
+                      </Button>
                     </>
                   ) : (
                     <>
-                      <button
+                      <Button
                         type="button"
+                        variant="secondary"
+                        size="sm"
                         onClick={() => startEdit(skill)}
-                        className="inline-flex items-center gap-1.5 rounded-ps border border-ps-border px-3 py-1.5 text-xs font-medium text-ps-fg transition-colors hover:bg-ps-surface-hover"
+                        className="gap-1.5"
                       >
                         <EditIcon className="h-3.5 w-3.5" />
                         <span>Edit</span>
-                      </button>
-                      <button
+                      </Button>
+                      <Button
                         type="button"
+                        variant="danger"
+                        size="sm"
                         onClick={() => setSkillToDelete(skill)}
                         disabled={deleting}
-                        className="inline-flex items-center gap-1.5 rounded-ps border border-ps-error px-3 py-1.5 text-xs font-medium text-ps-error transition-colors hover:bg-ps-error/10 disabled:cursor-not-allowed disabled:opacity-60"
+                        className="gap-1.5"
                       >
                         <TrashIcon className="h-3.5 w-3.5" />
                         <span>Delete</span>
-                      </button>
+                      </Button>
                     </>
                   )}
                 </div>
@@ -259,37 +272,34 @@ export default function SkillsPage() {
           maxWidth="sm"
           footer={
             <div className="flex items-center justify-between gap-2">
-              <button
+              <Button
                 type="button"
+                variant="ghost"
                 onClick={() => !creating && setCreateOpen(false)}
-                className="text-ps-sm text-ps-fg-muted underline-offset-2 hover:underline"
+                className="font-normal text-ps-sm text-ps-fg-muted underline-offset-2 hover:underline"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 type="submit"
                 form="create-skill-form"
+                variant="primary"
                 disabled={creating}
-                className="inline-flex items-center justify-center rounded-ps bg-ps-primary px-4 py-2 text-sm font-semibold text-ps-primary-foreground shadow-ps transition-colors hover:bg-ps-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
+                loading={creating}
               >
                 Create
-              </button>
+              </Button>
             </div>
           }
         >
           <form id="create-skill-form" onSubmit={handleCreate} className="flex flex-col gap-3">
-            <div>
-              <label htmlFor="new-skill-name" className="mb-1.5 block text-sm font-medium">
-                Name
-              </label>
-              <input
-                id="new-skill-name"
-                value={newName}
-                onChange={(e) => setNewName(e.target.value)}
-                placeholder="e.g. Bartender"
-                className="w-full rounded-ps border border-ps-border bg-ps-bg px-3 py-2 text-sm text-ps-fg outline-none focus:border-ps-border-focus focus:ring-2 focus:ring-ps-border-focus"
-              />
-            </div>
+            <Input
+              id="new-skill-name"
+              label="Name"
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              placeholder="e.g. Bartender"
+            />
             {createError && <p className="text-ps-sm text-ps-error">{createError}</p>}
           </form>
         </Modal>
@@ -303,21 +313,23 @@ export default function SkillsPage() {
           maxWidth="sm"
           footer={
             <div className="flex items-center justify-end gap-2">
-              <button
+              <Button
                 type="button"
+                variant="ghost"
                 onClick={() => setSkillToDelete(null)}
-                className="text-ps-sm text-ps-fg-muted underline-offset-2 hover:underline"
+                className="font-normal text-ps-sm text-ps-fg-muted underline-offset-2 hover:underline"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
+                variant="destructive"
                 onClick={handleConfirmDelete}
                 disabled={deleting}
-                className="inline-flex items-center justify-center rounded-ps bg-ps-error px-4 py-2 text-sm font-semibold text-white shadow-ps transition-colors hover:bg-ps-error/90 disabled:cursor-not-allowed disabled:opacity-60"
+                loading={deleting}
               >
                 Delete
-              </button>
+              </Button>
             </div>
           }
         >

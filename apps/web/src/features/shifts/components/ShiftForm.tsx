@@ -1,5 +1,6 @@
 import { Select } from "@/libs/ui/Select";
 import { Button } from "@/libs/ui/Button";
+import { IconButton } from "@/libs/ui/IconButton";
 import type { LocationAttributes } from "@shiftsync/shared";
 
 type Props = {
@@ -116,10 +117,9 @@ export function ShiftForm({
               required
               className="w-full rounded-ps border border-ps-border bg-ps-bg-card px-3 py-2.5 pr-11 text-sm text-ps-fg focus:border-ps-border-focus focus:outline-none focus:ring-2 focus:ring-ps-border-focus [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:pointer-events-none"
             />
-            <button
-              type="button"
+            <IconButton
+              className="absolute inset-y-1 right-1"
               onClick={() => openNativePicker("startDate")}
-              className="absolute inset-y-1 right-1 inline-flex w-9 items-center justify-center rounded-ps text-ps-fg-muted transition-colors hover:bg-ps-surface-hover hover:text-ps-fg"
               aria-label="Open start date picker"
             >
               <svg viewBox="0 0 20 20" fill="none" className="h-4 w-4" aria-hidden="true">
@@ -127,7 +127,7 @@ export function ShiftForm({
                 <path d="M3 8h14" stroke="currentColor" strokeWidth="1.5" />
                 <path d="M7 3v3M13 3v3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
               </svg>
-            </button>
+            </IconButton>
           </div>
         </div>
 
@@ -144,10 +144,9 @@ export function ShiftForm({
               required
               className="w-full rounded-ps border border-ps-border bg-ps-bg-card px-3 py-2.5 pr-11 text-sm text-ps-fg focus:border-ps-border-focus focus:outline-none focus:ring-2 focus:ring-ps-border-focus [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:pointer-events-none"
             />
-            <button
-              type="button"
+            <IconButton
+              className="absolute inset-y-1 right-1"
               onClick={() => openNativePicker("endDate")}
-              className="absolute inset-y-1 right-1 inline-flex w-9 items-center justify-center rounded-ps text-ps-fg-muted transition-colors hover:bg-ps-surface-hover hover:text-ps-fg"
               aria-label="Open end date picker"
             >
               <svg viewBox="0 0 20 20" fill="none" className="h-4 w-4" aria-hidden="true">
@@ -155,7 +154,7 @@ export function ShiftForm({
                 <path d="M3 8h14" stroke="currentColor" strokeWidth="1.5" />
                 <path d="M7 3v3M13 3v3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
               </svg>
-            </button>
+            </IconButton>
           </div>
         </div>
       </div>
@@ -211,17 +210,16 @@ export function ShiftForm({
               required
               className="w-full rounded-ps border border-ps-border bg-ps-bg-card px-3 py-2.5 pr-11 text-sm text-ps-fg focus:border-ps-border-focus focus:outline-none focus:ring-2 focus:ring-ps-border-focus [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:pointer-events-none"
             />
-            <button
-              type="button"
+            <IconButton
+              className="absolute inset-y-1 right-1"
               onClick={() => openNativePicker("dailyStartTime")}
-              className="absolute inset-y-1 right-1 inline-flex w-9 items-center justify-center rounded-ps text-ps-fg-muted transition-colors hover:bg-ps-surface-hover hover:text-ps-fg"
               aria-label="Open daily start time picker"
             >
               <svg viewBox="0 0 20 20" fill="none" className="h-4 w-4" aria-hidden="true">
                 <circle cx="10" cy="10" r="7" stroke="currentColor" strokeWidth="1.5" />
                 <path d="M10 6.5v4l2.75 1.75" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
               </svg>
-            </button>
+            </IconButton>
           </div>
         </div>
 
@@ -239,17 +237,16 @@ export function ShiftForm({
               required
               className="w-full rounded-ps border border-ps-border bg-ps-bg-card px-3 py-2.5 pr-11 text-sm text-ps-fg focus:border-ps-border-focus focus:outline-none focus:ring-2 focus:ring-ps-border-focus [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:pointer-events-none"
             />
-            <button
-              type="button"
+            <IconButton
+              className="absolute inset-y-1 right-1"
               onClick={() => openNativePicker("dailyEndTime")}
-              className="absolute inset-y-1 right-1 inline-flex w-9 items-center justify-center rounded-ps text-ps-fg-muted transition-colors hover:bg-ps-surface-hover hover:text-ps-fg"
               aria-label="Open daily end time picker"
             >
               <svg viewBox="0 0 20 20" fill="none" className="h-4 w-4" aria-hidden="true">
                 <circle cx="10" cy="10" r="7" stroke="currentColor" strokeWidth="1.5" />
                 <path d="M10 6.5v4l2.75 1.75" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
               </svg>
-            </button>
+            </IconButton>
           </div>
         </div>
       </div>

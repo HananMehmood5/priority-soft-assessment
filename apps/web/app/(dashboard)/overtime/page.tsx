@@ -8,6 +8,9 @@ import type { LocationAttributes } from '@/app/types';
 import { PageHeader } from '@/libs/ui/PageHeader';
 import { formatDate, formatDateTime } from '@/lib/format-date';
 import { LOCATIONS_QUERY, OVERTIME_DASHBOARD_QUERY } from '@/lib/apollo/operations';
+import { Button } from '@/libs/ui/Button';
+import { Input } from '@/libs/ui/Input';
+import { Select } from '@/libs/ui/Select';
 
 type AssignmentHoursEntry = {
   shiftId: string;
@@ -94,56 +97,46 @@ export default function OvertimeDashboardPage() {
         }}
         className="mb-6 grid gap-3 rounded-ps border border-ps-border bg-ps-bg-card p-4 sm:grid-cols-2 lg:grid-cols-4"
       >
-        <div className="min-w-0">
-          <label htmlFor="start" className="mb-1 block text-ps-sm">
-            Start date
-          </label>
-          <input
-            id="start"
-            type="date"
-            value={dateStart}
-            onChange={(e) => setDateStart(e.target.value)}
-            className="w-full rounded-ps border border-ps-border bg-ps-bg px-3 py-2 text-sm text-ps-fg outline-none focus:border-ps-border-focus focus:ring-2 focus:ring-ps-border-focus"
-          />
-        </div>
-        <div className="min-w-0">
-          <label htmlFor="end" className="mb-1 block text-ps-sm">
-            End date
-          </label>
-          <input
-            id="end"
-            type="date"
-            value={dateEnd}
-            onChange={(e) => setDateEnd(e.target.value)}
-            className="w-full rounded-ps border border-ps-border bg-ps-bg px-3 py-2 text-sm text-ps-fg outline-none focus:border-ps-border-focus focus:ring-2 focus:ring-ps-border-focus"
-          />
-        </div>
-        <div className="min-w-0">
-          <label htmlFor="locationId" className="mb-1 block text-ps-sm">
-            Location
-          </label>
-          <select
-            id="locationId"
-            value={locationId}
-            onChange={(e) => setLocationId(e.target.value)}
-            className="w-full rounded-ps border border-ps-border bg-ps-bg px-3 py-2 text-sm text-ps-fg outline-none focus:border-ps-border-focus focus:ring-2 focus:ring-ps-border-focus"
-          >
-            <option value="">All locations</option>
-            {locations.map((location) => (
-              <option key={location.id} value={location.id}>
-                {location.name}
-              </option>
-            ))}
-          </select>
-        </div>
+        <Input
+          id="start"
+          label="Start date"
+          type="date"
+          value={dateStart}
+          onChange={(e) => setDateStart(e.target.value)}
+          className="min-w-0"
+        />
+        <Input
+          id="end"
+          label="End date"
+          type="date"
+          value={dateEnd}
+          onChange={(e) => setDateEnd(e.target.value)}
+          className="min-w-0"
+        />
+        <Select
+          id="locationId"
+          label="Location"
+          value={locationId}
+          onChange={(e) => setLocationId(e.target.value)}
+          className="min-w-0"
+        >
+          <option value="">All locations</option>
+          {locations.map((location) => (
+            <option key={location.id} value={location.id}>
+              {location.name}
+            </option>
+          ))}
+        </Select>
         <div className="self-end lg:justify-self-start">
-          <button
+          <Button
             type="submit"
-            className="inline-flex items-center justify-center rounded-ps bg-ps-primary px-4 py-2 text-sm font-semibold text-ps-primary-foreground shadow-ps transition-colors hover:bg-ps-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
+            variant="primary"
             disabled={isLoading || !hasValidRange}
+            loading={isLoading}
+            loadingLabel="Loading…"
           >
-            {isLoading ? 'Loading…' : 'Refresh'}
-          </button>
+            Refresh
+          </Button>
         </div>
       </form>
       {queryError && (

@@ -14,6 +14,7 @@ import { useSocket } from '@/lib/use-socket';
 import { PageHeader } from '@/libs/ui/PageHeader';
 import { ErrorState } from '@/libs/ui/ErrorState';
 import { PageSkeleton } from '@/libs/ui/PageSkeleton';
+import { Button } from '@/libs/ui/Button';
 
 const MY_SHIFTS_DESCRIPTION =
   'Your assigned shifts. Request a swap to trade with another staff member, or drop to release for others to pick up.';
@@ -141,22 +142,26 @@ export default function MyShiftsPage() {
                 )}
               </div>
               <div className="flex flex-wrap gap-2">
-                <button
+                <Button
                   type="button"
-                  className="inline-flex items-center justify-center rounded-ps border border-ps-border px-4 py-2 text-sm font-medium text-ps-fg transition-colors hover:border-ps-fg-subtle hover:bg-ps-surface-hover disabled:cursor-not-allowed disabled:opacity-60"
+                  variant="secondary"
                   disabled={!!acting}
+                  loading={acting === a.id}
+                  loadingLabel="Requesting…"
                   onClick={() => handleCreateSwap(a.id)}
                 >
-                  {acting === a.id ? 'Requesting…' : 'Request swap'}
-                </button>
-                <button
+                  Request swap
+                </Button>
+                <Button
                   type="button"
-                  className="inline-flex items-center justify-center rounded-ps border border-ps-border px-4 py-2 text-sm font-medium text-ps-fg transition-colors hover:border-ps-fg-subtle hover:bg-ps-surface-hover disabled:cursor-not-allowed disabled:opacity-60"
+                  variant="secondary"
                   disabled={!!acting}
+                  loading={acting === a.id}
+                  loadingLabel="Requesting…"
                   onClick={() => handleCreateDrop(a.id)}
                 >
-                  {acting === a.id ? 'Requesting…' : 'Request drop'}
-                </button>
+                  Request drop
+                </Button>
               </div>
             </div>
           ))}

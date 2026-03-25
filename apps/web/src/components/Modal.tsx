@@ -2,6 +2,7 @@
 
 import type { ReactNode } from 'react';
 import { Dialog, DialogPanel, DialogTitle } from '@headlessui/react';
+import { Button } from '@/libs/ui/Button';
 
 interface ModalProps {
   open: boolean;
@@ -39,13 +40,15 @@ export function Modal({
             <DialogTitle className="text-lg font-semibold text-ps-fg">
               {title}
             </DialogTitle>
-            <button
+            <Button
               type="button"
+              variant="ghost"
+              size="sm"
               onClick={onClose}
-              className="rounded-ps px-2 py-1 text-xs text-ps-fg-muted hover:bg-ps-surface-hover"
+              className="text-xs text-ps-fg-muted"
             >
               Close
-            </button>
+            </Button>
           </div>
 
           <div className="px-4 py-3">{children}</div>

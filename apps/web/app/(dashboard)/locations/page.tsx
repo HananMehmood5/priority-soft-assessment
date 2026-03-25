@@ -17,6 +17,9 @@ import { PlusIcon } from '@/src/components/icons/PlusIcon';
 import { PageHeader } from '@/libs/ui/PageHeader';
 import { ErrorState } from '@/libs/ui/ErrorState';
 import { PageSkeleton } from '@/libs/ui/PageSkeleton';
+import { Button } from '@/libs/ui/Button';
+import { Input } from '@/libs/ui/Input';
+import { Select } from '@/libs/ui/Select';
 
 const LOCATIONS_DESCRIPTION =
   'Coastal Eats currently operates four locations across two time zones. Admins can use this page to manage the official list of locations.';
@@ -149,24 +152,21 @@ export default function LocationsPage() {
         description={LOCATIONS_DESCRIPTION}
         action={
           isAdmin ? (
-            <button
-              type="button"
-              onClick={openCreate}
-              className="inline-flex items-center gap-2 rounded-ps bg-ps-primary px-4 py-2 text-sm font-semibold text-ps-primary-foreground shadow-ps transition-colors hover:bg-ps-primary-hover"
-            >
+            <Button type="button" variant="primary" onClick={openCreate}>
               <PlusIcon className="h-3.5 w-3.5" />
               <span>Add location</span>
-            </button>
+            </Button>
           ) : undefined
         }
       />
       <div className="mb-6 flex flex-col gap-3">
         <div className="flex justify-end">
-          <input
+          <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by name or timezone"
-            className="w-full max-w-xs rounded-ps border border-ps-border bg-ps-bg-card px-3 py-2 text-sm text-ps-fg outline-none focus:border-ps-border-focus focus:ring-2 focus:ring-ps-border-focus"
+            className="w-full max-w-xs"
+            aria-label="Search locations by name or timezone"
           />
         </div>
       </div>
@@ -182,23 +182,27 @@ export default function LocationsPage() {
             </div>
             {isAdmin && (
               <div className="flex items-center gap-2">
-                <button
+                <Button
                   type="button"
+                  variant="secondary"
+                  size="sm"
                   onClick={() => openEdit(loc)}
-                  className="inline-flex items-center gap-1.5 rounded-ps border border-ps-border px-3 py-1.5 text-xs font-medium text-ps-fg transition-colors hover:bg-ps-surface-hover"
+                  className="gap-1.5"
                 >
                   <EditIcon className="h-3.5 w-3.5" />
                   <span>Edit</span>
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
+                  variant="danger"
+                  size="sm"
                   onClick={() => handleRequestDelete(loc)}
                   disabled={deleting}
-                  className="inline-flex items-center gap-1.5 rounded-ps border border-ps-error px-3 py-1.5 text-xs font-medium text-ps-error transition-colors hover:bg-ps-error/10 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="gap-1.5"
                 >
                   <TrashIcon className="h-3.5 w-3.5" />
                   <span>Delete</span>
-                </button>
+                </Button>
               </div>
             )}
           </li>
@@ -214,60 +218,49 @@ export default function LocationsPage() {
           maxWidth="lg"
           footer={
             <div className="flex items-center gap-2">
-              <button
+              <Button
                 type="submit"
                 form="location-form"
+                variant="primary"
                 disabled={creating || updating}
-                className="inline-flex items-center justify-center rounded-ps bg-ps-primary px-4 py-2 text-sm font-semibold text-ps-primary-foreground shadow-ps transition-colors hover:bg-ps-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
+                loading={creating || updating}
+                loadingLabel="Saving…"
               >
-                {creating || updating
-                  ? 'Saving…'
-                  : formMode.type === 'create'
-                  ? 'Create'
-                  : 'Save changes'}
-              </button>
-              <button
+                {formMode.type === 'create' ? 'Create' : 'Save changes'}
+              </Button>
+              <Button
                 type="button"
+                variant="ghost"
                 onClick={resetForm}
-                className="text-ps-sm text-ps-fg-muted underline-offset-2 hover:underline"
+                className="font-normal text-ps-sm text-ps-fg-muted underline-offset-2 hover:underline"
               >
                 Cancel
-              </button>
+              </Button>
             </div>
           }
         >
           <form id="location-form" className="flex flex-col gap-3" onSubmit={handleSubmit}>
-            <div>
-              <label htmlFor="loc-name" className="mb-1.5 block text-sm font-medium">
-                Name
-              </label>
-              <input
-                id="loc-name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="w-full rounded-ps border border-ps-border bg-ps-bg px-3 py-2.5 text-sm text-ps-fg outline-none focus:border-ps-border-focus focus:ring-2 focus:ring-ps-border-focus"
-              />
-            </div>
-            <div>
-              <label htmlFor="loc-tz" className="mb-1.5 block text-sm font-medium">
-                Timezone
-              </label>
-              <select
-                id="loc-tz"
-                value={timezone}
-                onChange={(e) => setTimezone(e.target.value)}
-                className="w-full appearance-none rounded-ps border border-ps-border bg-ps-bg pl-3 pr-10 py-2.5 text-sm text-ps-fg outline-none focus:border-ps-border-focus focus:ring-2 focus:ring-ps-border-focus"
-              >
-                {SUPPORTED_TIMEZONES.map((tz) => (
-                  <option key={tz} value={tz}>
-                    {tz}
-                  </option>
-                ))}
-                {!SUPPORTED_TIMEZONES.includes(timezone) && timezone && (
-                  <option value={timezone}>{timezone}</option>
-                )}
-              </select>
-            </div>
+            <Input
+              id="loc-name"
+              label="Name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
+            <Select
+              id="loc-tz"
+              label="Timezone"
+              value={timezone}
+              onChange={(e) => setTimezone(e.target.value)}
+            >
+              {SUPPORTED_TIMEZONES.map((tz) => (
+                <option key={tz} value={tz}>
+                  {tz}
+                </option>
+              ))}
+              {!SUPPORTED_TIMEZONES.includes(timezone) && timezone && (
+                <option value={timezone}>{timezone}</option>
+              )}
+            </Select>
             {formError && <p className="text-ps-sm text-ps-error">{formError}</p>}
           </form>
         </Modal>
@@ -280,21 +273,23 @@ export default function LocationsPage() {
           maxWidth="sm"
           footer={
             <div className="flex items-center justify-end gap-2">
-              <button
+              <Button
                 type="button"
+                variant="ghost"
                 onClick={() => setLocationToDelete(null)}
-                className="text-ps-sm text-ps-fg-muted underline-offset-2 hover:underline"
+                className="font-normal text-ps-sm text-ps-fg-muted underline-offset-2 hover:underline"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
+                variant="destructive"
                 onClick={handleConfirmDelete}
                 disabled={deleting}
-                className="inline-flex items-center justify-center rounded-ps bg-ps-error px-4 py-2 text-sm font-semibold text-white shadow-ps transition-colors hover:bg-ps-error/90 disabled:cursor-not-allowed disabled:opacity-60"
+                loading={deleting}
               >
                 Delete
-              </button>
+              </Button>
             </div>
           }
         >

@@ -16,13 +16,15 @@ export const ErrorState = ({ message, onRetry, variant = "inline" }: ErrorStateP
           Please retry. If this keeps happening, check the API is running.
         </div>
         {onRetry != null && (
-          <button
+          <Button
             type="button"
-            className="mt-4 rounded-lg bg-ps-primary px-3 py-2 text-sm font-semibold text-ps-primary-foreground hover:bg-ps-primary-hover"
+            variant="primary"
+            size="sm"
+            className="mt-4"
             onClick={onRetry}
           >
             Retry
-          </button>
+          </Button>
         )}
       </div>
     );

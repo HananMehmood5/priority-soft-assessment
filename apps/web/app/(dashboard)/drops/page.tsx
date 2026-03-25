@@ -8,6 +8,7 @@ import { useSocket } from '@/lib/use-socket';
 import { PageHeader } from '@/libs/ui/PageHeader';
 import { ErrorState } from '@/libs/ui/ErrorState';
 import { PageSkeleton } from '@/libs/ui/PageSkeleton';
+import { Button } from '@/libs/ui/Button';
 
 const DROPS_DESCRIPTION =
   'Pick up shifts other staff have dropped, subject to skills and scheduling rules.';
@@ -137,14 +138,16 @@ export default function DropsPage() {
                   <span>Assignment {d.assignmentId}</span>
                 )}
               </div>
-              <button
+              <Button
                 type="button"
-                className="inline-flex items-center justify-center rounded-ps bg-ps-primary px-4 py-2 text-sm font-semibold text-ps-primary-foreground shadow-ps transition-colors hover:bg-ps-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
+                variant="primary"
                 disabled={!!accepting}
+                loading={accepting === d.id}
+                loadingLabel="Accepting…"
                 onClick={() => handleAccept(d.id)}
               >
-                {accepting === d.id ? 'Accepting…' : 'Pick up shift'}
-              </button>
+                Pick up shift
+              </Button>
             </div>
           ))}
         </div>

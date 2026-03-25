@@ -14,6 +14,9 @@ import {
 import { PageHeader } from '@/libs/ui/PageHeader';
 import { ErrorState } from '@/libs/ui/ErrorState';
 import { PageSkeleton } from '@/libs/ui/PageSkeleton';
+import { Button } from '@/libs/ui/Button';
+import { Input } from '@/libs/ui/Input';
+import { Select } from '@/libs/ui/Select';
 
 const FAIRNESS_DESCRIPTION =
   'Compare distribution of hours, premium shifts, and desired vs actual hours for your staff.';
@@ -141,72 +144,58 @@ export default function FairnessPage() {
         }}
         className="mb-6 grid gap-3 rounded-ps border border-ps-border bg-ps-bg-card p-4 sm:grid-cols-2 lg:grid-cols-5"
       >
-        <div className="min-w-0">
-          <label htmlFor="start" className="mb-1 block text-ps-sm">
-            Start date
-          </label>
-          <input
-            id="start"
-            type="date"
-            value={dateStart}
-            onChange={(e) => setDateStart(e.target.value)}
-            className="w-full rounded-ps border border-ps-border bg-ps-bg px-3 py-2 text-sm text-ps-fg outline-none focus:border-ps-border-focus focus:ring-2 focus:ring-ps-border-focus"
-          />
-        </div>
-        <div className="min-w-0">
-          <label htmlFor="end" className="mb-1 block text-ps-sm">
-            End date
-          </label>
-          <input
-            id="end"
-            type="date"
-            value={dateEnd}
-            onChange={(e) => setDateEnd(e.target.value)}
-            className="w-full rounded-ps border border-ps-border bg-ps-bg px-3 py-2 text-sm text-ps-fg outline-none focus:border-ps-border-focus focus:ring-2 focus:ring-ps-border-focus"
-          />
-        </div>
-        <div className="min-w-0">
-          <label htmlFor="locationId" className="mb-1 block text-ps-sm">
-            Location
-          </label>
-          <select
-            id="locationId"
-            value={locationId}
-            onChange={(e) => setLocationId(e.target.value)}
-            className="w-full rounded-ps border border-ps-border bg-ps-bg px-3 py-2 text-sm text-ps-fg outline-none focus:border-ps-border-focus focus:ring-2 focus:ring-ps-border-focus"
-          >
-            <option value="">All locations</option>
-            {locations.map((location) => (
-              <option key={location.id} value={location.id}>
-                {location.name}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="min-w-0">
-          <label htmlFor="role" className="mb-1 block text-ps-sm">
-            Staff role (optional)
-          </label>
-          <select
-            id="role"
-            value={role}
-            onChange={(e) => setRole(e.target.value as UserRole | '')}
-            className="w-full rounded-ps border border-ps-border bg-ps-bg px-3 py-2 text-sm text-ps-fg outline-none focus:border-ps-border-focus focus:ring-2 focus:ring-ps-border-focus"
-          >
-            <option value="">All roles</option>
-            <option value={UserRole.Staff}>Staff</option>
-            <option value={UserRole.Manager}>Manager</option>
-            <option value={UserRole.Admin}>Admin</option>
-          </select>
-        </div>
+        <Input
+          id="start"
+          label="Start date"
+          type="date"
+          value={dateStart}
+          onChange={(e) => setDateStart(e.target.value)}
+          className="min-w-0"
+        />
+        <Input
+          id="end"
+          label="End date"
+          type="date"
+          value={dateEnd}
+          onChange={(e) => setDateEnd(e.target.value)}
+          className="min-w-0"
+        />
+        <Select
+          id="locationId"
+          label="Location"
+          value={locationId}
+          onChange={(e) => setLocationId(e.target.value)}
+          className="min-w-0"
+        >
+          <option value="">All locations</option>
+          {locations.map((location) => (
+            <option key={location.id} value={location.id}>
+              {location.name}
+            </option>
+          ))}
+        </Select>
+        <Select
+          id="role"
+          label="Staff role (optional)"
+          value={role}
+          onChange={(e) => setRole(e.target.value as UserRole | '')}
+          className="min-w-0"
+        >
+          <option value="">All roles</option>
+          <option value={UserRole.Staff}>Staff</option>
+          <option value={UserRole.Manager}>Manager</option>
+          <option value={UserRole.Admin}>Admin</option>
+        </Select>
         <div className="self-end lg:justify-self-start">
-          <button
+          <Button
             type="submit"
+            variant="primary"
             disabled={loading || !baseVars}
-            className="inline-flex items-center justify-center rounded-ps bg-ps-primary px-4 py-2 text-sm font-semibold text-ps-primary-foreground shadow-ps transition-colors hover:bg-ps-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
+            loading={loading}
+            loadingLabel="Loading…"
           >
-            {loading ? 'Loading…' : 'Refresh'}
-          </button>
+            Refresh
+          </Button>
         </div>
       </form>
       {error && (

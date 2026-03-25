@@ -12,6 +12,8 @@ import { expandShiftOccurrencesForCalendar, type CalendarOccurrence } from '@/li
 import { PageHeader } from '@/libs/ui/PageHeader';
 import { ErrorState } from '@/libs/ui/ErrorState';
 import { PageSkeleton } from '@/libs/ui/PageSkeleton';
+import { Input } from '@/libs/ui/Input';
+import { Select } from '@/libs/ui/Select';
 
 const CALENDAR_DESCRIPTION =
   "Week/day shift view with times rendered in each shift's location timezone.";
@@ -148,50 +150,38 @@ export default function CalendarPage() {
         onSubmit={(e) => e.preventDefault()}
         className="mb-5 flex flex-wrap gap-3"
       >
-        <div>
-          <label htmlFor="view" className="mb-1 block text-ps-sm">
-            View
-          </label>
-          <select
-            id="view"
-            value={view}
-            onChange={(e) => setView(e.target.value as ViewMode)}
-            className="rounded-ps border border-ps-border bg-ps-bg-card px-3 py-2 text-sm text-ps-fg outline-none focus:border-ps-border-focus focus:ring-2 focus:ring-ps-border-focus"
-          >
-            <option value="week">Week</option>
-            <option value="day">Day</option>
-          </select>
-        </div>
-        <div>
-          <label htmlFor="date" className="mb-1 block text-ps-sm">
-            {view === 'week' ? 'Week of' : 'Day'}
-          </label>
-          <input
-            id="date"
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            className="rounded-ps border border-ps-border bg-ps-bg-card px-3 py-2 text-sm text-ps-fg outline-none focus:border-ps-border-focus focus:ring-2 focus:ring-ps-border-focus"
-          />
-        </div>
-        <div>
-          <label htmlFor="locationId" className="mb-1 block text-ps-sm">
-            Location (optional)
-          </label>
-          <select
-            id="locationId"
-            value={locationId}
-            onChange={(e) => setLocationId(e.target.value)}
-            className="min-w-[10rem] rounded-ps border border-ps-border bg-ps-bg-card px-3 py-2 text-sm text-ps-fg outline-none focus:border-ps-border-focus focus:ring-2 focus:ring-ps-border-focus"
-          >
-            <option value="">All locations</option>
-            {locations.map((loc) => (
-              <option key={loc.id} value={loc.id}>
-                {loc.name}
-              </option>
-            ))}
-          </select>
-        </div>
+        <Select
+          id="view"
+          label="View"
+          value={view}
+          onChange={(e) => setView(e.target.value as ViewMode)}
+          className="w-auto"
+        >
+          <option value="week">Week</option>
+          <option value="day">Day</option>
+        </Select>
+        <Input
+          id="date"
+          label={view === 'week' ? 'Week of' : 'Day'}
+          type="date"
+          value={date}
+          onChange={(e) => setDate(e.target.value)}
+          className="w-auto"
+        />
+        <Select
+          id="locationId"
+          label="Location (optional)"
+          value={locationId}
+          onChange={(e) => setLocationId(e.target.value)}
+          className="min-w-[10rem] w-auto max-w-xs"
+        >
+          <option value="">All locations</option>
+          {locations.map((loc) => (
+            <option key={loc.id} value={loc.id}>
+              {loc.name}
+            </option>
+          ))}
+        </Select>
       </form>
       {view === 'day' ? (
         <div className="rounded-ps border border-ps-border bg-ps-bg-card p-3">

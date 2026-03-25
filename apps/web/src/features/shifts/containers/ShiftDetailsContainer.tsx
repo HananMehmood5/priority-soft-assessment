@@ -16,6 +16,7 @@ import type { OvertimeWhatIf } from "@/features/shifts/types/OvertimeWhatIf";
 import type { ConstraintError } from "@/features/shifts/types/ConstraintError";
 import type { AuditEntry } from "@/features/shifts/types/AuditEntry";
 import { UserRole } from "@shiftsync/shared";
+import { Button } from "@/libs/ui/Button";
 import {
   SHIFT_QUERY,
   SHIFTS_WITH_LOCATIONS_QUERY,
@@ -286,21 +287,24 @@ export function ShiftDetailsContainer() {
           maxWidth="lg"
           footer={
             <div className="flex items-center justify-between gap-2">
-              <button
+              <Button
                 type="button"
+                variant="ghost"
                 onClick={() => !assigning && setAddAssignmentOpen(false)}
-                className="text-ps-sm text-ps-fg-muted underline-offset-2 hover:underline"
+                className="font-normal text-ps-sm text-ps-fg-muted underline-offset-2 hover:underline"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 type="submit"
                 form="add-assignment-form"
+                variant="primary"
                 disabled={assigning || !skillId || !userId || staffOptions.length === 0}
-                className="inline-flex items-center justify-center rounded-ps bg-ps-primary px-4 py-2 text-sm font-semibold text-ps-primary-foreground shadow-ps transition-colors hover:bg-ps-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
+                loading={assigning}
+                loadingLabel="Adding…"
               >
-                {assigning ? "Adding…" : "Add assignment"}
-              </button>
+                Add assignment
+              </Button>
             </div>
           }
         >
@@ -341,21 +345,25 @@ export function ShiftDetailsContainer() {
           maxWidth="xl"
           footer={
             <div className="flex items-center justify-between gap-3">
-              <button
+              <Button
                 type="button"
+                variant="ghost"
                 onClick={() => !updatingShift && setEditDetailsOpen(false)}
-                className="inline-flex items-center rounded-ps px-3 py-2 text-ps-sm text-ps-fg-muted hover:bg-ps-surface-hover hover:text-ps-fg"
+                className="text-ps-sm text-ps-fg-muted hover:bg-ps-surface-hover hover:text-ps-fg"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 type="submit"
                 form="edit-shift-form"
+                variant="primary"
                 disabled={updatingShift}
-                className="inline-flex min-w-[130px] items-center justify-center rounded-ps bg-ps-primary px-5 py-2.5 text-sm font-semibold text-ps-primary-foreground shadow-ps transition-colors hover:bg-ps-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
+                loading={updatingShift}
+                loadingLabel="Saving…"
+                className="min-w-[130px] px-5 py-2.5"
               >
-                {updatingShift ? "Saving…" : "Save changes"}
-              </button>
+                Save changes
+              </Button>
             </div>
           }
         >
@@ -397,24 +405,27 @@ export function ShiftDetailsContainer() {
           maxWidth="sm"
           footer={
             <div className="flex items-center justify-end gap-2">
-              <button
+              <Button
                 type="button"
+                variant="ghost"
                 onClick={() => !deleting && setConfirmDeleteOpen(false)}
-                className="text-ps-sm text-ps-fg-muted underline-offset-2 hover:underline"
+                className="font-normal text-ps-sm text-ps-fg-muted underline-offset-2 hover:underline"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
+                variant="destructive"
+                disabled={deleting}
+                loading={deleting}
+                loadingLabel="Deleting…"
                 onClick={async () => {
                   if (deleting) return;
                   await handleDelete();
                 }}
-                disabled={deleting}
-                className="inline-flex items-center justify-center rounded-ps bg-ps-error px-4 py-2 text-sm font-semibold text-white shadow-ps transition-colors hover:bg-ps-error/90 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {deleting ? "Deleting…" : "Delete shift"}
-              </button>
+                Delete shift
+              </Button>
             </div>
           }
         >
