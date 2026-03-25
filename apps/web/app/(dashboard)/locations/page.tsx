@@ -101,8 +101,8 @@ export default function LocationsPage() {
         });
       }
       resetForm();
-    } catch (err: any) {
-      setFormError(err?.message ?? 'Unable to save location.');
+    } catch (err: unknown) {
+      setFormError(err instanceof Error ? err.message : 'Unable to save location.');
     }
   };
 
@@ -244,7 +244,7 @@ export default function LocationsPage() {
                     {tz}
                   </option>
                 ))}
-                {!SUPPORTED_TIMEZONES.includes(timezone as any) && timezone && (
+                {!SUPPORTED_TIMEZONES.includes(timezone) && timezone && (
                   <option value={timezone}>{timezone}</option>
                 )}
               </select>

@@ -12,7 +12,7 @@ import { Button } from "@/libs/ui/Button";
 import {
   LOCATIONS_QUERY,
   CREATE_SHIFT_MUTATION,
-  SHIFTS_QUERY,
+  SHIFTS_WITH_LOCATIONS_QUERY,
 } from "@/lib/apollo/operations";
 
 export function CreateShiftContainer() {
@@ -31,7 +31,7 @@ export function CreateShiftContainer() {
 
   const [createShift, { loading: submitting, error: mutateError }] =
     useMutation(CREATE_SHIFT_MUTATION, {
-      refetchQueries: [{ query: SHIFTS_QUERY }],
+      refetchQueries: [{ query: SHIFTS_WITH_LOCATIONS_QUERY }],
     });
 
   const locations = useMemo(

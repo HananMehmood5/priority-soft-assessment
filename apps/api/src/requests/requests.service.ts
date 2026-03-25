@@ -274,7 +274,7 @@ export class RequestsService {
   /** Pending swap requests that staff can accept (excludes own requests). */
   async findAvailableSwaps(user: User): Promise<ShiftRequest[]> {
     const all = await this.requestRepository.findAllPendingSwaps();
-    let rows = all.filter((r) => {
+    const rows = all.filter((r) => {
       const a = (r as { assignment?: { userId: string } }).assignment;
       return a && a.userId !== user.id;
     });

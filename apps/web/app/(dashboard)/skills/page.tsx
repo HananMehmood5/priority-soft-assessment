@@ -62,8 +62,8 @@ export default function SkillsPage() {
         variables: { input: { name: newName.trim() } },
       });
       setNewName('');
-    } catch (err: any) {
-      setCreateError(err?.message ?? 'Unable to create skill.');
+    } catch (err: unknown) {
+      setCreateError(err instanceof Error ? err.message : 'Unable to create skill.');
     }
   };
 
@@ -85,8 +85,8 @@ export default function SkillsPage() {
         variables: { id: editState.id, input: { name: editState.name.trim() } },
       });
       setEditState(null);
-    } catch (err: any) {
-      setEditError(err?.message ?? 'Unable to update skill.');
+    } catch (err: unknown) {
+      setEditError(err instanceof Error ? err.message : 'Unable to update skill.');
     }
   };
 

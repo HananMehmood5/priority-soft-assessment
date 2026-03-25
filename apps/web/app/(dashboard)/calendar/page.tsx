@@ -36,7 +36,7 @@ export default function CalendarPage() {
 
   const occurrences = useMemo<ShiftOccurrence[]>(() => {
     const out: ShiftOccurrence[] = [];
-    for (const s of shifts as any[]) {
+    for (const s of shifts) {
       const startDate = String(s.startDate ?? '').slice(0, 10);
       const endDate = String(s.endDate ?? '').slice(0, 10);
       const dailyStartTime = String(s.dailyStartTime ?? '');

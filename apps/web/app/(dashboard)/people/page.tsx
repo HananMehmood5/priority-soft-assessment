@@ -91,11 +91,11 @@ export default function PeoplePage() {
     refetchQueries: [staffQueryRefetch],
   });
 
-  const allStaff = staffData?.staff ?? [];
   const locations = locationsData?.locations ?? [];
   const skills = skillsData?.skills ?? [];
 
   const staff = useMemo(() => {
+    const allStaff = staffData?.staff ?? [];
     const q = search.trim().toLowerCase();
     if (!q) return allStaff;
     return allStaff.filter(
@@ -103,7 +103,7 @@ export default function PeoplePage() {
         (s.name?.toLowerCase().includes(q) ?? false) ||
         s.email.toLowerCase().includes(q),
     );
-  }, [allStaff, search]);
+  }, [staffData?.staff, search]);
 
   const openDetail = (s: StaffMember) => {
     setDetailUser(s);

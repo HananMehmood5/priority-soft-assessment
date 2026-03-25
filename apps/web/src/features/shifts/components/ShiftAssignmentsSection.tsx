@@ -1,4 +1,3 @@
-import { Input } from "@/libs/ui/Input";
 import { Select } from "@/libs/ui/Select";
 import { Button } from "@/libs/ui/Button";
 import type { ConstraintError } from "@/features/shifts/types/ConstraintError";
@@ -65,6 +64,7 @@ export function ShiftAssignmentsSection({
       <form
         id={formId}
         onSubmit={onSubmit}
+        aria-busy={assigning}
         className="flex max-w-[480px] flex-col gap-4 rounded-ps border border-ps-border bg-ps-bg-card p-4"
       >
         <Select
