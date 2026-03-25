@@ -1,14 +1,16 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery, useMutation } from '@apollo/client';
 import { useAuth } from '@/lib/auth-context';
 import { formatDateTime } from '@/lib/format-date';
 import { RequestType, RequestStatus, UserRole } from '@shiftsync/shared';
+import { useSocket } from '@/lib/use-socket';
 import {
   PENDING_REQUESTS_QUERY,
   APPROVE_MUTATION,
   REJECT_MUTATION,
+  LOCATIONS_QUERY,
 } from '@/lib/apollo/operations';
 
 type RequestRow = {
@@ -29,7 +31,13 @@ export default function ApprovalsPage() {
   const canAccess =
     user?.role === UserRole.Admin || user?.role === UserRole.Manager;
 
-  const { data, loading, error } = useQuery<{ pendingRequests: RequestRow[] }>(
+  const socket = useSocket();
+
+  const { data: locationsData } = useQuery<{ locations: { id: string }[] }>(LOCATIONS_QUERY, {
+    skip: !token || !canAccess,
+  });
+
+  const { data, loading, error, refetch } = useQuery<{ pendingRequests: RequestRow[] }>(
     PENDING_REQUESTS_QUERY,
     { skip: !token || !canAccess }
   );
@@ -67,6 +75,29 @@ export default function ApprovalsPage() {
   };
 
   const canApprove = (r: RequestRow) => r.status === RequestStatus.Accepted;
+
+  useEffect(() => {
+    if (!socket) return;
+
+    const locationIds = locationsData?.locations?.map((l) => l.id) ?? [];
+    locationIds.forEach((locationId) => {
+      socket.emit('subscribe_location', { locationId });
+    });
+
+    const refreshEvents = [
+      'schedule_published',
+      'schedule_updated',
+      'swap_request',
+      'swap_resolved',
+      'drop_request',
+      'drop_resolved',
+    ];
+    const handler = () => refetch();
+    refreshEvents.forEach((ev) => socket.on(ev, handler));
+    return () => {
+      refreshEvents.forEach((ev) => socket.off(ev, handler));
+    };
+  }, [socket, refetch, locationsData]);
 
   if (!user) return <p className="text-ps-fg-muted">Loading…</p>;
   if (!canAccess) {

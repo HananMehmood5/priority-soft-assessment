@@ -86,6 +86,21 @@ export class ShiftRepository {
     return shift;
   }
 
+  /** Shifts in [weekStart, weekEnd) for a location that are not yet published (for audit trail on publish week). */
+  async findUnpublishedInWeekWindow(
+    locationId: string,
+    weekStart: Date,
+    weekEnd: Date,
+  ): Promise<Shift[]> {
+    return this.shiftModel.findAll({
+      where: {
+        locationId,
+        published: false,
+        startDate: { [Op.gte]: weekStart, [Op.lt]: weekEnd },
+      },
+    });
+  }
+
   async updateWeekPublished(
     locationId: string,
     weekStart: Date,

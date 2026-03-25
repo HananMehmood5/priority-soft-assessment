@@ -105,10 +105,17 @@ export default function OnDutyPage() {
 
   useEffect(() => {
     if (!socket) return;
+    const locationIds = locationsData?.locations?.map((l) => l.id) ?? [];
+    locationIds.forEach((locationId) => {
+      socket.emit('subscribe_location', { locationId });
+    });
+
     const refreshEvents = [
       'schedule_published',
       'schedule_updated',
+      'swap_request',
       'swap_resolved',
+      'drop_request',
       'drop_resolved',
       'assignment_conflict',
     ];
@@ -117,7 +124,7 @@ export default function OnDutyPage() {
     return () => {
       refreshEvents.forEach((ev) => socket.off(ev, handler));
     };
-  }, [socket, refetch]);
+  }, [socket, refetch, locationsData]);
 
   if (!user) return <p className="text-ps-fg-muted">Loading…</p>;
   if (!canAccess) {

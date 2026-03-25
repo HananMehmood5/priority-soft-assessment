@@ -1,5 +1,5 @@
 import { Field, InputType, Int } from '@nestjs/graphql';
-import { IsArray, IsInt, IsOptional, Max, Min, IsString } from 'class-validator';
+import { IsArray, IsInt, IsOptional, Max, Min, IsString, IsUUID } from 'class-validator';
 
 @InputType()
 export class UpdateShiftInput {
@@ -30,4 +30,15 @@ export class UpdateShiftInput {
   @Min(0, { each: true })
   @Max(6, { each: true })
   daysOfWeek?: number[];
+
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsUUID()
+  requiredSkillId?: string;
+
+  @Field(() => Int, { nullable: true })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  headcountNeeded?: number;
 }

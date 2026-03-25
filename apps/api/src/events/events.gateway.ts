@@ -1,6 +1,9 @@
 import {
   WebSocketGateway,
   WebSocketServer,
+  SubscribeMessage,
+  MessageBody,
+  ConnectedSocket,
   OnGatewayInit,
   OnGatewayConnection,
   OnGatewayDisconnect,
@@ -75,5 +78,14 @@ export class EventsGateway
   /** Client should call subscribe_location with locationId to join */
   subscribeLocation(client: any, locationId: string) {
     client.join(`location:${locationId}`);
+  }
+
+  @SubscribeMessage('subscribe_location')
+  handleSubscribeLocation(
+    @MessageBody() payload: { locationId: string },
+    @ConnectedSocket() client: any,
+  ) {
+    if (!payload?.locationId) return;
+    this.subscribeLocation(client, payload.locationId);
   }
 }

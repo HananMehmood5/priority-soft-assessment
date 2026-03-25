@@ -29,4 +29,13 @@ export class CreateShiftInput {
   @Field()
   @IsString()
   dailyEndTime: string;
+
+  @Field()
+  @IsUUID()
+  requiredSkillId: string;
+
+  @Field(() => Int)
+  @IsInt()
+  @Min(1)
+  headcountNeeded: number;
 }

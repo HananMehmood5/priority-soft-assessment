@@ -26,6 +26,12 @@ export class ShiftEntity {
   dailyEndTime: string;
 
   @Field()
+  requiredSkillId: string;
+
+  @Field(() => Int)
+  headcountNeeded: number;
+
+  @Field()
   published: boolean;
 
   @Field()

@@ -165,7 +165,7 @@ export class RequestsService {
     if (!r1.valid) {
       const alternatives = await this.constraints.getAlternatives(
         fromShift.locationId,
-        fromAssignment.skillId,
+        fromShift.requiredSkillId,
         fromShift,
         toUser,
       );
@@ -180,7 +180,7 @@ export class RequestsService {
     if (!r2.valid) {
       const alternatives = await this.constraints.getAlternatives(
         toShift.locationId,
-        toAssignment.skillId,
+        toShift.requiredSkillId,
         toShift,
         fromUser,
       );
@@ -231,7 +231,7 @@ export class RequestsService {
     if (!result.valid) {
       const alternatives = await this.constraints.getAlternatives(
         shift.locationId,
-        assignment.skillId,
+        shift.requiredSkillId,
         shift,
       );
       return { request: null as any, constraintError: { ...result, alternatives } };
@@ -285,9 +285,57 @@ export class RequestsService {
       await request.update({ status: RequestStatus.Approved }, { transaction });
     });
     const updated = await this.requestRepository.findByPkWithFullForApprove(requestId);
-    if (updated?.type === RequestType.Drop) {
+    if (!updated) {
+      throw new NotFoundException('Request not found after approve');
+    }
+
+    if (updated.type === RequestType.Swap) {
+      const fromA = (updated as { assignment?: ShiftAssignment }).assignment;
+      const toA = (updated as { counterpartAssignment?: ShiftAssignment }).counterpartAssignment;
+      const fromShift = (fromA as { shift?: Shift })?.shift;
+      const toShift = (toA as { shift?: Shift })?.shift;
+      if (fromA && toA) {
+        await this.notifications.createAndPush(
+          fromA.userId,
+          'request_approved',
+          'Swap approved',
+          'Your shift swap was approved by a manager.',
+          { requestId },
+        );
+        await this.notifications.createAndPush(
+          toA.userId,
+          'request_approved',
+          'Swap approved',
+          'Your shift swap was approved by a manager.',
+          { requestId },
+        );
+      }
+      if (fromShift) {
+        this.eventsGateway.emitToLocation(fromShift.locationId, WS_EVENTS.SCHEDULE_UPDATED, {
+          shiftId: fromShift.id,
+          requestId,
+          action: 'swap_approved',
+        });
+        this.eventsGateway.emitToLocation(fromShift.locationId, WS_EVENTS.SWAP_RESOLVED, {
+          requestId,
+          status: 'approved',
+        });
+      }
+      if (toShift && toShift.locationId !== fromShift?.locationId) {
+        this.eventsGateway.emitToLocation(toShift.locationId, WS_EVENTS.SCHEDULE_UPDATED, {
+          shiftId: toShift.id,
+          requestId,
+          action: 'swap_approved',
+        });
+        this.eventsGateway.emitToLocation(toShift.locationId, WS_EVENTS.SWAP_RESOLVED, {
+          requestId,
+          status: 'approved',
+        });
+      }
+    } else if (updated.type === RequestType.Drop) {
       const assignment = (updated as { assignment?: ShiftAssignment })?.assignment;
       const claimer = (updated as { claimer?: User })?.claimer;
+      const shift = (assignment as { shift?: Shift })?.shift;
       if (assignment?.userId) {
         await this.notifications.createAndPush(
           assignment.userId,
@@ -306,7 +354,19 @@ export class RequestsService {
           { requestId },
         );
       }
+      if (shift) {
+        this.eventsGateway.emitToLocation(shift.locationId, WS_EVENTS.SCHEDULE_UPDATED, {
+          shiftId: shift.id,
+          requestId,
+          action: 'drop_approved',
+        });
+        this.eventsGateway.emitToLocation(shift.locationId, WS_EVENTS.DROP_RESOLVED, {
+          requestId,
+          status: 'approved',
+        });
+      }
     }
+
     return updated as ShiftRequest;
   }
 
@@ -317,17 +377,72 @@ export class RequestsService {
     if (!can) throw new ForbiddenException('You cannot reject this request');
     await this.requestRepository.updateStatus(requestId, RequestStatus.Rejected);
     const updated = await this.requestRepository.findByPk(requestId);
-    const withAssignment = await this.requestRepository.findByPkWithAssignmentAndShift(requestId);
-    const ownerUserId = (withAssignment as { assignment?: ShiftAssignment })?.assignment?.userId;
-    if (ownerUserId) {
+    const full = await this.requestRepository.findByPkWithFullForApprove(requestId);
+    const assignment = full?.assignment as (ShiftAssignment & { shift?: Shift }) | undefined;
+    const counterpart = (full as { counterpartAssignment?: ShiftAssignment & { shift?: Shift } })
+      ?.counterpartAssignment;
+    const claimer = (full as { claimer?: User })?.claimer;
+    const shift = assignment?.shift;
+
+    if (assignment?.userId) {
       await this.notifications.createAndPush(
-        ownerUserId,
+        assignment.userId,
         'request_rejected',
         'Request rejected',
         'Your request was rejected by a manager.',
         { requestId },
       );
     }
+    if (full?.type === RequestType.Swap && counterpart?.userId) {
+      await this.notifications.createAndPush(
+        counterpart.userId,
+        'request_rejected',
+        'Swap request rejected',
+        'A manager rejected the swap request.',
+        { requestId },
+      );
+    }
+    if (full?.type === RequestType.Drop && claimer?.id) {
+      await this.notifications.createAndPush(
+        claimer.id,
+        'request_rejected',
+        'Drop request rejected',
+        'A manager rejected the drop / pickup request.',
+        { requestId },
+      );
+    }
+
+    if (shift) {
+      this.eventsGateway.emitToLocation(shift.locationId, WS_EVENTS.SCHEDULE_UPDATED, {
+        shiftId: shift.id,
+        requestId,
+        action: 'request_rejected',
+      });
+      if (full?.type === RequestType.Swap) {
+        this.eventsGateway.emitToLocation(shift.locationId, WS_EVENTS.SWAP_RESOLVED, {
+          requestId,
+          status: 'rejected',
+        });
+        const toShift = counterpart?.shift;
+        if (toShift && toShift.locationId !== shift.locationId) {
+          this.eventsGateway.emitToLocation(toShift.locationId, WS_EVENTS.SCHEDULE_UPDATED, {
+            shiftId: toShift.id,
+            requestId,
+            action: 'request_rejected',
+          });
+          this.eventsGateway.emitToLocation(toShift.locationId, WS_EVENTS.SWAP_RESOLVED, {
+            requestId,
+            status: 'rejected',
+          });
+        }
+      } else if (full?.type === RequestType.Drop) {
+        this.eventsGateway.emitToLocation(shift.locationId, WS_EVENTS.DROP_RESOLVED, {
+          requestId,
+          status: 'rejected',
+        });
+      }
+    }
+
     return updated as ShiftRequest;
   }
 
@@ -343,16 +458,78 @@ export class RequestsService {
     if (!canManage && !isOwner) {
       throw new ForbiddenException('You cannot cancel this request');
     }
+
+    const full = await this.requestRepository.findByPkWithFullForApprove(requestId);
+    const counterpart = (full as { counterpartAssignment?: ShiftAssignment & { shift?: Shift } })
+      ?.counterpartAssignment;
+    const claimer = (full as { claimer?: User })?.claimer;
+    const cancellerId = user.id;
+
     await this.requestRepository.updateStatus(requestId, RequestStatus.Cancelled);
     const updated = await this.requestRepository.findByPk(requestId);
-    const withAssignment = await this.requestRepository.findByPkWithAssignmentAndShift(requestId);
-    const shift = (withAssignment as { assignment?: ShiftAssignment & { shift?: Shift } })?.assignment?.shift;
-    if (shift) {
-      this.eventsGateway.emitToLocation(shift.locationId, WS_EVENTS.SWAP_RESOLVED, {
-        requestId,
-        status: 'cancelled',
-      });
+    const shift =
+      (full?.assignment as (ShiftAssignment & { shift?: Shift }) | undefined)?.shift ??
+      (assignment as { shift?: Shift } | undefined)?.shift;
+
+    if (assignment?.userId && assignment.userId !== cancellerId) {
+      await this.notifications.createAndPush(
+        assignment.userId,
+        'request_cancelled',
+        'Request cancelled',
+        'A swap or drop request was cancelled.',
+        { requestId },
+      );
     }
+    if (request.type === RequestType.Swap && counterpart?.userId && counterpart.userId !== cancellerId) {
+      await this.notifications.createAndPush(
+        counterpart.userId,
+        'request_cancelled',
+        'Swap request cancelled',
+        'The other party cancelled the swap request.',
+        { requestId },
+      );
+    }
+    if (request.type === RequestType.Drop && claimer?.id && claimer.id !== cancellerId) {
+      await this.notifications.createAndPush(
+        claimer.id,
+        'request_cancelled',
+        'Drop request cancelled',
+        'The drop or pickup request was cancelled.',
+        { requestId },
+      );
+    }
+
+    if (shift) {
+      this.eventsGateway.emitToLocation(shift.locationId, WS_EVENTS.SCHEDULE_UPDATED, {
+        shiftId: shift.id,
+        requestId,
+        action: 'request_cancelled',
+      });
+      if (request.type === RequestType.Drop) {
+        this.eventsGateway.emitToLocation(shift.locationId, WS_EVENTS.DROP_RESOLVED, {
+          requestId,
+          status: 'cancelled',
+        });
+      } else {
+        this.eventsGateway.emitToLocation(shift.locationId, WS_EVENTS.SWAP_RESOLVED, {
+          requestId,
+          status: 'cancelled',
+        });
+        const toShift = counterpart?.shift;
+        if (toShift && toShift.locationId !== shift.locationId) {
+          this.eventsGateway.emitToLocation(toShift.locationId, WS_EVENTS.SCHEDULE_UPDATED, {
+            shiftId: toShift.id,
+            requestId,
+            action: 'request_cancelled',
+          });
+          this.eventsGateway.emitToLocation(toShift.locationId, WS_EVENTS.SWAP_RESOLVED, {
+            requestId,
+            status: 'cancelled',
+          });
+        }
+      }
+    }
+
     return updated as ShiftRequest;
   }
 

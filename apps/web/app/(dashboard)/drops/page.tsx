@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery, useMutation } from '@apollo/client';
 import { useAuth } from '@/lib/auth-context';
-import { AVAILABLE_DROPS_QUERY, ACCEPT_DROP_MUTATION } from '@/lib/apollo/operations';
+import { AVAILABLE_DROPS_QUERY, ACCEPT_DROP_MUTATION, LOCATIONS_QUERY } from '@/lib/apollo/operations';
+import { useSocket } from '@/lib/use-socket';
 
 type DropRequest = {
   id: string;
@@ -20,10 +21,15 @@ type DropRequest = {
 
 export default function DropsPage() {
   const { token } = useAuth();
+  const socket = useSocket();
   const [constraintError, setConstraintError] = useState<string | null>(null);
   const [accepting, setAccepting] = useState<string | null>(null);
 
-  const { data, loading, error } = useQuery<{
+  const { data: locationsData } = useQuery<{ locations: { id: string }[] }>(LOCATIONS_QUERY, {
+    skip: !token,
+  });
+
+  const { data, loading, error, refetch } = useQuery<{
     availableDrops: DropRequest[];
   }>(AVAILABLE_DROPS_QUERY, { skip: !token });
 
@@ -37,6 +43,30 @@ export default function DropsPage() {
   });
 
   const drops = data?.availableDrops ?? [];
+
+  useEffect(() => {
+    if (!socket) return;
+
+    const locationIds = locationsData?.locations?.map((l) => l.id) ?? [];
+    locationIds.forEach((locationId) => {
+      socket.emit('subscribe_location', { locationId });
+    });
+
+    const refreshEvents = [
+      'schedule_published',
+      'schedule_updated',
+      'swap_request',
+      'swap_resolved',
+      'drop_request',
+      'drop_resolved',
+      'assignment_conflict',
+    ];
+    const handler = () => refetch();
+    refreshEvents.forEach((ev) => socket.on(ev, handler));
+    return () => {
+      refreshEvents.forEach((ev) => socket.off(ev, handler));
+    };
+  }, [socket, refetch, locationsData]);
 
   const handleAccept = async (requestId: string) => {
     if (!token) return;

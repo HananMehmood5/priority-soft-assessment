@@ -4,6 +4,7 @@ import { setupTestApp, graphqlRequest } from './test-utils';
 describe('Overtime (e2e)', () => {
   let app: INestApplication;
   let managerToken: string;
+  let requiredSkillId: string;
 
   beforeAll(async () => {
     const { app: a } = await setupTestApp();
@@ -16,6 +17,15 @@ describe('Overtime (e2e)', () => {
       },
     }).expect(200);
     managerToken = managerLogin.body.data?.login;
+
+    const skillsRes = await graphqlRequest(
+      app,
+      { query: `query Skills { skills { id name } }` },
+      managerToken,
+    ).expect(200);
+    const server = skillsRes.body.data?.skills?.find((s: any) => s.name === 'server');
+    requiredSkillId = server?.id ?? skillsRes.body.data?.skills?.[0]?.id;
+    expect(requiredSkillId).toBeTruthy();
   });
 
   afterAll(async () => {
@@ -73,6 +83,8 @@ describe('Overtime (e2e)', () => {
               dailyStartTime: '09:00',
               dailyEndTime: '17:00',
               daysOfWeek,
+              requiredSkillId,
+              headcountNeeded: 1,
             },
           },
         },

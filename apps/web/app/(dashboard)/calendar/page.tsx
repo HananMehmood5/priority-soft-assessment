@@ -1,107 +1,95 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@apollo/client';
 import { formatInTimeZone } from 'date-fns-tz';
 import { useAuth } from '@/lib/auth-context';
 import type { ShiftAttributes, LocationAttributes } from '@/app/types';
 import { formatDate, parseCalendarDateInput } from '@/lib/format-date';
 import { SHIFTS_WITH_LOCATIONS_QUERY } from '@/lib/apollo/operations';
+import { useSocket } from '@/lib/use-socket';
+import { expandShiftOccurrencesForCalendar, type CalendarOccurrence } from '@/lib/calendar-location-time';
 
 type ViewMode = 'week' | 'day';
 
+/** Browser-local week column dates as `YYYY-MM-DD` (date picker / calendar week). */
+function localWeekColumnIsoDates(anchorYmd: string): string[] {
+  const active = parseCalendarDateInput(anchorYmd);
+  const start = new Date(active);
+  start.setDate(start.getDate() - start.getDay());
+  return Array.from({ length: 7 }, (_, idx) => {
+    const d = new Date(start);
+    d.setDate(start.getDate() + idx);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  });
+}
+
 export default function CalendarPage() {
   const { token } = useAuth();
+  const socket = useSocket();
   const [view, setView] = useState<ViewMode>('week');
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [locationId, setLocationId] = useState('');
 
-  const { data, loading, error } = useQuery<{
+  const { data, loading, error, refetch } = useQuery<{
     shifts: ShiftAttributes[];
     locations: LocationAttributes[];
   }>(SHIFTS_WITH_LOCATIONS_QUERY, { skip: !token });
 
   const shifts = useMemo(() => data?.shifts ?? [], [data?.shifts]);
   const locations = useMemo(() => data?.locations ?? [], [data?.locations]);
+  const locationIds = useMemo(() => locations.map((l) => l.id), [locations]);
 
   const activeDate = useMemo(() => parseCalendarDateInput(date), [date]);
 
-  type ShiftOccurrence = {
-    key: string;
-    templateId: string;
-    locationId: string;
-    startAt: Date;
-    endAt: Date;
-    published: boolean;
-  };
-
-  const occurrences = useMemo<ShiftOccurrence[]>(() => {
-    const out: ShiftOccurrence[] = [];
+  const occurrences = useMemo<CalendarOccurrence[]>(() => {
+    const out: CalendarOccurrence[] = [];
     for (const s of shifts) {
-      const startDate = String(s.startDate ?? '').slice(0, 10);
-      const endDate = String(s.endDate ?? '').slice(0, 10);
-      const dailyStartTime = String(s.dailyStartTime ?? '');
-      const dailyEndTime = String(s.dailyEndTime ?? '');
-      const daysOfWeek = Array.isArray(s.daysOfWeek) && s.daysOfWeek.length ? s.daysOfWeek : [0, 1, 2, 3, 4, 5, 6];
-      if (!startDate || !endDate || !dailyStartTime || !dailyEndTime) continue;
-
-      const overnight = dailyEndTime <= dailyStartTime;
-      const daysOfWeekSet = new Set<number>(daysOfWeek);
-      const cursor = new Date(`${startDate}T00:00:00`);
-      const end = new Date(`${endDate}T00:00:00`);
-      while (cursor <= end) {
-        const weekdayLocal = cursor.getDay(); // 0=Sun..6=Sat (local, matches template days)
-        if (!daysOfWeekSet.has(weekdayLocal)) {
-          cursor.setDate(cursor.getDate() + 1);
-          continue;
-        }
-        const dayISO = cursor.toISOString().slice(0, 10);
-        const startAt = new Date(`${dayISO}T${dailyStartTime}:00`);
-        const endAt = new Date(`${dayISO}T${dailyEndTime}:00`);
-        if (overnight) endAt.setDate(endAt.getDate() + 1);
-        out.push({
-          key: `${s.id}:${dayISO}`,
-          templateId: s.id,
-          locationId: s.locationId,
-          startAt,
-          endAt,
-          published: !!s.published,
-        });
-        cursor.setDate(cursor.getDate() + 1);
-      }
+      const tz = locations.find((l) => l.id === s.locationId)?.timezone ?? 'UTC';
+      out.push(
+        ...expandShiftOccurrencesForCalendar(
+          {
+            id: s.id,
+            locationId: s.locationId,
+            startDate: String(s.startDate ?? ''),
+            endDate: String(s.endDate ?? ''),
+            daysOfWeek: Array.isArray(s.daysOfWeek) ? s.daysOfWeek : [],
+            dailyStartTime: String(s.dailyStartTime ?? ''),
+            dailyEndTime: String(s.dailyEndTime ?? ''),
+            published: !!s.published,
+          },
+          tz,
+        ),
+      );
     }
     return out;
-  }, [shifts]);
+  }, [shifts, locations]);
 
   const filtered = useMemo(() => {
     const selectedLoc = locationId || null;
-    const result = occurrences.filter((s) => !selectedLoc || s.locationId === selectedLoc);
+    let result = occurrences.filter((s) => !selectedLoc || s.locationId === selectedLoc);
     if (view === 'day') {
-      return result.filter((s) => {
-        const d = new Date(s.startAt);
-        return d.toDateString() === activeDate.toDateString();
+      result = result.filter((s) => {
+        const tz = locations.find((l) => l.id === s.locationId)?.timezone ?? 'UTC';
+        return formatInTimeZone(s.startAt, tz, 'yyyy-MM-dd') === date;
       });
+      return result;
     }
-    const start = new Date(activeDate);
-    start.setDate(start.getDate() - start.getDay());
-    const end = new Date(start);
-    end.setDate(end.getDate() + 7);
-    return result.filter((s) => {
-      const d = new Date(s.startAt);
-      return d >= start && d < end;
+    const weekCols = new Set(localWeekColumnIsoDates(date));
+    result = result.filter((s) => {
+      const tz = locations.find((l) => l.id === s.locationId)?.timezone ?? 'UTC';
+      return weekCols.has(formatInTimeZone(s.startAt, tz, 'yyyy-MM-dd'));
     });
-  }, [occurrences, locationId, view, activeDate]);
+    return result;
+  }, [occurrences, locationId, view, date, locations]);
 
-  const daysForWeek = useMemo(() => {
+  const daysForWeekIso = useMemo(() => {
     if (view !== 'week') return [];
-    const start = new Date(activeDate);
-    start.setDate(start.getDate() - start.getDay());
-    return Array.from({ length: 7 }).map((_, idx) => {
-      const d = new Date(start);
-      d.setDate(start.getDate() + idx);
-      return d;
-    });
-  }, [view, activeDate]);
+    return localWeekColumnIsoDates(date);
+  }, [view, date]);
 
   const locationName = (id: string) =>
     locations.find((l) => l.id === id)?.name ?? id;
@@ -109,6 +97,26 @@ export default function CalendarPage() {
     locations.find((l) => l.id === id)?.timezone ?? 'UTC';
   const formatAtLocation = (value: Date, locId: string) =>
     formatInTimeZone(value, locationTz(locId), 'd MMM yyyy, h:mm a zzz');
+
+  useEffect(() => {
+    if (!socket) return;
+
+    locationIds.forEach((id) => {
+      socket.emit('subscribe_location', { locationId: id });
+    });
+
+    const refreshEvents = [
+      'schedule_published',
+      'schedule_updated',
+      'swap_resolved',
+      'drop_resolved',
+    ];
+    const handler = () => refetch();
+    refreshEvents.forEach((ev) => socket.on(ev, handler));
+    return () => {
+      refreshEvents.forEach((ev) => socket.off(ev, handler));
+    };
+  }, [socket, refetch, locationIds]);
 
   if (loading) return <p className="text-ps-fg-muted">Loading calendar…</p>;
   if (error) return <p className="text-ps-error">{error.message}</p>;
@@ -190,21 +198,18 @@ export default function CalendarPage() {
         </div>
       ) : (
         <div className="grid grid-cols-7 gap-2">
-          {daysForWeek.map((d) => {
-            const list = filtered.filter(
-              (s) => new Date(s.startAt).toDateString() === d.toDateString()
-            );
+          {daysForWeekIso.map((colIso) => {
+            const list = filtered.filter((s) => {
+              const tz = locations.find((l) => l.id === s.locationId)?.timezone ?? 'UTC';
+              return formatInTimeZone(s.startAt, tz, 'yyyy-MM-dd') === colIso;
+            });
             return (
               <div
-                key={d.toISOString()}
-                className="min-h-[80px] rounded-ps border border-ps-border bg-ps-bg-card p-2"
+                key={colIso}
+          className="min-h-[80px] rounded-ps border border-ps-border bg-ps-bg-card p-2"
               >
                 <div className="mb-1 text-ps-xs font-semibold">
-                  {d.toLocaleDateString(undefined, {
-                    weekday: 'short',
-                    month: 'short',
-                    day: 'numeric',
-                  })}
+                  {formatDate(parseCalendarDateInput(colIso))}
                 </div>
                 {list.length === 0 ? (
                   <p className="m-0 text-ps-xs text-ps-fg-muted">No shifts</p>

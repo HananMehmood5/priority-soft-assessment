@@ -64,6 +64,24 @@ export class ShiftAssignmentRepository {
     });
   }
 
+  async countByShiftId(shiftId: string, options?: { transaction?: Transaction }): Promise<number> {
+    return this.assignmentModel.count({
+      where: { shiftId },
+      transaction: options?.transaction,
+    });
+  }
+
+  async countByShiftIdAndUserId(
+    shiftId: string,
+    userId: string,
+    options?: { transaction?: Transaction },
+  ): Promise<number> {
+    return this.assignmentModel.count({
+      where: { shiftId, userId },
+      transaction: options?.transaction,
+    });
+  }
+
   async create(
     data: ShiftAssignmentBaseAttributes,
     options?: { transaction?: Transaction },

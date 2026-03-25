@@ -73,6 +73,23 @@ export class ShiftsService {
     );
   }
 
+  private async notifyAssignedStaffForShift(
+    shiftId: string,
+    locationId: string,
+    type: string,
+    title: string,
+    body: string,
+    payload: Record<string, unknown>,
+  ): Promise<void> {
+    const assignments = await this.assignmentRepository.findAllByShiftId(shiftId, ['userId']);
+    const uniqueUserIds = [...new Set(assignments.map((a) => (a as { userId: string }).userId))];
+    await Promise.all(
+      uniqueUserIds.map((uid) =>
+        this.notifications.createAndPush(uid, type, title, body, payload),
+      ),
+    );
+  }
+
   /** Derive a single concrete interval covering the whole shift template. */
   private getTemplateBounds(shift: Shift): { start: Date; end: Date } {
     const intervals = expandShiftToIntervals(shift as any, undefined, getShiftTimeZone(shift as any));
@@ -109,6 +126,8 @@ export class ShiftsService {
       daysOfWeek: number[];
       dailyStartTime: string;
       dailyEndTime: string;
+      requiredSkillId: string;
+      headcountNeeded: number;
     },
     user: User,
   ): Promise<Shift> {
@@ -132,6 +151,8 @@ export class ShiftsService {
       daysOfWeek: data.daysOfWeek,
       dailyStartTime: data.dailyStartTime,
       dailyEndTime: data.dailyEndTime,
+      requiredSkillId: data.requiredSkillId,
+      headcountNeeded: data.headcountNeeded,
       published: false,
     });
     await this.auditService.log(
@@ -164,6 +185,8 @@ export class ShiftsService {
       daysOfWeek?: number[];
       dailyStartTime?: string;
       dailyEndTime?: string;
+      requiredSkillId?: string;
+      headcountNeeded?: number;
     },
     user: User,
   ): Promise<Shift> {
@@ -196,6 +219,19 @@ export class ShiftsService {
       }
       shift.daysOfWeek = data.daysOfWeek;
     }
+    if (data.requiredSkillId !== undefined) {
+      shift.requiredSkillId = data.requiredSkillId;
+    }
+    if (data.headcountNeeded !== undefined) {
+      if (data.headcountNeeded < 1) {
+        throw new BadRequestException('headcountNeeded must be at least 1');
+      }
+      const currentCount = (await this.assignmentRepository.findAllByShiftId(id, ['id'])).length;
+      if (currentCount > data.headcountNeeded) {
+        throw new BadRequestException('Cannot reduce headcount below existing assignments.');
+      }
+      shift.headcountNeeded = data.headcountNeeded;
+    }
 
     const sDate = this.toDateOnly(shift.startDate as Date | string);
     const eDate = this.toDateOnly(shift.endDate as Date | string);
@@ -227,6 +263,16 @@ export class ShiftsService {
       `A shift was updated for location ${shift.locationId}.`,
       { shiftId: shift.id, locationId: shift.locationId },
     );
+    if (shift.published) {
+      await this.notifyAssignedStaffForShift(
+        shift.id,
+        shift.locationId,
+        'shift_updated',
+        'Your shift was updated',
+        'A published shift you are assigned to was changed.',
+        { shiftId: shift.id, locationId: shift.locationId },
+      );
+    }
     return shift;
   }
 
@@ -245,6 +291,79 @@ export class ShiftsService {
     const txnResult = await this.sequelize.transaction(async (transaction) => {
       // Serialize concurrent assignment attempts for the same staff member.
       await User.findByPk(data.userId, { transaction, lock: Transaction.LOCK.UPDATE });
+      // Serialize headcount cap updates across different staff assignments.
+      await Shift.findByPk(shiftId, { transaction, lock: Transaction.LOCK.UPDATE });
+
+      // Enforce shift-level required skill for assignments by default.
+      if (data.skillId !== shift.requiredSkillId) {
+        const message = 'Shift requires a different skill for assignments.';
+        const alternatives = await this.constraints.getAlternatives(
+          shift.locationId,
+          shift.requiredSkillId,
+          shift,
+          data.userId,
+        );
+        this.eventsGateway.emitToUser(data.userId, WS_EVENTS.ASSIGNMENT_CONFLICT, {
+          shiftId,
+          reason: message,
+        });
+        return {
+          constraintError: {
+            valid: false,
+            message,
+            alternatives,
+          },
+        };
+      }
+
+      const dupAssignee = await this.assignmentRepository.countByShiftIdAndUserId(
+        shiftId,
+        data.userId,
+        { transaction },
+      );
+      if (dupAssignee > 0) {
+        const message = 'Staff is already assigned to this shift.';
+        this.eventsGateway.emitToUser(data.userId, WS_EVENTS.ASSIGNMENT_CONFLICT, {
+          shiftId,
+          reason: message,
+        });
+        const alternatives = await this.constraints.getAlternatives(
+          shift.locationId,
+          shift.requiredSkillId,
+          shift,
+          data.userId,
+        );
+        return {
+          constraintError: {
+            valid: false,
+            message,
+            alternatives,
+          },
+        };
+      }
+
+      // Enforce shift-level headcount cap.
+      const currentCount = await this.assignmentRepository.countByShiftId(shiftId, { transaction });
+      if (currentCount >= shift.headcountNeeded) {
+        const message = 'Shift headcount is already filled.';
+        this.eventsGateway.emitToUser(data.userId, WS_EVENTS.ASSIGNMENT_CONFLICT, {
+          shiftId,
+          reason: message,
+        });
+        const alternatives = await this.constraints.getAlternatives(
+          shift.locationId,
+          shift.requiredSkillId,
+          shift,
+          data.userId,
+        );
+        return {
+          constraintError: {
+            valid: false,
+            message,
+            alternatives,
+          },
+        };
+      }
 
       const result = await this.constraints.validateAssignment(
         data.userId,
@@ -348,7 +467,16 @@ export class ShiftsService {
     const shift = await this.shiftRepository.findByIdOrFail(shiftId);
     const can = await this.permissions.canManageLocation(user, shift.locationId);
     if (!can) throw new ForbiddenException('You cannot publish this shift');
+    const beforePublish = shift.toJSON() as unknown as Record<string, unknown>;
     const updated = await this.shiftRepository.updatePublished(shiftId, true);
+    await this.auditService.log(
+      user.id,
+      AuditAction.Update,
+      AuditEntityType.Shift,
+      shiftId,
+      beforePublish,
+      updated.toJSON() as unknown as Record<string, unknown>,
+    );
     this.eventsGateway.emitToLocation(updated.locationId, WS_EVENTS.SCHEDULE_PUBLISHED, {
       shiftId: updated.id,
       locationId: updated.locationId,
@@ -361,6 +489,14 @@ export class ShiftsService {
       `Shift ${updated.id} has been published.`,
       { shiftId: updated.id, locationId: updated.locationId },
     );
+    await this.notifyAssignedStaffForShift(
+      updated.id,
+      updated.locationId,
+      'schedule_published_staff',
+      'Schedule published',
+      'A shift you are assigned to is now published.',
+      { shiftId: updated.id, locationId: updated.locationId },
+    );
     return updated;
   }
 
@@ -369,7 +505,28 @@ export class ShiftsService {
     if (!can) throw new ForbiddenException('You cannot publish shifts for this location');
     const weekEnd = new Date(weekStart);
     weekEnd.setDate(weekEnd.getDate() + 7);
+    const toPublish = await this.shiftRepository.findUnpublishedInWeekWindow(locationId, weekStart, weekEnd);
+    const beforeById = new Map(
+      toPublish.map((s) => [s.id, s.toJSON() as unknown as Record<string, unknown>]),
+    );
     const count = await this.shiftRepository.updateWeekPublished(locationId, weekStart, weekEnd, true);
+    await Promise.all(
+      toPublish.map(async (s) => {
+        const after = await this.shiftRepository.findById(s.id);
+        if (!after) return;
+        const before = beforeById.get(s.id);
+        if (before) {
+          await this.auditService.log(
+            user.id,
+            AuditAction.Update,
+            AuditEntityType.Shift,
+            s.id,
+            before,
+            after.toJSON() as unknown as Record<string, unknown>,
+          );
+        }
+      }),
+    );
     this.eventsGateway.emitToLocation(locationId, WS_EVENTS.SCHEDULE_PUBLISHED, {
       locationId,
       weekStart,
@@ -381,6 +538,18 @@ export class ShiftsService {
       'Weekly schedule published',
       `${count} shifts were published for the selected week.`,
       { locationId, weekStart, publishedCount: count },
+    );
+    await Promise.all(
+      toPublish.map((s) =>
+        this.notifyAssignedStaffForShift(
+          s.id,
+          locationId,
+          'schedule_published_staff',
+          'Schedule published',
+          'A shift you are assigned to is now published.',
+          { shiftId: s.id, locationId },
+        ),
+      ),
     );
     return count;
   }
@@ -398,7 +567,16 @@ export class ShiftsService {
       }
     }
 
+    const beforeUnpublish = shift.toJSON() as unknown as Record<string, unknown>;
     const updated = await this.shiftRepository.updatePublished(shiftId, false);
+    await this.auditService.log(
+      user.id,
+      AuditAction.Update,
+      AuditEntityType.Shift,
+      shiftId,
+      beforeUnpublish,
+      updated.toJSON() as unknown as Record<string, unknown>,
+    );
 
     // Cancels any pending swap/drop requests related to this schedule change.
     await this.requestsService.cancelPendingByShiftId(updated.id);

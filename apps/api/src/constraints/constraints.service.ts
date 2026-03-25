@@ -173,6 +173,15 @@ export class ConstraintsService {
     shift: Shift,
     excludeAssignmentId?: string,
   ): Promise<ConstraintResult> {
+    // Shift-level required skill: assignment must match the shift template by default.
+    const requiredSkillId = (shift as Shift & { requiredSkillId?: string }).requiredSkillId;
+    if (requiredSkillId && skillId !== requiredSkillId) {
+      return {
+        valid: false,
+        message: 'Shift requires a specific skill.',
+      };
+    }
+
     let r = await this.checkDoubleBookTemplate(userId, shift, excludeAssignmentId);
     if (!r.valid) return r;
     r = await this.checkRestTemplate(userId, shift, excludeAssignmentId);

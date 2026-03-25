@@ -18,6 +18,10 @@ export interface ShiftBaseAttributes {
   dailyStartTime: string;
   /** Daily end time (HH:mm) in location timezone; may be <= dailyStartTime for overnight patterns. */
   dailyEndTime: string;
+  /** Skill required for staff assigned to this shift. */
+  requiredSkillId: Id;
+  /** Number of staff that must be assigned to this shift. */
+  headcountNeeded: number;
   published?: boolean;
 }
 

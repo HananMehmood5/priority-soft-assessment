@@ -59,7 +59,9 @@ input CreateShiftInput {
   dailyStartTime: String!
   daysOfWeek: [Int!]!
   endDate: String!
+  headcountNeeded: Int!
   locationId: String!
+  requiredSkillId: String!
   startDate: String!
 }
 
@@ -248,10 +250,12 @@ type ShiftEntity {
   dailyStartTime: String!
   daysOfWeek: [Int!]!
   endDate: String!
+  headcountNeeded: Int!
   id: String!
   location: LocationEntity
   locationId: String!
   published: Boolean!
+  requiredSkillId: String!
   startDate: String!
   updatedAt: DateTime!
 }
@@ -280,6 +284,8 @@ input UpdateShiftInput {
   dailyStartTime: String
   daysOfWeek: [Int!]
   endDate: String
+  headcountNeeded: Int
+  requiredSkillId: String
   startDate: String
 }
 

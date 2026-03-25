@@ -1,13 +1,15 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery, useMutation } from '@apollo/client';
 import { useAuth } from '@/lib/auth-context';
 import {
   AVAILABLE_SWAPS_QUERY,
   MY_ASSIGNMENTS_QUERY,
   ACCEPT_SWAP_MUTATION,
+  LOCATIONS_QUERY,
 } from '@/lib/apollo/operations';
+import { useSocket } from '@/lib/use-socket';
 
 type SwapRequest = {
   id: string;
@@ -30,6 +32,7 @@ type MyAssignment = {
 
 export default function SwapsPage() {
   const { token } = useAuth();
+  const socket = useSocket();
   const [constraintError, setConstraintError] = useState<string | null>(null);
   const [accepting, setAccepting] = useState<string | null>(null);
   const [selectedCounterpart, setSelectedCounterpart] = useState<Record<string, string>>({});
@@ -42,6 +45,9 @@ export default function SwapsPage() {
     MY_ASSIGNMENTS_QUERY,
     { skip: !token }
   );
+  const { data: locationsData } = useQuery<{ locations: { id: string }[] }>(LOCATIONS_QUERY, {
+    skip: !token,
+  });
 
   const [acceptSwap] = useMutation<{
     acceptSwapRequest: {
@@ -59,6 +65,41 @@ export default function SwapsPage() {
   const myAssignments = assignmentsQuery.data?.myAssignments ?? [];
   const loading = swapsQuery.loading || assignmentsQuery.loading;
   const error = swapsQuery.error?.message ?? assignmentsQuery.error?.message ?? null;
+
+  const refetchSwaps = swapsQuery.refetch;
+  const refetchAssignments = assignmentsQuery.refetch;
+
+  useEffect(() => {
+    if (!socket) return;
+
+    const locationIds = locationsData?.locations?.map((l) => l.id) ?? [];
+    locationIds.forEach((locationId) => {
+      socket.emit('subscribe_location', { locationId });
+    });
+
+    const refreshEvents = [
+      'schedule_published',
+      'schedule_updated',
+      'swap_request',
+      'swap_resolved',
+      'drop_request',
+      'drop_resolved',
+      'assignment_conflict',
+    ];
+    const handler = () => {
+      refetchSwaps();
+      refetchAssignments();
+    };
+    refreshEvents.forEach((ev) => socket.on(ev, handler));
+    return () => {
+      refreshEvents.forEach((ev) => socket.off(ev, handler));
+    };
+  }, [
+    socket,
+    locationsData,
+    refetchSwaps,
+    refetchAssignments,
+  ]);
 
   const handleAccept = async (requestId: string, counterpartAssignmentId: string) => {
     if (!token || !counterpartAssignmentId) return;

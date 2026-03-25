@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery, useMutation } from '@apollo/client';
 import { useAuth } from '@/lib/auth-context';
 import type { ShiftAssignmentAttributes } from '@shiftsync/shared';
@@ -8,7 +8,9 @@ import {
   MY_ASSIGNMENTS_QUERY,
   CREATE_SWAP_MUTATION,
   CREATE_DROP_MUTATION,
+  LOCATIONS_QUERY,
 } from '@/lib/apollo/operations';
+import { useSocket } from '@/lib/use-socket';
 
 type AssignmentWithShift = ShiftAssignmentAttributes & {
   shift?: {
@@ -24,9 +26,14 @@ type AssignmentWithShift = ShiftAssignmentAttributes & {
 
 export default function MyShiftsPage() {
   const { token } = useAuth();
+  const socket = useSocket();
   const [acting, setActing] = useState<string | null>(null);
 
-  const { data, loading, error } = useQuery<{ myAssignments: AssignmentWithShift[] }>(
+  const { data: locationsData } = useQuery<{ locations: { id: string }[] }>(LOCATIONS_QUERY, {
+    skip: !token,
+  });
+
+  const { data, loading, error, refetch } = useQuery<{ myAssignments: AssignmentWithShift[] }>(
     MY_ASSIGNMENTS_QUERY,
     { skip: !token }
   );
@@ -38,6 +45,29 @@ export default function MyShiftsPage() {
   });
 
   const assignments = data?.myAssignments ?? [];
+
+  useEffect(() => {
+    if (!socket) return;
+    const locationIds = locationsData?.locations?.map((l) => l.id) ?? [];
+    locationIds.forEach((locationId) => {
+      socket.emit('subscribe_location', { locationId });
+    });
+
+    const refreshEvents = [
+      'schedule_published',
+      'schedule_updated',
+      'swap_request',
+      'swap_resolved',
+      'drop_request',
+      'drop_resolved',
+      'assignment_conflict',
+    ];
+    const handler = () => refetch();
+    refreshEvents.forEach((ev) => socket.on(ev, handler));
+    return () => {
+      refreshEvents.forEach((ev) => socket.off(ev, handler));
+    };
+  }, [socket, refetch, locationsData]);
 
   const handleCreateSwap = async (assignmentId: string) => {
     if (!token) return;

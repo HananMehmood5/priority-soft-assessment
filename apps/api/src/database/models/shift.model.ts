@@ -12,6 +12,7 @@ import {
 import type { ShiftAttributesDb, ShiftBaseAttributesDb } from '@shiftsync/shared';
 import { Location } from './location.model';
 import { ShiftAssignment } from './shift-assignment.model';
+import { Skill } from './skill.model';
 
 @Table({
   tableName: 'shifts',
@@ -43,6 +44,13 @@ export class Shift extends Model<ShiftAttributesDb, ShiftBaseAttributesDb> {
 
   @Column({ type: DataType.STRING, allowNull: false })
   dailyEndTime?: string | null;
+
+  @ForeignKey(() => Skill)
+  @Column({ type: DataType.UUID, allowNull: false })
+  requiredSkillId: string;
+
+  @Column({ type: DataType.INTEGER, allowNull: false })
+  headcountNeeded: number;
 
   @Column({ type: DataType.BOOLEAN, defaultValue: false })
   published: boolean;
