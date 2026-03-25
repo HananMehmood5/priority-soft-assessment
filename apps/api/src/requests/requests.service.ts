@@ -1,4 +1,6 @@
 import { Injectable, ForbiddenException, NotFoundException, BadRequestException } from '@nestjs/common';
+import { InjectConnection } from '@nestjs/sequelize';
+import { Sequelize } from 'sequelize-typescript';
 import { RequestStatus, RequestType } from '@shiftsync/shared';
 import { ShiftRequest, ShiftAssignment, Shift, User } from '../database/models';
 import { ShiftRepository } from '../database/repositories/shift.repository';
@@ -14,6 +16,8 @@ const DROP_EXPIRY_HOURS = 24;
 @Injectable()
 export class RequestsService {
   constructor(
+    @InjectConnection()
+    private readonly sequelize: Sequelize,
     private readonly requestRepository: ShiftRequestRepository,
     private readonly assignmentRepository: ShiftAssignmentRepository,
     private readonly shiftRepository: ShiftRepository,
@@ -178,23 +182,27 @@ export class RequestsService {
     }
     const can = await this.canManageRequest(user, request);
     if (!can) throw new ForbiddenException('You cannot approve this request');
-    if (request.type === RequestType.Swap) {
-      const fromA = (request as { assignment: ShiftAssignment }).assignment;
-      const toA = (request as { counterpartAssignment: ShiftAssignment }).counterpartAssignment;
-      const fromUserId = fromA.userId;
-      const toUserId = toA.userId;
-      await this.assignmentRepository.updateUserAndVersion(fromA.id, toUserId, fromA.version + 1);
-      await this.assignmentRepository.updateUserAndVersion(toA.id, fromUserId, toA.version + 1);
-    } else {
-      const assignment = (request as { assignment: ShiftAssignment }).assignment;
-      const claimer = (request as { claimer: User }).claimer;
-      await this.assignmentRepository.updateUserAndVersion(
-        assignment.id,
-        claimer.id,
-        assignment.version + 1,
-      );
-    }
-    await this.requestRepository.updateStatus(requestId, RequestStatus.Approved);
+    await this.sequelize.transaction(async (transaction) => {
+      if (request.type === RequestType.Swap) {
+        const fromA = (request as { assignment: ShiftAssignment }).assignment;
+        const toA = (request as { counterpartAssignment: ShiftAssignment }).counterpartAssignment;
+        const fromUserId = fromA.userId;
+        const toUserId = toA.userId;
+        await fromA.update({ userId: toUserId, version: fromA.version + 1 }, { transaction });
+        await toA.update({ userId: fromUserId, version: toA.version + 1 }, { transaction });
+      } else {
+        const assignment = (request as { assignment: ShiftAssignment }).assignment;
+        const claimer = (request as { claimer: User }).claimer;
+        await assignment.update(
+          {
+            userId: claimer.id,
+            version: assignment.version + 1,
+          },
+          { transaction },
+        );
+      }
+      await request.update({ status: RequestStatus.Approved }, { transaction });
+    });
     const updated = await this.requestRepository.findByPkWithFullForApprove(requestId);
     return updated as ShiftRequest;
   }

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useQuery } from '@apollo/client';
+import { UserRole } from '@shiftsync/shared';
 import { useAuth } from '@/lib/auth-context';
 import type { LocationAttributes } from '@/app/types';
 import { PageHeader } from '@/libs/ui/PageHeader';
@@ -36,21 +37,31 @@ function getDefaultRange() {
   };
 }
 
+function toISOStringOrNull(value: string): string | null {
+  if (!value) return null;
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return parsed.toISOString();
+}
+
 export default function OvertimeDashboardPage() {
   const { token, user } = useAuth();
   const [locationId, setLocationId] = useState('');
   const [dateStart, setDateStart] = useState(getDefaultRange().start);
   const [dateEnd, setDateEnd] = useState(getDefaultRange().end);
+  const startIso = toISOStringOrNull(dateStart);
+  const endIso = toISOStringOrNull(dateEnd);
+  const hasValidRange = Boolean(startIso && endIso);
 
   const { data, loading, error, refetch } = useQuery<{
     overtimeDashboard: DashboardOvertimeEntry[];
   }>(OVERTIME_DASHBOARD_QUERY, {
     variables: {
-      start: new Date(dateStart).toISOString(),
-      end: new Date(dateEnd).toISOString(),
+      start: startIso,
+      end: endIso,
       locationId: locationId || null,
     },
-    skip: !token,
+    skip: !token || !hasValidRange,
   });
   const locationsQuery = useQuery<{
     locations: Pick<LocationAttributes, 'id' | 'name' | 'timezone'>[];
@@ -63,7 +74,7 @@ export default function OvertimeDashboardPage() {
   const isLoading = loading || locationsQuery.loading;
   const queryError = error?.message ?? locationsQuery.error?.message ?? null;
 
-  if (!user || (user.role !== 'Admin' && user.role !== 'Manager')) {
+  if (!user || (user.role !== UserRole.Admin && user.role !== UserRole.Manager)) {
     return <p className="text-ps-error">You do not have access to the overtime dashboard.</p>;
   }
 
@@ -126,7 +137,7 @@ export default function OvertimeDashboardPage() {
           <button
             type="submit"
             className="inline-flex items-center justify-center rounded-ps bg-ps-primary px-4 py-2 text-sm font-semibold text-ps-primary-foreground shadow-ps transition-colors hover:bg-ps-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
-            disabled={isLoading}
+            disabled={isLoading || !hasValidRange}
           >
             {isLoading ? 'Loading…' : 'Refresh'}
           </button>

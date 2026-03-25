@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useQuery } from '@apollo/client';
 import { useAuth } from '@/lib/auth-context';
 import type { LocationAttributes } from '@/app/types';
@@ -48,11 +48,23 @@ function getDefaultRange() {
   };
 }
 
-const vars = (dateStart: string, dateEnd: string, locationId: string) => ({
-  start: new Date(dateStart).toISOString(),
-  end: new Date(dateEnd).toISOString(),
-  locationId: locationId || null,
-});
+function toISOStringOrNull(value: string): string | null {
+  if (!value) return null;
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return parsed.toISOString();
+}
+
+const vars = (dateStart: string, dateEnd: string, locationId: string) => {
+  const start = toISOStringOrNull(dateStart);
+  const end = toISOStringOrNull(dateEnd);
+  if (!start || !end) return null;
+  return {
+    start,
+    end,
+    locationId: locationId || null,
+  };
+};
 
 export default function FairnessPage() {
   const { token, user } = useAuth();
@@ -61,21 +73,22 @@ export default function FairnessPage() {
   const [dateStart, setDateStart] = useState(getDefaultRange().start);
   const [dateEnd, setDateEnd] = useState(getDefaultRange().end);
 
-  const baseVars = vars(dateStart, dateEnd, locationId);
+  const baseVars = useMemo(() => vars(dateStart, dateEnd, locationId), [dateStart, dateEnd, locationId]);
+  const shouldSkipReportQueries = !token || !baseVars;
 
   const distQuery = useQuery<{ reportDistribution: DistributionEntry[] }>(
     DISTRIBUTION_QUERY,
-    { variables: baseVars, skip: !token }
+    { variables: baseVars ?? undefined, skip: shouldSkipReportQueries }
   );
   const premQuery = useQuery<{ reportPremiumFairness: PremiumFairnessEntry[] }>(
     PREMIUM_FAIRNESS_QUERY,
-    { variables: baseVars, skip: !token }
+    { variables: baseVars ?? undefined, skip: shouldSkipReportQueries }
   );
   const desiredQuery = useQuery<{ reportDesiredHours: DesiredHoursEntry[] }>(
     DESIRED_HOURS_QUERY,
     {
-      variables: { ...baseVars, role: role || null },
-      skip: !token,
+      variables: baseVars ? { ...baseVars, role: role || null } : undefined,
+      skip: shouldSkipReportQueries,
     }
   );
   const locationsQuery = useQuery<{
@@ -98,9 +111,11 @@ export default function FairnessPage() {
   const locations = locationsQuery.data?.locations ?? [];
 
   const refetchAll = () => {
+    if (!baseVars) return;
     distQuery.refetch();
     premQuery.refetch();
     desiredQuery.refetch();
+    locationsQuery.refetch();
   };
 
   if (!user || (user.role !== UserRole.Admin && user.role !== UserRole.Manager)) {
@@ -181,7 +196,7 @@ export default function FairnessPage() {
         <div className="self-end lg:justify-self-start">
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || !baseVars}
             className="inline-flex items-center justify-center rounded-ps bg-ps-primary px-4 py-2 text-sm font-semibold text-ps-primary-foreground shadow-ps transition-colors hover:bg-ps-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
           >
             {loading ? 'Loading…' : 'Refresh'}

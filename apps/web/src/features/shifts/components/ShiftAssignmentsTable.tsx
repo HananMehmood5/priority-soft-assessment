@@ -13,6 +13,15 @@ type Props = {
   onAddAssignmentClick?: () => void;
 };
 
+function getAssignmentUserLabel(row: AssignmentRow): string {
+  const name = row.user?.name?.trim();
+  const email = row.user?.email?.trim();
+  if (name && email) return `${name} (${email})`;
+  if (name) return name;
+  if (email) return email;
+  return `User ${row.userId.slice(0, 8)}`;
+}
+
 export function ShiftAssignmentsTable({ assignments, onAddAssignmentClick }: Props) {
   return (
     <section className="mt-8">
@@ -37,7 +46,7 @@ export function ShiftAssignmentsTable({ assignments, onAddAssignmentClick }: Pro
             header: "Staff",
             render: (row) => (
               <span className="text-sm text-ps-fg">
-                {row.user?.name} ({row.user?.email})
+                {getAssignmentUserLabel(row)}
               </span>
             ),
           },

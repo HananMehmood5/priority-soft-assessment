@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { IoAdapter } from '@nestjs/platform-socket.io';
 import { AppModule } from './app.module';
+import { ValidationPipe } from './common/pipes/validation.pipe';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -17,6 +18,7 @@ async function bootstrap() {
     origin: corsOrigin,
     credentials: true,
   });
+  app.useGlobalPipes(new ValidationPipe());
 
   app.useWebSocketAdapter(new IoAdapter(app));
 

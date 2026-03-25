@@ -40,24 +40,32 @@ function formatTime(time: string): string {
 }
 
 function formatDateRange(startDate: string, endDate: string): string {
-  const start = new Date(`${startDate}T00:00:00Z`);
-  const end = new Date(`${endDate}T00:00:00Z`);
-  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+  const startParts = startDate.split('-').map((part) => Number(part));
+  const endParts = endDate.split('-').map((part) => Number(part));
+  if (
+    startParts.length !== 3 ||
+    endParts.length !== 3 ||
+    startParts.some(Number.isNaN) ||
+    endParts.some(Number.isNaN)
+  ) {
     return `${startDate} - ${endDate}`;
   }
-  const fullDate = new Intl.DateTimeFormat('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  });
-  const monthDay = new Intl.DateTimeFormat('en-US', {
-    month: 'short',
-    day: 'numeric',
-  });
+
+  const [startYear, startMonth, startDay] = startParts;
+  const [endYear, endMonth, endDay] = endParts;
+  const monthLabels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const startMonthLabel = monthLabels[startMonth - 1];
+  const endMonthLabel = monthLabels[endMonth - 1];
+  if (!startMonthLabel || !endMonthLabel) {
+    return `${startDate} - ${endDate}`;
+  }
+
+  const formatMonthDay = (monthLabel: string, day: number) => `${monthLabel} ${day}`;
+  const formatFull = (monthLabel: string, day: number, year: number) => `${monthLabel} ${day}, ${year}`;
 
   return startDate === endDate
-    ? fullDate.format(start)
-    : `${monthDay.format(start)} - ${fullDate.format(end)}`;
+    ? formatFull(startMonthLabel, startDay, startYear)
+    : `${formatMonthDay(startMonthLabel, startDay)} - ${formatFull(endMonthLabel, endDay, endYear)}`;
 }
 
 function formatAssignee(assignment: AssignmentWithUser): string {

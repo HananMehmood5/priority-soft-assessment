@@ -176,7 +176,7 @@ export function ShiftForm({
                 key={d.value}
                 htmlFor={checkboxId}
                 className={[
-                  "inline-flex min-w-[52px] cursor-pointer select-none items-center justify-center gap-2 rounded-full border px-3 py-1.5 text-sm transition-colors",
+                  "inline-flex min-w-[52px] cursor-pointer select-none items-center justify-center gap-2 rounded-full border px-3 py-1.5 text-sm transition-colors focus-within:ring-2 focus-within:ring-ps-border-focus focus-within:ring-offset-2 focus-within:ring-offset-ps-bg",
                   checked
                     ? "border-ps-primary bg-ps-primary/15 text-ps-primary"
                     : "border-ps-border bg-ps-bg-card text-ps-fg-muted hover:border-ps-border-focus hover:text-ps-fg",

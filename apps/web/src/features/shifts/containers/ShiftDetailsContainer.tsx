@@ -236,7 +236,7 @@ export function ShiftDetailsContainer() {
         onTogglePublish={handleTogglePublish}
         publishError={publishError}
         publishing={publishing}
-        canDelete={user?.role === "Admin"}
+        canDelete={user?.role === UserRole.Admin}
         onDelete={() => setConfirmDeleteOpen(true)}
         deleting={deleting}
       />

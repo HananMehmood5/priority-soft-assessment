@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { ForbiddenException, Injectable } from '@nestjs/common';
 import { Op } from 'sequelize';
 import { DateTime } from 'luxon';
 import { UserRole } from '@shiftsync/shared';
@@ -44,6 +44,25 @@ export class ReportsService {
     private readonly locationRepository: LocationRepository,
   ) {}
 
+  private applyLocationScope(
+    shiftWhere: Record<string, unknown>,
+    visibleIds: string[] | null,
+    locationId: string | null,
+  ): void {
+    if (!locationId) {
+      if (visibleIds) {
+        shiftWhere.locationId = { [Op.in]: visibleIds };
+      }
+      return;
+    }
+
+    if (visibleIds && !visibleIds.includes(locationId)) {
+      throw new ForbiddenException('You can only view reports for your managed locations');
+    }
+
+    shiftWhere.locationId = locationId;
+  }
+
   /** Premium = Friday or Saturday, and "evening" = start at or after 17:00 local (5pm) */
   private isPremiumShift(shift: Shift, locationTimezone: string): boolean {
     const first = expandShiftToIntervals(shift as any)[0];
@@ -72,8 +91,7 @@ export class ReportsService {
     };
     const visibleIds = await this.getVisibleLocationIds(user);
     if (visibleIds !== null && visibleIds.length === 0) return [];
-    if (locationId) shiftWhere.locationId = locationId;
-    else if (visibleIds) shiftWhere.locationId = { [Op.in]: visibleIds };
+    this.applyLocationScope(shiftWhere, visibleIds, locationId);
     const assignments = await this.assignmentRepository.findAllWithShiftWhereAndUser(shiftWhere);
     const byUser = new Map<string, { name: string | null; hours: number }>();
     for (const a of assignments) {
@@ -105,8 +123,7 @@ export class ReportsService {
       startDate: { [Op.lte]: end },
       endDate: { [Op.gte]: start },
     };
-    if (locationId) shiftWhere.locationId = locationId;
-    else if (visibleIds) shiftWhere.locationId = { [Op.in]: visibleIds };
+    this.applyLocationScope(shiftWhere, visibleIds, locationId);
     const shifts = await this.shiftRepository.findAllWithAssignmentsAndUserAndLocation(shiftWhere);
     const byUser = new Map<string, { userName: string | null; premium: number; total: number; hours: number }>();
     for (const shift of shifts) {
@@ -151,8 +168,7 @@ export class ReportsService {
       startDate: { [Op.lte]: weekEnd },
       endDate: { [Op.gte]: weekStart },
     };
-    if (locationId) shiftWhere.locationId = locationId;
-    else if (visibleIds) shiftWhere.locationId = { [Op.in]: visibleIds };
+    this.applyLocationScope(shiftWhere, visibleIds, locationId);
     const assignments = await this.assignmentRepository.findAllWithShiftWhereAndUser(shiftWhere);
     const hoursByUser = new Map<string, number>();
     for (const a of assignments) {

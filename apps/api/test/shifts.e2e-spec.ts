@@ -82,4 +82,33 @@ describe('Shifts (e2e)', () => {
     }).expect(200);
     expect(res.body.errors).toBeDefined();
   });
+
+  test('createShift validates DTO inputs', async () => {
+    const startDate = new Date(Date.now() + 7 * 24 * 3600 * 1000).toISOString().slice(0, 10);
+    const endDate = startDate;
+    const res = await graphqlRequest(
+      app,
+      {
+        query: `mutation CreateShift($input: CreateShiftInput!) {
+          createShift(input: $input) { id }
+        }`,
+        variables: {
+          input: {
+            locationId: 'not-a-uuid',
+            startDate,
+            endDate,
+            daysOfWeek: [7],
+            dailyStartTime: '09:00',
+            dailyEndTime: '17:00',
+          },
+        },
+      },
+      managerToken,
+    ).expect(200);
+
+    expect(res.body.errors).toBeDefined();
+    const errorsText = JSON.stringify(res.body.errors);
+    expect(errorsText).toContain('Validation failed');
+    expect(errorsText).toContain('locationId');
+  });
 });

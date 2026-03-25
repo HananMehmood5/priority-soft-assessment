@@ -1,11 +1,13 @@
 import { INestApplication } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from '../src/app.module';
+import { ValidationPipe } from '../src/common/pipes/validation.pipe';
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 export const request = require('supertest') as (app: unknown) => import('supertest').SuperTest<import('supertest').Test>;
 
 export async function setupTestApp(): Promise<{ app: INestApplication }> {
   const app = await NestFactory.create(AppModule);
+  app.useGlobalPipes(new ValidationPipe());
   await app.init();
   return { app };
 }
