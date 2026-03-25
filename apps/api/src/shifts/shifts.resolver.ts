@@ -1,5 +1,5 @@
 import { UseGuards } from '@nestjs/common';
-import { Args, Mutation, Query, Resolver, ResolveField, Parent } from '@nestjs/graphql';
+import { Args, Int, Mutation, Query, Resolver, ResolveField, Parent } from '@nestjs/graphql';
 import { Shift, ShiftAssignment, Location, User, Skill } from '../database/models';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -34,6 +34,15 @@ export class ShiftsResolver {
   @ResolveField(() => [ShiftAssignmentEntity], { name: 'assignments', nullable: 'itemsAndList' })
   assignments(@Parent() shift: Shift & { assignments?: ShiftAssignment[] }): ShiftAssignment[] | undefined {
     return shift.assignments;
+  }
+
+  @ResolveField(() => [Int])
+  daysOfWeek(@Parent() shift: Shift & { daysOfWeek?: unknown }): number[] {
+    // Sequelize JSONB can be missing/null on older rows or when migrations weren't applied.
+    // Always return a concrete array to satisfy the non-null GraphQL list field.
+    return Array.isArray((shift as any).daysOfWeek) && (shift as any).daysOfWeek.length
+      ? (shift as any).daysOfWeek as number[]
+      : [0, 1, 2, 3, 4, 5, 6];
   }
 
   @ResolveField(() => LocationEntity, { nullable: true })
@@ -140,16 +149,6 @@ export class ShiftsResolver {
     @CurrentUser() user: import('../database/models').User,
   ): Promise<number> {
     return this.shiftsService.publishWeek(locationId, new Date(weekStart), user);
-  }
-
-  @Mutation(() => ShiftEntity)
-  @UseGuards(RolesGuard)
-  @Roles(UserRole.Admin, UserRole.Manager)
-  async unpublishShift(
-    @Args('shiftId') shiftId: string,
-    @CurrentUser() user: import('../database/models').User,
-  ): Promise<Shift> {
-    return this.shiftsService.unpublish(shiftId, user);
   }
 
   @Mutation(() => Boolean)

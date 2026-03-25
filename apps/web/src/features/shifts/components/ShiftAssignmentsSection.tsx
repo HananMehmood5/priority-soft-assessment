@@ -25,6 +25,10 @@ type Props = {
   assigning: boolean;
   onSubmit: (e: React.FormEvent) => void;
   onSelectSuggestedUser: (id: string) => void;
+  /** When true, hides the section heading/description (useful inside modals). */
+  hideHeading?: boolean;
+  /** Optional form id to allow external submit buttons (e.g. modal footer). */
+  formId?: string;
 };
 
 export function ShiftAssignmentsSection({
@@ -44,14 +48,39 @@ export function ShiftAssignmentsSection({
   assigning,
   onSubmit,
   onSelectSuggestedUser,
+  hideHeading = false,
+  formId,
 }: Props) {
-  const hasStaffPicker = staffOptions.length > 0;
-
   return (
-    <section>
-      <h2 className="mb-3 text-ps-lg font-semibold">Add assignment</h2>
-      <form onSubmit={onSubmit} className="flex max-w-[400px] flex-col gap-4">
-        {hasStaffPicker ? (
+    <section className="mt-8">
+      {!hideHeading && (
+        <div className="mb-3">
+          <h2 className="text-ps-lg font-semibold">Add assignment</h2>
+          <p className="mt-1 text-ps-sm text-ps-fg-muted">
+            Choose who will work this shift and at which skill. Overtime and rule
+            warnings will appear automatically.
+          </p>
+        </div>
+      )}
+      <form
+        id={formId}
+        onSubmit={onSubmit}
+        className="flex max-w-[480px] flex-col gap-4 rounded-ps border border-ps-border bg-ps-bg-card p-4"
+      >
+        <Select
+          id="skillId"
+          label="Skill"
+          value={skillId}
+          onChange={(e) => onSkillIdChange(e.target.value)}
+        >
+          {skills.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.name}
+            </option>
+          ))}
+        </Select>
+
+        {staffOptions.length > 0 ? (
           <Select
             id="userId"
             label="Staff"
@@ -66,13 +95,9 @@ export function ShiftAssignmentsSection({
             ))}
           </Select>
         ) : (
-          <Input
-            id="userId"
-            label="Staff user ID (UUID)"
-            value={userId}
-            onChange={(e) => onUserIdChange(e.target.value)}
-            placeholder="e.g. 550e8400-e29b-41d4-a716-446655440000"
-          />
+          <p className="text-ps-sm text-ps-fg-muted">
+            No staff are currently available for this skill at this location.
+          </p>
         )}
 
         <OvertimeWhatIfPanel
@@ -82,19 +107,6 @@ export function ShiftAssignmentsSection({
           overrideReason={overtimeOverrideReason}
           onOverrideReasonChange={onOverrideReasonChange}
         />
-
-        <Select
-          id="skillId"
-          label="Skill"
-          value={skillId}
-          onChange={(e) => onSkillIdChange(e.target.value)}
-        >
-          {skills.map((s) => (
-            <option key={s.id} value={s.id}>
-              {s.name}
-            </option>
-          ))}
-        </Select>
 
         {constraintError && (
           <div className="rounded-ps border border-ps-primary bg-ps-primary-muted p-3">
@@ -120,10 +132,6 @@ export function ShiftAssignmentsSection({
         )}
 
         {error && <p className="m-0 text-ps-error">{error}</p>}
-
-        <Button type="submit" variant="primary" loading={assigning}>
-          {assigning ? "Adding…" : "Add assignment"}
-        </Button>
       </form>
     </section>
   );

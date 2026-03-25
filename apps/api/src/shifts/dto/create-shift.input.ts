@@ -1,5 +1,5 @@
-import { Field, InputType } from '@nestjs/graphql';
-import { IsUUID, IsString } from 'class-validator';
+import { Field, InputType, Int } from '@nestjs/graphql';
+import { IsArray, IsInt, Max, Min, IsString, IsUUID } from 'class-validator';
 
 @InputType()
 export class CreateShiftInput {
@@ -14,6 +14,13 @@ export class CreateShiftInput {
   @Field()
   @IsString()
   endDate: string;
+
+  @Field(() => [Int])
+  @IsArray()
+  @IsInt({ each: true })
+  @Min(0, { each: true })
+  @Max(6, { each: true })
+  daysOfWeek: number[];
 
   @Field()
   @IsString()

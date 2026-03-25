@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation } from '@apollo/client';
 import { useAuth } from '@/lib/auth-context';
-import { formatDateTime } from '@/lib/format-date';
 import {
   AVAILABLE_SWAPS_QUERY,
   MY_ASSIGNMENTS_QUERY,
@@ -19,14 +18,14 @@ type SwapRequest = {
   assignment?: {
     id: string;
     shiftId: string;
-    shift?: { id: string; locationId: string; startAt: string; endAt: string };
+    shift?: { id: string; locationId: string; startDate: string; endDate: string; dailyStartTime: string; dailyEndTime: string };
   };
 };
 
 type MyAssignment = {
   id: string;
   shiftId: string;
-  shift?: { id: string; locationId: string; startAt: string; endAt: string };
+  shift?: { id: string; locationId: string; startDate: string; endDate: string; dailyStartTime: string; dailyEndTime: string };
 };
 
 export default function SwapsPage() {
@@ -110,8 +109,8 @@ export default function SwapsPage() {
                 {s.assignment?.shift && (
                   <span>
                     Shift: Location {s.assignment.shift.locationId} ·{' '}
-                    {formatDateTime(s.assignment.shift.startAt)} –{' '}
-                    {formatDateTime(s.assignment.shift.endAt)}
+                    {s.assignment.shift.dailyStartTime}–{s.assignment.shift.dailyEndTime} from{' '}
+                    {s.assignment.shift.startDate} to {s.assignment.shift.endDate}
                   </span>
                 )}
                 {!s.assignment?.shift && (
@@ -135,7 +134,7 @@ export default function SwapsPage() {
                     {myAssignments.map((a) => (
                       <option key={a.id} value={a.id}>
                         {a.shift
-                          ? `${a.shift.locationId} ${formatDateTime(a.shift.startAt)}`
+                          ? `${a.shift.locationId} ${a.shift.startDate} ${a.shift.dailyStartTime}`
                           : a.id.slice(0, 8)}
                       </option>
                     ))}

@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation } from '@apollo/client';
 import { useAuth } from '@/lib/auth-context';
-import { formatDateTime } from '@/lib/format-date';
 import { AVAILABLE_DROPS_QUERY, ACCEPT_DROP_MUTATION } from '@/lib/apollo/operations';
 
 type DropRequest = {
@@ -15,7 +14,7 @@ type DropRequest = {
   assignment?: {
     id: string;
     shiftId: string;
-    shift?: { id: string; locationId: string; startAt: string; endAt: string };
+    shift?: { id: string; locationId: string; startDate: string; endDate: string; dailyStartTime: string; dailyEndTime: string };
   };
 };
 
@@ -80,8 +79,8 @@ export default function DropsPage() {
                 {d.assignment?.shift && (
                   <span>
                     Location {d.assignment.shift.locationId} ·{' '}
-                    {formatDateTime(d.assignment.shift.startAt)} –{' '}
-                    {formatDateTime(d.assignment.shift.endAt)}
+                    {d.assignment.shift.dailyStartTime}–{d.assignment.shift.dailyEndTime} from{' '}
+                    {d.assignment.shift.startDate} to {d.assignment.shift.endDate}
                   </span>
                 )}
                 {!d.assignment?.shift && (

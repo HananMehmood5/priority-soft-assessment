@@ -30,10 +30,13 @@ export class Shift extends Model<ShiftAttributesDb, ShiftBaseAttributesDb> {
   locationId: string;
 
   @Column({ type: DataType.DATEONLY, allowNull: false })
-  startDate?: Date | null;
+  startDate: Date;
 
   @Column({ type: DataType.DATEONLY, allowNull: false })
-  endDate?: Date | null;
+  endDate: Date;
+
+  @Column({ type: DataType.JSONB, allowNull: false })
+  daysOfWeek: number[];
 
   @Column({ type: DataType.STRING, allowNull: false })
   dailyStartTime?: string | null;

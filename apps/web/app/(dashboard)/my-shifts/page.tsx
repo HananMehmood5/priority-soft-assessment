@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation } from '@apollo/client';
 import { useAuth } from '@/lib/auth-context';
-import { formatDateTime } from '@/lib/format-date';
 import type { ShiftAssignmentAttributes } from '@shiftsync/shared';
 import {
   MY_ASSIGNMENTS_QUERY,
@@ -12,7 +11,15 @@ import {
 } from '@/lib/apollo/operations';
 
 type AssignmentWithShift = ShiftAssignmentAttributes & {
-  shift?: { id: string; locationId: string; startAt: string; endAt: string; published: boolean };
+  shift?: {
+    id: string;
+    locationId: string;
+    startDate: string;
+    endDate: string;
+    dailyStartTime: string;
+    dailyEndTime: string;
+    published: boolean;
+  };
 };
 
 export default function MyShiftsPage() {
@@ -77,7 +84,8 @@ export default function MyShiftsPage() {
                 {a.shift && (
                   <span className="ml-2 text-ps-fg-muted">
                     Location {a.shift.locationId} ·{' '}
-                    {formatDateTime(a.shift.startAt)} – {formatDateTime(a.shift.endAt)}
+                    {a.shift.dailyStartTime}–{a.shift.dailyEndTime} from {a.shift.startDate} to{' '}
+                    {a.shift.endDate}
                     {a.shift.published ? ' · Published' : ''}
                   </span>
                 )}

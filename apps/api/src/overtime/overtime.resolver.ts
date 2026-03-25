@@ -17,16 +17,10 @@ export class OvertimeResolver {
   @Query(() => WhatIfResultEntity)
   async overtimeWhatIf(
     @Args('userId', { type: () => String }) userId: string,
-    @Args('assignmentStart', { type: () => Date }) assignmentStart: Date,
-    @Args('assignmentEnd', { type: () => Date }) assignmentEnd: Date,
+    @Args('shiftId', { type: () => String }) shiftId: string,
     @Args('overtimeOverrideReason', { type: () => String, nullable: true }) overtimeOverrideReason?: string | null,
   ): Promise<WhatIfResult> {
-    return this.overtimeService.whatIf(
-      userId,
-      new Date(assignmentStart),
-      new Date(assignmentEnd),
-      overtimeOverrideReason,
-    );
+    return this.overtimeService.whatIfTemplate(userId, shiftId, overtimeOverrideReason);
   }
 
   @Query(() => [DashboardOvertimeEntryEntity])

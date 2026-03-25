@@ -52,3 +52,6 @@ dist
 # Yarn
 .yarn-integrity
 .vercel
+
+# Cursor
+.cursor/plans/

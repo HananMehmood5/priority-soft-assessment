@@ -19,8 +19,11 @@ export function CreateShiftContainer() {
   const { token } = useAuth();
   const router = useRouter();
   const [locationId, setLocationId] = useState("");
-  const [startAt, setStartAt] = useState("");
-  const [endAt, setEndAt] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [daysOfWeek, setDaysOfWeek] = useState<number[]>([0, 1, 2, 3, 4, 5, 6]);
+  const [dailyStartTime, setDailyStartTime] = useState("");
+  const [dailyEndTime, setDailyEndTime] = useState("");
 
   const { data: locationsData, loading } = useQuery<{
     locations: LocationAttributes[];
@@ -45,13 +48,18 @@ export function CreateShiftContainer() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!token) return;
+    if (!startDate || !endDate || !dailyStartTime || !dailyEndTime) return;
+    if (!Array.isArray(daysOfWeek) || daysOfWeek.length === 0) return;
     try {
       await createShift({
         variables: {
           input: {
             locationId,
-            startAt: new Date(startAt).toISOString(),
-            endAt: new Date(endAt).toISOString(),
+            startDate,
+            endDate,
+            daysOfWeek,
+            dailyStartTime,
+            dailyEndTime,
           },
         },
       });
@@ -79,13 +87,19 @@ export function CreateShiftContainer() {
       <ShiftForm
         locations={locations}
         locationId={locationId}
-        startAt={startAt}
-        endAt={endAt}
+        startDate={startDate}
+        endDate={endDate}
+        daysOfWeek={daysOfWeek}
+        dailyStartTime={dailyStartTime}
+        dailyEndTime={dailyEndTime}
         submitting={submitting}
         error={error}
         onLocationChange={setLocationId}
-        onStartChange={setStartAt}
-        onEndChange={setEndAt}
+        onStartDateChange={setStartDate}
+        onEndDateChange={setEndDate}
+        onDaysOfWeekChange={setDaysOfWeek}
+        onDailyStartTimeChange={setDailyStartTime}
+        onDailyEndTimeChange={setDailyEndTime}
         onSubmit={handleSubmit}
       />
     </div>

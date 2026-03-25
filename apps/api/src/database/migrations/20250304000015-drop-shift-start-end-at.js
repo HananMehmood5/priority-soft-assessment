@@ -1,12 +1,14 @@
-/* Drop legacy start_at/end_at columns now that shifts use date range + daily times. */
+'use strict';
+
+/** @type {import('sequelize-cli').Migration} */
 module.exports = {
-  up: async (queryInterface) => {
+  async up(queryInterface) {
     const table = await queryInterface.describeTable('shifts');
     if (table.start_at) await queryInterface.removeColumn('shifts', 'start_at');
     if (table.end_at) await queryInterface.removeColumn('shifts', 'end_at');
   },
 
-  down: async (queryInterface, Sequelize) => {
+  async down(queryInterface, Sequelize) {
     await queryInterface.addColumn('shifts', 'start_at', {
       type: Sequelize.DATE,
       allowNull: true,

@@ -86,14 +86,13 @@ export class ShiftAssignmentRepository {
   /** Assignments for user with shift in time window (e.g. week or day). */
   async findAllByUserIdWithShiftInTimeWindow(
     userId: string,
-    window: { startAtGte: Date; startAtLt?: Date; endAtLte?: Date },
+    window: { rangeStart: Date; rangeEnd: Date },
   ): Promise<ShiftAssignment[]> {
+    // Shift template overlaps the requested range if startDate <= rangeEnd && endDate >= rangeStart
     const shiftWhere: Record<string, unknown> = {
-      startAt: window.startAtLt
-        ? { [Op.gte]: window.startAtGte, [Op.lt]: window.startAtLt }
-        : { [Op.gte]: window.startAtGte },
+      startDate: { [Op.lte]: window.rangeEnd },
+      endDate: { [Op.gte]: window.rangeStart },
     };
-    if (window.endAtLte) shiftWhere.endAt = { [Op.lte]: window.endAtLte };
     return this.assignmentModel.findAll({
       where: { userId },
       include: [

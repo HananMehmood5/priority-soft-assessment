@@ -6,6 +6,7 @@ import { ShiftAssignmentRepository } from '../database/repositories/shift-assign
 import { LocationRepository } from '../database/repositories/location.repository';
 import { SkillRepository } from '../database/repositories/skill.repository';
 import { UserRepository } from '../database/repositories/user.repository';
+import { expandShiftToIntervals } from '../common/shift-time.utils';
 
 export interface ConstraintResult {
   valid: boolean;
@@ -22,59 +23,59 @@ export class ConstraintsService {
     private readonly userRepository: UserRepository,
   ) { }
 
-  /** Check if user is double-booked (overlapping assigned shifts) */
-  async checkDoubleBook(
+  private async getUserAssignedIntervals(
     userId: string,
-    startAt: Date,
-    endAt: Date,
     excludeAssignmentId?: string,
-  ): Promise<ConstraintResult> {
-    const overlaps = await this.assignmentRepository.findAllByUserIdWithShift(userId);
-    const start = startAt.getTime();
-    const end = endAt.getTime();
-
-    for (const a of overlaps) {
+  ): Promise<Array<{ assignmentId: string; start: Date; end: Date }>> {
+    const assignments = await this.assignmentRepository.findAllByUserIdWithShift(userId);
+    const out: Array<{ assignmentId: string; start: Date; end: Date }> = [];
+    for (const a of assignments) {
       if (excludeAssignmentId && a.id === excludeAssignmentId) continue;
       const s = (a as { shift: Shift }).shift;
-      const sStart = (s.startAt as Date).getTime();
-      const sEnd = (s.endAt as Date).getTime();
-      if (start < sEnd && end > sStart) {
-        return {
-          valid: false,
-          message: `Staff is already assigned to another shift that overlaps (${(s.startAt as Date).toISOString()} - ${(s.endAt as Date).toISOString()}).`,
-        };
+      if (!s) continue;
+      const intervals = expandShiftToIntervals(s as any);
+      for (const it of intervals) out.push({ assignmentId: a.id, start: it.start, end: it.end });
+    }
+    return out;
+  }
+
+  /** Check if user is double-booked (any overlapping intervals). */
+  async checkDoubleBookTemplate(
+    userId: string,
+    newShift: Shift,
+    excludeAssignmentId?: string,
+  ): Promise<ConstraintResult> {
+    const newIntervals = expandShiftToIntervals(newShift as any);
+    const existing = await this.getUserAssignedIntervals(userId, excludeAssignmentId);
+    for (const n of newIntervals) {
+      for (const e of existing) {
+        if (n.start < e.end && n.end > e.start) {
+          return { valid: false, message: 'Staff is already assigned to another shift that overlaps.' };
+        }
       }
     }
     return { valid: true };
   }
 
-  /** Min 10h between shifts */
-  async checkRest(
+  /** Min 10h between shifts (between any adjacent intervals). */
+  async checkRestTemplate(
     userId: string,
-    startAt: Date,
-    endAt: Date,
+    newShift: Shift,
     excludeAssignmentId?: string,
   ): Promise<ConstraintResult> {
     const TEN_HOURS_MS = 10 * 60 * 60 * 1000;
-    const assignments = await this.assignmentRepository.findAllByUserIdWithShift(userId);
-    for (const a of assignments) {
-      if (excludeAssignmentId && a.id === excludeAssignmentId) continue;
-      const s = (a as { shift: Shift }).shift;
-      const sStart = (s.startAt as Date).getTime();
-      const sEnd = (s.endAt as Date).getTime();
-      const gapBefore = startAt.getTime() - sEnd;
-      const gapAfter = sStart - endAt.getTime();
-      if (gapBefore > 0 && gapBefore < TEN_HOURS_MS) {
-        return {
-          valid: false,
-          message: `Less than 10 hours rest before this shift (previous shift ends ${(s.endAt as Date).toISOString()}).`,
-        };
-      }
-      if (gapAfter > 0 && gapAfter < TEN_HOURS_MS) {
-        return {
-          valid: false,
-          message: `Less than 10 hours rest after this shift (next shift starts ${(s.startAt as Date).toISOString()}).`,
-        };
+    const newIntervals = expandShiftToIntervals(newShift as any);
+    const existing = await this.getUserAssignedIntervals(userId, excludeAssignmentId);
+    for (const n of newIntervals) {
+      for (const e of existing) {
+        const gapBefore = n.start.getTime() - e.end.getTime();
+        const gapAfter = e.start.getTime() - n.end.getTime();
+        if (gapBefore > 0 && gapBefore < TEN_HOURS_MS) {
+          return { valid: false, message: 'Less than 10 hours rest before this shift.' };
+        }
+        if (gapAfter > 0 && gapAfter < TEN_HOURS_MS) {
+          return { valid: false, message: 'Less than 10 hours rest after this shift.' };
+        }
       }
     }
     return { valid: true };
@@ -164,25 +165,27 @@ export class ConstraintsService {
     return slotStart <= start && slotEnd >= end;
   }
 
-  /** Run all assignment checks; returns first failure or success */
+  /** Run all assignment checks against a shift template; returns first failure or success */
   async validateAssignment(
     userId: string,
     locationId: string,
     skillId: string,
-    startAt: Date,
-    endAt: Date,
+    shift: Shift,
     excludeAssignmentId?: string,
   ): Promise<ConstraintResult> {
-    let r = await this.checkDoubleBook(userId, startAt, endAt, excludeAssignmentId);
+    let r = await this.checkDoubleBookTemplate(userId, shift, excludeAssignmentId);
     if (!r.valid) return r;
-    r = await this.checkRest(userId, startAt, endAt, excludeAssignmentId);
+    r = await this.checkRestTemplate(userId, shift, excludeAssignmentId);
     if (!r.valid) return r;
     r = await this.checkSkill(userId, skillId);
     if (!r.valid) return r;
     r = await this.checkLocation(userId, locationId);
     if (!r.valid) return r;
-    r = await this.checkAvailability(userId, locationId, startAt, endAt);
-    if (!r.valid) return r;
+    const intervals = expandShiftToIntervals(shift as any);
+    for (const it of intervals) {
+      r = await this.checkAvailability(userId, locationId, it.start, it.end);
+      if (!r.valid) return r;
+    }
     return { valid: true };
   }
 
@@ -190,8 +193,7 @@ export class ConstraintsService {
   async getAlternatives(
     locationId: string,
     skillId: string,
-    startAt: Date,
-    endAt: Date,
+    shift: Shift,
     excludeUserId?: string,
   ): Promise<Array<{ id: string; name: string | null }>> {
     const certified = await this.locationRepository.findAllStaffLocationsByLocationId(locationId);
@@ -200,7 +202,7 @@ export class ConstraintsService {
     const candidateIds = [...new Set(withSkill.map((s) => s.userId))];
     const eligible: Array<{ id: string; name: string | null }> = [];
     for (const uid of candidateIds) {
-      const result = await this.validateAssignment(uid, locationId, skillId, startAt, endAt);
+      const result = await this.validateAssignment(uid, locationId, skillId, shift);
       if (result.valid) {
         const user = await this.userRepository.findByPk(uid, { attributes: ['id', 'name'] });
         if (user) eligible.push({ id: user.id, name: user.name });

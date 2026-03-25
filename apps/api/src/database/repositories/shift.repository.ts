@@ -42,34 +42,34 @@ export class ShiftRepository {
     if (locationIds.length === 0) return [];
     return this.shiftModel.findAll({
       where: { locationId: { [Op.in]: locationIds } },
-      order: options.order ?? [['startAt', 'ASC']],
+      order: options.order ?? [['startDate', 'ASC']],
       include: ['location', 'assignments'],
     });
   }
 
   async findAll(options: { order?: [string, string] } = {}): Promise<Shift[]> {
     return this.shiftModel.findAll({
-      order: options.order ?? [['startAt', 'ASC']],
+      order: options.order ?? [['startDate', 'ASC']],
       include: ['location', 'assignments'],
     });
   }
 
   async findInWindow(where: {
-    startAt: { lte: Date; gt?: Date };
-    endAt: { gt: Date };
+    startDateLte: Date;
+    endDateGte: Date;
     published?: boolean;
     locationId?: string;
   }): Promise<Shift[]> {
     const cond: Record<string, unknown> = {
-      startAt: { [Op.lte]: where.startAt.lte },
-      endAt: { [Op.gt]: where.endAt.gt },
+      startDate: { [Op.lte]: where.startDateLte },
+      endDate: { [Op.gte]: where.endDateGte },
     };
     if (where.published !== undefined) cond.published = where.published;
     if (where.locationId) cond.locationId = where.locationId;
     return this.shiftModel.findAll({
       where: cond,
       include: ['location', 'assignments'],
-      order: [['startAt', 'ASC']],
+      order: [['startDate', 'ASC']],
     });
   }
 
@@ -97,7 +97,7 @@ export class ShiftRepository {
       {
         where: {
           locationId,
-          startAt: { [Op.gte]: weekStart, [Op.lt]: weekEnd },
+          startDate: { [Op.gte]: weekStart, [Op.lt]: weekEnd },
         },
       },
     );
@@ -111,13 +111,14 @@ export class ShiftRepository {
     locationId?: string | null,
   ): Promise<Shift[]> {
     const where: Record<string, unknown> = {
-      startAt: { [Op.gte]: start },
-      endAt: { [Op.lte]: end },
+      startDate: { [Op.lte]: end },
+      endDate: { [Op.gte]: start },
     };
     if (locationId) where.locationId = locationId;
     return this.shiftModel.findAll({
       where,
       include: [{ association: 'assignments', include: ['user'] }],
+      order: [['startDate', 'ASC']],
     });
   }
 

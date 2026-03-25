@@ -6,6 +6,7 @@ export interface ShiftLiteAttributes {
   locationId: Id;
   startDate: string;
   endDate: string;
+  daysOfWeek: number[];
   dailyStartTime: string;
   dailyEndTime: string;
   published: boolean;

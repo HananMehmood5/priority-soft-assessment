@@ -6,6 +6,7 @@ import { ShiftAssignmentRepository } from '../database/repositories/shift-assign
 import { ShiftRequestRepository } from '../database/repositories/shift-request.repository';
 import { PermissionsService } from '../permissions/permissions.service';
 import { ConstraintsService, ConstraintResult } from '../constraints/constraints.service';
+import { getShiftFirstStart } from '../common/shift-time.utils';
 
 const MAX_PENDING_PER_STAFF = 3;
 const DROP_EXPIRY_HOURS = 24;
@@ -18,7 +19,7 @@ export class RequestsService {
     private readonly shiftRepository: ShiftRepository,
     private readonly permissions: PermissionsService,
     private readonly constraints: ConstraintsService,
-  ) {}
+  ) { }
 
   private async countPendingForStaff(userId: string): Promise<number> {
     const assignments = await this.assignmentRepository.findAllByUserId(userId, ['id']);
@@ -58,7 +59,11 @@ export class RequestsService {
   async createDrop(assignmentId: string, user: User): Promise<ShiftRequest> {
     const assignment = await this.assignmentRepository.findByIdOrFailWithShift(assignmentId);
     const shift = (assignment as { shift: Shift }).shift;
-    if (this.isDropExpired(shift.startAt)) {
+    const firstStart = getShiftFirstStart(shift as any);
+    if (!firstStart) {
+      throw new BadRequestException('Unable to determine shift start');
+    }
+    if (this.isDropExpired(firstStart)) {
       throw new BadRequestException('Drop request cannot be created within 24h of shift start');
     }
     if (assignment.userId !== user.id) {
@@ -98,15 +103,13 @@ export class RequestsService {
       toUser,
       fromShift.locationId,
       fromAssignment.skillId,
-      fromShift.startAt,
-      fromShift.endAt,
+      fromShift,
     );
     if (!r1.valid) {
       const alternatives = await this.constraints.getAlternatives(
         fromShift.locationId,
         fromAssignment.skillId,
-        fromShift.startAt,
-        fromShift.endAt,
+        fromShift,
         toUser,
       );
       return { request: null as any, constraintError: { ...r1, alternatives } };
@@ -115,15 +118,13 @@ export class RequestsService {
       fromUser,
       toShift.locationId,
       toAssignment.skillId,
-      toShift.startAt,
-      toShift.endAt,
+      toShift,
     );
     if (!r2.valid) {
       const alternatives = await this.constraints.getAlternatives(
         toShift.locationId,
         toAssignment.skillId,
-        toShift.startAt,
-        toShift.endAt,
+        toShift,
         fromUser,
       );
       return { request: null as any, constraintError: { ...r2, alternatives } };
@@ -143,22 +144,24 @@ export class RequestsService {
     }
     const assignment = (request as { assignment: ShiftAssignment & { shift: Shift } }).assignment;
     const shift = assignment.shift;
-    if (this.isDropExpired(shift.startAt)) {
+    const firstStart = getShiftFirstStart(shift as any);
+    if (!firstStart) {
+      throw new BadRequestException('Unable to determine shift start');
+    }
+    if (this.isDropExpired(firstStart)) {
       throw new BadRequestException('Drop has expired (within 24h of shift)');
     }
     const result = await this.constraints.validateAssignment(
       user.id,
       shift.locationId,
       assignment.skillId,
-      shift.startAt,
-      shift.endAt,
+      shift,
     );
     if (!result.valid) {
       const alternatives = await this.constraints.getAlternatives(
         shift.locationId,
         assignment.skillId,
-        shift.startAt,
-        shift.endAt,
+        shift,
       );
       return { request: null as any, constraintError: { ...result, alternatives } };
     }

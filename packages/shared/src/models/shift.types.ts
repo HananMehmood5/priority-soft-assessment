@@ -5,8 +5,19 @@ import type { ShiftAssignmentAttributes } from './shift-assignment.types';
 
 export interface ShiftBaseAttributes {
   locationId: Id;
-  startAt: string;
-  endAt: string;
+  /** First calendar date of the shift template (YYYY-MM-DD, location timezone). */
+  startDate: string;
+  /** Last calendar date of the shift template (YYYY-MM-DD, location timezone). */
+  endDate: string;
+  /**
+   * Weekdays the shift occurs on within `startDate`–`endDate`.
+   * 0=Sunday, 1=Monday, ... 6=Saturday.
+   */
+  daysOfWeek: number[];
+  /** Daily start time (HH:mm) in location timezone. */
+  dailyStartTime: string;
+  /** Daily end time (HH:mm) in location timezone; may be <= dailyStartTime for overnight patterns. */
+  dailyEndTime: string;
   published?: boolean;
 }
 

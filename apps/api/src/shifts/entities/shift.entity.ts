@@ -1,4 +1,4 @@
-import { ObjectType, Field } from '@nestjs/graphql';
+import { ObjectType, Field, Int } from '@nestjs/graphql';
 import { ShiftAssignmentEntity } from './shift-assignment.entity';
 import { LocationEntity } from '../../locations/entities/location.entity';
 
@@ -15,6 +15,9 @@ export class ShiftEntity {
 
   @Field()
   endDate: string;
+
+  @Field(() => [Int])
+  daysOfWeek: number[];
 
   @Field()
   dailyStartTime: string;

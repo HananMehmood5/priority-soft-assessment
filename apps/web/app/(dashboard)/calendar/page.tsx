@@ -25,9 +25,56 @@ export default function CalendarPage() {
 
   const activeDate = useMemo(() => new Date(date), [date]);
 
+  type ShiftOccurrence = {
+    key: string;
+    templateId: string;
+    locationId: string;
+    startAt: Date;
+    endAt: Date;
+    published: boolean;
+  };
+
+  const occurrences = useMemo<ShiftOccurrence[]>(() => {
+    const out: ShiftOccurrence[] = [];
+    for (const s of shifts as any[]) {
+      const startDate = String(s.startDate ?? '').slice(0, 10);
+      const endDate = String(s.endDate ?? '').slice(0, 10);
+      const dailyStartTime = String(s.dailyStartTime ?? '');
+      const dailyEndTime = String(s.dailyEndTime ?? '');
+      const daysOfWeek = Array.isArray(s.daysOfWeek) && s.daysOfWeek.length ? s.daysOfWeek : [0, 1, 2, 3, 4, 5, 6];
+      if (!startDate || !endDate || !dailyStartTime || !dailyEndTime) continue;
+
+      const overnight = dailyEndTime <= dailyStartTime;
+      const daysOfWeekSet = new Set<number>(daysOfWeek);
+      const cursor = new Date(`${startDate}T00:00:00`);
+      const end = new Date(`${endDate}T00:00:00`);
+      while (cursor <= end) {
+        const weekdayUtc = cursor.getUTCDay(); // 0=Sun..6=Sat
+        if (!daysOfWeekSet.has(weekdayUtc)) {
+          cursor.setDate(cursor.getDate() + 1);
+          continue;
+        }
+        const dayISO = cursor.toISOString().slice(0, 10);
+        const startAt = new Date(`${dayISO}T${dailyStartTime}:00`);
+        const endAt = new Date(`${dayISO}T${dailyEndTime}:00`);
+        if (overnight) endAt.setDate(endAt.getDate() + 1);
+        out.push({
+          key: `${s.id}:${dayISO}`,
+          templateId: s.id,
+          locationId: s.locationId,
+          startAt,
+          endAt,
+          published: !!s.published,
+        });
+        cursor.setDate(cursor.getDate() + 1);
+      }
+    }
+    return out;
+  }, [shifts]);
+
   const filtered = useMemo(() => {
     const selectedLoc = locationId || null;
-    const result = shifts.filter((s) => !selectedLoc || s.locationId === selectedLoc);
+    const result = occurrences.filter((s) => !selectedLoc || s.locationId === selectedLoc);
     if (view === 'day') {
       return result.filter((s) => {
         const d = new Date(s.startAt);
@@ -42,7 +89,7 @@ export default function CalendarPage() {
       const d = new Date(s.startAt);
       return d >= start && d < end;
     });
-  }, [shifts, locationId, view, activeDate]);
+  }, [occurrences, locationId, view, activeDate]);
 
   const daysForWeek = useMemo(() => {
     if (view !== 'week') return [];
@@ -124,13 +171,13 @@ export default function CalendarPage() {
                 .slice()
                 .sort((a, b) => +new Date(a.startAt) - +new Date(b.startAt))
                 .map((s) => (
-                  <li key={s.id} className="border-b border-ps-border py-2">
+                  <li key={s.key} className="border-b border-ps-border py-2">
                     <div className="font-medium">
                       {locationName(s.locationId)} – {formatDateTime(s.startAt)} –{' '}
                       {formatDateTime(s.endAt)}
                     </div>
                     <div className="text-ps-xs text-ps-fg-muted">
-                      ID {s.id} · {s.published ? 'Published' : 'Draft'}
+                      Shift {s.templateId} · {s.published ? 'Published' : 'Draft'}
                     </div>
                   </li>
                 ))}
@@ -163,7 +210,7 @@ export default function CalendarPage() {
                       .slice()
                       .sort((a, b) => +new Date(a.startAt) - +new Date(b.startAt))
                       .map((s) => (
-                        <li key={s.id} className="mb-1">
+                        <li key={s.key} className="mb-1">
                           <span className="text-ps-fg-muted">
                             {formatDateTime(s.startAt)} – {formatDateTime(s.endAt)}
                           </span>

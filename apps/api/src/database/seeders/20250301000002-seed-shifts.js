@@ -21,22 +21,56 @@ module.exports = {
 
     const nextWeek = new Date(now);
     nextWeek.setDate(nextWeek.getDate() + 7);
-    const mon9 = new Date(nextWeek);
-    mon9.setHours(9, 0, 0, 0);
-    const mon17 = new Date(nextWeek);
-    mon17.setHours(17, 0, 0, 0);
-    const tue9 = new Date(mon9);
-    tue9.setDate(tue9.getDate() + 1);
-    const tue17 = new Date(mon17);
-    tue17.setDate(tue17.getDate() + 1);
+    const mon = new Date(nextWeek);
+    // Normalize to Monday of next week (JS: 0=Sun)
+    const day = mon.getDay();
+    const deltaToMon = ((1 - day) + 7) % 7;
+    mon.setDate(mon.getDate() + deltaToMon);
+    mon.setHours(0, 0, 0, 0);
+    const tue = new Date(mon);
+    tue.setDate(tue.getDate() + 1);
+    const wed = new Date(mon);
+    wed.setDate(wed.getDate() + 2);
+
+    const toISODateOnly = (d) => d.toISOString().slice(0, 10);
 
     await queryInterface.bulkInsert('shifts', [
-      { id: crypto.randomUUID(), location_id: downtown, start_at: mon9, end_at: mon17, published: true, created_at: now, updated_at: now },
-      { id: crypto.randomUUID(), location_id: downtown, start_at: tue9, end_at: tue17, published: false, created_at: now, updated_at: now },
-      { id: crypto.randomUUID(), location_id: downtown, start_at: new Date(tue9.getTime() + 24 * 3600000), end_at: new Date(tue17.getTime() + 24 * 3600000), published: false, created_at: now, updated_at: now },
+      {
+        id: crypto.randomUUID(),
+        location_id: downtown,
+        start_date: toISODateOnly(mon),
+        end_date: toISODateOnly(mon),
+        daily_start_time: '09:00',
+        daily_end_time: '17:00',
+        published: true,
+        created_at: now,
+        updated_at: now,
+      },
+      {
+        id: crypto.randomUUID(),
+        location_id: downtown,
+        start_date: toISODateOnly(tue),
+        end_date: toISODateOnly(tue),
+        daily_start_time: '09:00',
+        daily_end_time: '17:00',
+        published: false,
+        created_at: now,
+        updated_at: now,
+      },
+      {
+        id: crypto.randomUUID(),
+        location_id: downtown,
+        start_date: toISODateOnly(wed),
+        end_date: toISODateOnly(wed),
+        daily_start_time: '09:00',
+        daily_end_time: '17:00',
+        published: false,
+        created_at: now,
+        updated_at: now,
+      },
     ]);
 
-    const allShifts = await queryInterface.sequelize.query('SELECT id FROM shifts ORDER BY start_at', { type: Sequelize.QueryTypes.SELECT });
+    const allShifts = await queryInterface.sequelize.query('SELECT id FROM shifts ORDER BY start_date', { type: Sequelize.QueryTypes.SELECT });
     if (allShifts.length >= 1 && staffIds.length >= 1) {
       await queryInterface.bulkInsert('shift_assignments', [{
         id: crypto.randomUUID(),

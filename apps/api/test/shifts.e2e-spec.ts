@@ -36,7 +36,7 @@ describe('Shifts (e2e)', () => {
     const res = await graphqlRequest(
       app,
       {
-        query: `query Shifts { shifts { id locationId startAt endAt published } }`,
+        query: `query Shifts { shifts { id locationId startDate endDate daysOfWeek dailyStartTime dailyEndTime published } }`,
       },
       managerToken,
     ).expect(200);
@@ -47,21 +47,23 @@ describe('Shifts (e2e)', () => {
   });
 
   test('createShift as manager returns shift', async () => {
-    const startAt = new Date(Date.now() + 7 * 24 * 3600 * 1000);
-    startAt.setHours(9, 0, 0, 0);
-    const endAt = new Date(startAt.getTime() + 8 * 3600 * 1000);
+    const startDate = new Date(Date.now() + 7 * 24 * 3600 * 1000).toISOString().slice(0, 10);
+    const endDate = startDate;
 
     const res = await graphqlRequest(
       app,
       {
         query: `mutation CreateShift($input: CreateShiftInput!) {
-          createShift(input: $input) { id locationId startAt endAt published }
+          createShift(input: $input) { id locationId startDate endDate daysOfWeek dailyStartTime dailyEndTime published }
         }`,
         variables: {
           input: {
             locationId,
-            startAt: startAt.toISOString(),
-            endAt: endAt.toISOString(),
+            startDate,
+            endDate,
+            daysOfWeek: [1, 2, 3, 4, 5],
+            dailyStartTime: '09:00',
+            dailyEndTime: '17:00',
           },
         },
       },

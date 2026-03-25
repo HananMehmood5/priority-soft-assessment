@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import { useQuery } from '@apollo/client';
 import { useAuth } from '@/lib/auth-context';
-import { formatDateTime } from '@/lib/format-date';
 import type { ShiftAttributes, ShiftAssignmentAttributes } from '@/app/types';
 import { UserRole } from '@shiftsync/shared';
 import { useSocket } from '@/lib/use-socket';
@@ -115,7 +114,7 @@ export default function OnDutyPage() {
                     <tr key={s.id} className="border-b border-ps-border">
                       <td className="px-2 py-2">{s.id}</td>
                       <td className="px-2 py-2">
-                        {formatDateTime(s.startAt)} – {formatDateTime(s.endAt)}
+                        {s.dailyStartTime}–{s.dailyEndTime} from {s.startDate} to {s.endDate}
                       </td>
                       <td className="px-2 py-2 text-ps-xs text-ps-fg-muted">
                         {s.assignments && s.assignments.length > 0

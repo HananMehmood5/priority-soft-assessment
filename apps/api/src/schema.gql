@@ -31,13 +31,10 @@ type AuditEntryEntity {
   before: String
   createdAt: DateTime!
   entityId: String!
-  entityName: String
   entityType: String!
   id: String!
   user: UserEntity
   userId: String!
-  userName: String
-  what: String
 }
 
 input AvailabilitySlotInput {
@@ -58,11 +55,12 @@ input CreateLocationInput {
 }
 
 input CreateShiftInput {
+  dailyEndTime: String!
+  dailyStartTime: String!
+  daysOfWeek: [Int!]!
+  endDate: String!
   locationId: String!
   startDate: String!
-  endDate: String!
-  dailyStartTime: String!
-  dailyEndTime: String!
 }
 
 input CreateSkillInput {
@@ -151,7 +149,6 @@ type Mutation {
   removeSkillFromStaff(skillId: String!, staffId: String!): Boolean!
   removeStaffFromLocation(locationId: String!, staffId: String!): Boolean!
   setNotificationPreference(channel: String!, enabled: Boolean!): NotificationPreferenceEntity!
-  unpublishShift(shiftId: String!): ShiftEntity!
   updateLocation(id: String!, input: UpdateLocationInput!): LocationEntity!
   updateMyProfile(input: UpdateProfileInput!): UserEntity!
   updateShift(id: String!, input: UpdateShiftInput!): ShiftEntity!
@@ -197,7 +194,7 @@ type Query {
   notifications(limit: Int, offset: Int, unreadOnly: Boolean): [NotificationEntity!]!
   onDutyShifts(locationId: String, userId: String): [ShiftEntity!]!
   overtimeDashboard(end: DateTime!, locationId: String, start: DateTime!): [DashboardOvertimeEntryEntity!]!
-  overtimeWhatIf(assignmentEnd: DateTime!, assignmentStart: DateTime!, overtimeOverrideReason: String, userId: String!): WhatIfResultEntity!
+  overtimeWhatIf(overtimeOverrideReason: String, shiftId: String!, userId: String!): WhatIfResultEntity!
   pendingRequests: [RequestEntity!]!
   reportDesiredHours(end: DateTime!, locationId: String, role: UserRole, start: DateTime!): [DesiredHoursEntryEntity!]!
   reportDistribution(end: DateTime!, locationId: String, start: DateTime!): [DistributionEntryEntity!]!
@@ -246,14 +243,15 @@ type ShiftAssignmentEntity {
 type ShiftEntity {
   assignments: [ShiftAssignmentEntity]
   createdAt: DateTime!
+  dailyEndTime: String!
+  dailyStartTime: String!
+  daysOfWeek: [Int!]!
+  endDate: String!
   id: String!
   location: LocationEntity
   locationId: String!
   published: Boolean!
   startDate: String!
-  endDate: String!
-  dailyStartTime: String!
-  dailyEndTime: String!
   updatedAt: DateTime!
 }
 
@@ -261,6 +259,7 @@ type SkillEntity {
   createdAt: DateTime!
   id: String!
   name: String!
+  staffCount: Int!
   updatedAt: DateTime!
 }
 
@@ -276,10 +275,11 @@ input UpdateProfileInput {
 }
 
 input UpdateShiftInput {
-  startDate: String
-  endDate: String
-  dailyStartTime: String
   dailyEndTime: String
+  dailyStartTime: String
+  daysOfWeek: [Int!]
+  endDate: String
+  startDate: String
 }
 
 input UpdateSkillInput {

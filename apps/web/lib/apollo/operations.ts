@@ -162,8 +162,11 @@ export const SHIFTS_WITH_LOCATIONS_QUERY = gql`
     shifts {
       id
       locationId
-      startAt
-      endAt
+      startDate
+      endDate
+      daysOfWeek
+      dailyStartTime
+      dailyEndTime
       published
     }
     locations {
@@ -179,11 +182,35 @@ export const SHIFT_QUERY = gql`
     shift(id: $id) {
       id
       locationId
-      startAt
-      endAt
+      location {
+        id
+        name
+        timezone
+      }
+      startDate
+      endDate
+      daysOfWeek
+      dailyStartTime
+      dailyEndTime
       published
       createdAt
       updatedAt
+      assignments {
+        id
+        userId
+        skillId
+        createdAt
+        updatedAt
+        user {
+          id
+          name
+          email
+        }
+        skill {
+          id
+          name
+        }
+      }
     }
   }
 `;
@@ -193,10 +220,39 @@ export const CREATE_SHIFT_MUTATION = gql`
     createShift(input: $input) {
       id
       locationId
-      startAt
-      endAt
+      startDate
+      endDate
+      daysOfWeek
+      dailyStartTime
+      dailyEndTime
       published
     }
+  }
+`;
+
+export const PUBLISH_SHIFT_MUTATION = gql`
+  mutation PublishShift($shiftId: String!) {
+    publishShift(shiftId: $shiftId) {
+      id
+      published
+      updatedAt
+    }
+  }
+`;
+
+export const UNPUBLISH_SHIFT_MUTATION = gql`
+  mutation UnpublishShift($shiftId: String!) {
+    unpublishShift(shiftId: $shiftId) {
+      id
+      published
+      updatedAt
+    }
+  }
+`;
+
+export const DELETE_SHIFT_MUTATION = gql`
+  mutation DeleteShift($id: String!) {
+    deleteShift(id: $id)
   }
 `;
 
@@ -228,7 +284,11 @@ export const SHIFT_HISTORY_QUERY = gql`
     shiftHistory(shiftId: $shiftId) {
       id
       userId
-      userName
+      user {
+        id
+        name
+        email
+      }
       entityId
       entityType
       action
@@ -240,16 +300,8 @@ export const SHIFT_HISTORY_QUERY = gql`
 `;
 
 export const OVERTIME_WHAT_IF_QUERY = gql`
-  query OvertimeWhatIf(
-    $userId: String!
-    $assignmentStart: DateTime!
-    $assignmentEnd: DateTime!
-  ) {
-    overtimeWhatIf(
-      userId: $userId
-      assignmentStart: $assignmentStart
-      assignmentEnd: $assignmentEnd
-    ) {
+  query OvertimeWhatIf($userId: String!, $shiftId: String!) {
+    overtimeWhatIf(userId: $userId, shiftId: $shiftId) {
       projectedWeeklyHours
       projectedDailyHours
       weeklyWarn
@@ -271,6 +323,7 @@ export const SKILLS_QUERY = gql`
     skills {
       id
       name
+      staffCount
       createdAt
       updatedAt
     }
@@ -387,8 +440,11 @@ export const AVAILABLE_SWAPS_QUERY = gql`
         shift {
           id
           locationId
-          startAt
-          endAt
+          startDate
+          endDate
+          daysOfWeek
+          dailyStartTime
+          dailyEndTime
         }
       }
     }
@@ -408,8 +464,11 @@ export const MY_ASSIGNMENTS_QUERY = gql`
       shift {
         id
         locationId
-        startAt
-        endAt
+        startDate
+        endDate
+        daysOfWeek
+        dailyStartTime
+        dailyEndTime
         published
       }
     }
@@ -465,8 +524,11 @@ export const AVAILABLE_DROPS_QUERY = gql`
         shift {
           id
           locationId
-          startAt
-          endAt
+          startDate
+          endDate
+          daysOfWeek
+          dailyStartTime
+          dailyEndTime
         }
       }
     }
@@ -544,15 +606,17 @@ export const AUDIT_EXPORT_QUERY = gql`
     auditExport(start: $start, end: $end, locationId: $locationId) {
       id
       userId
-      userName
       entityId
       entityType
-      entityName
-      what
       action
       createdAt
       before
       after
+      user {
+        id
+        name
+        email
+      }
     }
   }
 `;
@@ -651,8 +715,11 @@ export const ON_DUTY_QUERY = gql`
     onDutyShifts(locationId: $locationId) {
       id
       locationId
-      startAt
-      endAt
+      startDate
+      endDate
+      daysOfWeek
+      dailyStartTime
+      dailyEndTime
       published
       assignments {
         id

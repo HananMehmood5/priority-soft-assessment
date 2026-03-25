@@ -38,30 +38,100 @@ describe('Overtime (e2e)', () => {
     const uid = userRes.body.data?.me?.id;
     expect(uid).toBeTruthy();
 
-    const assignmentStart = new Date(Date.now() + 7 * 24 * 3600 * 1000);
-    assignmentStart.setHours(9, 0, 0, 0);
-    const assignmentEnd = new Date(assignmentStart.getTime() + 8 * 3600 * 1000);
+    const locRes = await graphqlRequest(
+      app,
+      { query: `query Locations { locations { id } }` },
+      managerToken,
+    ).expect(200);
+    const locationId = locRes.body.data?.locations?.[0]?.id;
+    expect(locationId).toBeTruthy();
 
-    const res = await graphqlRequest(
+    // Pick a week far enough in the future that the test user has no existing assignments.
+    const base = new Date(Date.now() + 70 * 24 * 3600 * 1000);
+    const day = base.getUTCDay(); // 0=Sun..6=Sat
+    const diffToMon = (1 - day + 7) % 7;
+    base.setUTCDate(base.getUTCDate() + diffToMon);
+    base.setUTCHours(0, 0, 0, 0);
+
+    const startDate = base.toISOString().slice(0, 10);
+    const end = new Date(base);
+    end.setUTCDate(end.getUTCDate() + 6); // Sunday
+    const endDate = end.toISOString().slice(0, 10);
+
+    const createShift = async (daysOfWeek: number[]) => {
+      const res = await graphqlRequest(
+        app,
+        {
+          query: `mutation CreateShift($input: CreateShiftInput!) {
+            createShift(input: $input) { id }
+          }`,
+          variables: {
+            input: {
+              locationId,
+              startDate,
+              endDate,
+              dailyStartTime: '09:00',
+              dailyEndTime: '17:00',
+              daysOfWeek,
+            },
+          },
+        },
+        managerToken,
+      ).expect(200);
+
+      return res.body.data?.createShift?.id as string | undefined;
+    };
+
+    const shiftIdMonThu = await createShift([1, 2, 3, 4]); // Mon-Thu (4 days) => 32h
+    const shiftIdMonFri = await createShift([1, 2, 3, 4, 5]); // Mon-Fri (5 days) => 40h (block)
+    expect(shiftIdMonThu).toBeTruthy();
+    expect(shiftIdMonFri).toBeTruthy();
+
+    const resMonThu = await graphqlRequest(
       app,
       {
-        query: `query OvertimeWhatIf($userId: String!, $assignmentStart: DateTime!, $assignmentEnd: DateTime!) {
-          overtimeWhatIf(userId: $userId, assignmentStart: $assignmentStart, assignmentEnd: $assignmentEnd) {
-            canAssign projectedWeeklyHours weeklyWarn weeklyBlock
+        query: `query OvertimeWhatIf($userId: String!, $shiftId: String!) {
+          overtimeWhatIf(userId: $userId, shiftId: $shiftId) {
+            canAssign
+            projectedWeeklyHours
+            projectedDailyHours
+            weeklyBlock
           }
         }`,
-        variables: {
-          userId: uid,
-          assignmentStart: assignmentStart.toISOString(),
-          assignmentEnd: assignmentEnd.toISOString(),
-        },
+        variables: { userId: uid, shiftId: shiftIdMonThu },
       },
       token,
     ).expect(200);
 
-    expect(res.body.errors).toBeUndefined();
-    expect(res.body.data?.overtimeWhatIf).toBeDefined();
-    expect(typeof res.body.data.overtimeWhatIf.canAssign).toBe('boolean');
+    expect(resMonThu.body.errors).toBeUndefined();
+    expect(resMonThu.body.data?.overtimeWhatIf).toBeDefined();
+    expect(resMonThu.body.data.overtimeWhatIf.canAssign).toBe(true);
+    expect(resMonThu.body.data.overtimeWhatIf.projectedWeeklyHours).toBeLessThan(40);
+    expect(resMonThu.body.data.overtimeWhatIf.projectedDailyHours).toBeCloseTo(8, 5);
+    expect(resMonThu.body.data.overtimeWhatIf.weeklyBlock).toBe(false);
+
+    const resMonFri = await graphqlRequest(
+      app,
+      {
+        query: `query OvertimeWhatIf($userId: String!, $shiftId: String!) {
+          overtimeWhatIf(userId: $userId, shiftId: $shiftId) {
+            canAssign
+            projectedWeeklyHours
+            projectedDailyHours
+            weeklyBlock
+          }
+        }`,
+        variables: { userId: uid, shiftId: shiftIdMonFri },
+      },
+      token,
+    ).expect(200);
+
+    expect(resMonFri.body.errors).toBeUndefined();
+    expect(resMonFri.body.data?.overtimeWhatIf).toBeDefined();
+    expect(resMonFri.body.data.overtimeWhatIf.canAssign).toBe(false);
+    expect(resMonFri.body.data.overtimeWhatIf.projectedWeeklyHours).toBeGreaterThanOrEqual(40);
+    expect(resMonFri.body.data.overtimeWhatIf.projectedDailyHours).toBeCloseTo(8, 5);
+    expect(resMonFri.body.data.overtimeWhatIf.weeklyBlock).toBe(true);
   });
 
   test('overtimeDashboard as manager returns array', async () => {

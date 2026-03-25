@@ -26,15 +26,19 @@ export type UserAttributesDb = WithDates<UserAttributes, 'createdAt' | 'updatedA
 export type LocationAttributesDb = WithDates<LocationAttributes, 'createdAt' | 'updatedAt'>;
 export type SkillAttributesDb = WithDates<SkillAttributes, 'createdAt' | 'updatedAt'>;
 
-/** Creation payload at DB layer: startAt/endAt are Date. */
-export interface ShiftBaseAttributesDb extends Omit<ShiftBaseAttributes, 'startAt' | 'endAt'> {
-  startAt: Date;
-  endAt: Date;
+/** Creation payload at DB layer: dates are Date, daily times are strings. */
+export interface ShiftBaseAttributesDb
+  extends Omit<ShiftBaseAttributes, 'startDate' | 'endDate'> {
+  startDate: Date;
+  endDate: Date;
 }
 
 export type ShiftAttributesDb = WithDates<
-  ShiftAttributes,
-  'createdAt' | 'updatedAt' | 'startAt' | 'endAt'
+  Omit<ShiftAttributes, 'startDate' | 'endDate'> & {
+    startDate: Date;
+    endDate: Date;
+  },
+  'createdAt' | 'updatedAt'
 >;
 export type ShiftAssignmentAttributesDb = WithDates<
   ShiftAssignmentAttributes,

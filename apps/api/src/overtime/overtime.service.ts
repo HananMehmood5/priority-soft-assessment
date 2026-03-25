@@ -10,6 +10,7 @@ import {
   toISODate,
   toOrdinal,
 } from '../common/utils/date.utils';
+import { expandShiftToIntervals } from '../common/shift-time.utils';
 import { ShiftAssignment, Shift } from '../database/models';
 import { ShiftRepository } from '../database/repositories/shift.repository';
 import { ShiftAssignmentRepository } from '../database/repositories/shift-assignment.repository';
@@ -72,12 +73,14 @@ export class OvertimeService {
     const weekEndDate = addDays(weekStart, 7);
     const assignments = await this.assignmentRepository.findAllByUserIdWithShiftInTimeWindow(
       userId,
-      { startAtGte: weekStart, startAtLt: weekEndDate },
+      { rangeStart: weekStart, rangeEnd: weekEndDate },
     );
     let total = 0;
     for (const a of assignments) {
       const s = (a as { shift: Shift }).shift;
-      if (s) total += hoursBetween(s.startAt, s.endAt);
+      if (!s) continue;
+      const intervals = expandShiftToIntervals(s as any, { start: weekStart, end: weekEndDate });
+      for (const it of intervals) total += hoursBetween(it.start, it.end);
     }
     return total;
   }
@@ -87,12 +90,14 @@ export class OvertimeService {
     const dayEnd = endOfDay(date);
     const assignments = await this.assignmentRepository.findAllByUserIdWithShiftInTimeWindow(
       userId,
-      { startAtGte: dayStart, endAtLte: dayEnd },
+      { rangeStart: dayStart, rangeEnd: dayEnd },
     );
     let total = 0;
     for (const a of assignments) {
       const s = (a as { shift: Shift }).shift;
-      if (s) total += hoursBetween(s.startAt, s.endAt);
+      if (!s) continue;
+      const intervals = expandShiftToIntervals(s as any, { start: dayStart, end: dayEnd });
+      for (const it of intervals) total += hoursBetween(it.start, it.end);
     }
     return total;
   }
@@ -102,12 +107,14 @@ export class OvertimeService {
     const weekEndForConsec = addDays(weekStart, 7);
     const assignments = await this.assignmentRepository.findAllByUserIdWithShiftInTimeWindow(
       userId,
-      { startAtGte: weekStart, startAtLt: weekEndForConsec },
+      { rangeStart: weekStart, rangeEnd: weekEndForConsec },
     );
     const days = new Set<number>();
     for (const a of assignments) {
       const s = (a as { shift: Shift }).shift;
-      if (s) days.add(toOrdinal(s.startAt));
+      if (!s) continue;
+      const intervals = expandShiftToIntervals(s as any, { start: weekStart, end: weekEndForConsec });
+      for (const it of intervals) days.add(toOrdinal(it.start));
     }
     if (includeDate && isInRange(includeDate, weekStart, weekEndForConsec)) {
       days.add(toOrdinal(includeDate));
@@ -194,6 +201,138 @@ export class OvertimeService {
     };
   }
 
+  /**
+   * What-if for assigning a user to a shift template (date-range + daily times).
+   * Returns the *worst-case* projected weekly/daily hours across the template range.
+   */
+  async whatIfTemplate(
+    userId: string,
+    shiftId: string,
+    overtimeOverrideReason?: string | null,
+  ): Promise<WhatIfResult> {
+    const shift = await this.shiftRepository.findByIdOrFail(shiftId);
+    const intervals = expandShiftToIntervals(shift as any);
+    if (intervals.length === 0) {
+      return {
+        weeklyHours: 0,
+        weeklyWarn: false,
+        weeklyBlock: false,
+        dailyWarn: false,
+        dailyBlock: false,
+        consecutiveDays: 0,
+        consecutiveWarn: false,
+        consecutiveRequireOverride: false,
+        overtimeOverrideReason,
+        projectedWeeklyHours: 0,
+        projectedDailyHours: 0,
+        canAssign: true,
+        message: undefined,
+      };
+    }
+
+    // Group additional hours by week start and by day.
+    const addHoursByWeek = new Map<string, { weekStart: Date; hours: number; days: Set<number> }>();
+    const addHoursByDay = new Map<number, number>(); // ordinal day -> hours
+
+    for (const it of intervals) {
+      const weekStart = this.getWeekStart(it.start);
+      const weekKey = toISODate(weekStart);
+      const h = hoursBetween(it.start, it.end);
+      if (!addHoursByWeek.has(weekKey)) addHoursByWeek.set(weekKey, { weekStart, hours: 0, days: new Set() });
+      const w = addHoursByWeek.get(weekKey)!;
+      w.hours += h;
+      w.days.add(toOrdinal(it.start));
+      addHoursByDay.set(toOrdinal(it.start), (addHoursByDay.get(toOrdinal(it.start)) ?? 0) + h);
+    }
+
+    let maxProjectedWeekly = 0;
+    let maxProjectedDaily = 0;
+    let anyWeeklyWarn = false;
+    let anyWeeklyBlock = false;
+    let anyDailyWarn = false;
+    let anyDailyBlock = false;
+    let maxConsecutive = 0;
+    let anyConsecutiveWarn = false;
+    let anyConsecutiveRequireOverride = false;
+    const messages: string[] = [];
+
+    // Weekly checks per week bucket.
+    for (const { weekStart, hours: addHours, days } of addHoursByWeek.values()) {
+      const baseWeekly = await this.getWeeklyHours(userId, weekStart);
+      const projectedWeekly = baseWeekly + addHours;
+      maxProjectedWeekly = Math.max(maxProjectedWeekly, projectedWeekly);
+      if (projectedWeekly >= WEEKLY_WARN_HOURS) anyWeeklyWarn = true;
+      if (projectedWeekly >= WEEKLY_BLOCK_HOURS) anyWeeklyBlock = true;
+
+      // Consecutive days: include all additional days in this week.
+      const weekEndForConsec = addDays(weekStart, 7);
+      const assigned = await this.assignmentRepository.findAllByUserIdWithShiftInTimeWindow(userId, { rangeStart: weekStart, rangeEnd: weekEndForConsec });
+      const daySet = new Set<number>();
+      for (const a of assigned) {
+        const s = (a as { shift: Shift }).shift;
+        if (!s) continue;
+        const its = expandShiftToIntervals(s as any, { start: weekStart, end: weekEndForConsec });
+        for (const it of its) daySet.add(toOrdinal(it.start));
+      }
+      for (const d of days) daySet.add(d);
+      const sorted = [...daySet].sort((a, b) => a - b);
+      let run = 0;
+      let maxRun = 0;
+      for (let i = 0; i < sorted.length; i++) {
+        if (i === 0 || sorted[i] - sorted[i - 1] === 1) run++;
+        else run = 1;
+        if (run > maxRun) maxRun = run;
+      }
+      maxConsecutive = Math.max(maxConsecutive, maxRun);
+      if (maxRun >= CONSECUTIVE_WARN_DAYS) anyConsecutiveWarn = true;
+      if (maxRun >= CONSECUTIVE_OVERRIDE_DAYS && !overtimeOverrideReason) anyConsecutiveRequireOverride = true;
+    }
+
+    // Daily checks for each additional day.
+    for (const [dayOrdinal, addHours] of addHoursByDay.entries()) {
+      // Reconstruct a Date from ordinal by scanning intervals (we just need a representative day).
+      const dayDate = intervals.find((it) => toOrdinal(it.start) === dayOrdinal)?.start ?? intervals[0].start;
+      const baseDaily = await this.getDailyHours(userId, dayDate);
+      const projectedDaily = baseDaily + addHours;
+      maxProjectedDaily = Math.max(maxProjectedDaily, projectedDaily);
+      if (projectedDaily > DAILY_WARN_HOURS) anyDailyWarn = true;
+      if (projectedDaily > DAILY_BLOCK_HOURS) anyDailyBlock = true;
+    }
+
+    let canAssign = true;
+    if (anyWeeklyBlock) {
+      canAssign = false;
+      messages.push(`Weekly hours would exceed ${WEEKLY_BLOCK_HOURS}h (${maxProjectedWeekly.toFixed(1)}h).`);
+    }
+    if (anyDailyBlock) {
+      canAssign = false;
+      messages.push(`Daily hours would exceed ${DAILY_BLOCK_HOURS}h (${maxProjectedDaily.toFixed(1)}h).`);
+    }
+    if (anyConsecutiveRequireOverride) {
+      canAssign = false;
+      messages.push('7 consecutive days requires manager override with documented reason.');
+    }
+    if (anyWeeklyWarn && !anyWeeklyBlock) messages.push(`Weekly hours at or above ${WEEKLY_WARN_HOURS}h.`);
+    if (anyDailyWarn && !anyDailyBlock) messages.push(`Daily hours over ${DAILY_WARN_HOURS}h.`);
+    if (anyConsecutiveWarn && !anyConsecutiveRequireOverride) messages.push('6+ consecutive days worked.');
+
+    return {
+      weeklyHours: maxProjectedWeekly,
+      weeklyWarn: anyWeeklyWarn,
+      weeklyBlock: anyWeeklyBlock,
+      dailyWarn: anyDailyWarn,
+      dailyBlock: anyDailyBlock,
+      consecutiveDays: maxConsecutive,
+      consecutiveWarn: anyConsecutiveWarn,
+      consecutiveRequireOverride: anyConsecutiveRequireOverride,
+      overtimeOverrideReason,
+      projectedWeeklyHours: maxProjectedWeekly,
+      projectedDailyHours: maxProjectedDaily,
+      canAssign,
+      message: messages.length ? messages.join(' ') : undefined,
+    };
+  }
+
   async getDashboardData(
     locationId: string | null,
     start: Date,
@@ -211,27 +350,30 @@ export class OvertimeService {
       for (const a of ass || []) {
         const user = (a as { user?: { name: string | null } }).user;
         const userId = a.userId;
-        const weekStart = this.getWeekStart(shift.startAt);
-        const weekKey = toISODate(weekStart);
-        const hours = hoursBetween(shift.startAt, shift.endAt);
-        if (!byUser.has(userId)) {
-          byUser.set(userId, {
-            userName: user?.name ?? null,
-            weekStarts: new Map(),
+        const intervals = expandShiftToIntervals(shift as any, { start, end });
+        for (const it of intervals) {
+          const weekStart = this.getWeekStart(it.start);
+          const weekKey = toISODate(weekStart);
+          const hours = hoursBetween(it.start, it.end);
+          if (!byUser.has(userId)) {
+            byUser.set(userId, {
+              userName: user?.name ?? null,
+              weekStarts: new Map(),
+            });
+          }
+          const u = byUser.get(userId)!;
+          if (!u.weekStarts.has(weekKey)) {
+            u.weekStarts.set(weekKey, { hours: 0, assignments: [] });
+          }
+          const w = u.weekStarts.get(weekKey)!;
+          w.hours += hours;
+          w.assignments.push({
+            shiftId: shift.id,
+            startAt: it.start,
+            endAt: it.end,
+            hours,
           });
         }
-        const u = byUser.get(userId)!;
-        if (!u.weekStarts.has(weekKey)) {
-          u.weekStarts.set(weekKey, { hours: 0, assignments: [] });
-        }
-        const w = u.weekStarts.get(weekKey)!;
-        w.hours += hours;
-        w.assignments.push({
-          shiftId: shift.id,
-          startAt: shift.startAt,
-          endAt: shift.endAt,
-          hours,
-        });
       }
     }
     const result: DashboardOvertimeEntry[] = [];

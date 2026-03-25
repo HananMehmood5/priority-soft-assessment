@@ -9,6 +9,8 @@ import { ConstraintsService, ConstraintResult } from '../constraints/constraints
 import { RequestsService } from '../requests/requests.service';
 import { OvertimeService } from '../overtime/overtime.service';
 import { AuditService } from '../audit/audit.service';
+import { expandShiftToIntervals } from '../common/shift-time.utils';
+import { addDays } from '../common/utils/date.utils';
 
 const DEFAULT_CUTOFF_HOURS = 48;
 
@@ -23,7 +25,7 @@ export class ShiftsService {
     private readonly requestsService: RequestsService,
     private readonly overtimeService: OvertimeService,
     private readonly auditService: AuditService,
-  ) {}
+  ) { }
 
   private getCutoffHours(): number {
     return this.config.get<number>('CUTOFF_HOURS', DEFAULT_CUTOFF_HOURS);
@@ -31,22 +33,68 @@ export class ShiftsService {
 
   private isPastCutoff(shiftStartAt: Date): boolean {
     const cutoffMs = this.getCutoffHours() * 60 * 60 * 1000;
-    return Date.now() >= (shiftStartAt.getTime() - cutoffMs);
+    return Date.now() >= shiftStartAt.getTime() - cutoffMs;
+  }
+
+  /** Derive a single concrete interval covering the whole shift template. */
+  private getTemplateBounds(shift: Shift): { start: Date; end: Date } {
+    const intervals = expandShiftToIntervals(shift as any);
+    if (intervals.length === 0) {
+      // Fallback to previous behavior if the template is invalid/empty.
+      const startDate = shift.startDate as Date;
+      const endDate = shift.endDate as Date;
+      const [sh, sm] = (shift.dailyStartTime ?? '00:00').split(':').map(Number);
+      const [eh, em] = (shift.dailyEndTime ?? '00:00').split(':').map(Number);
+
+      const start = new Date(startDate);
+      start.setHours(sh, sm, 0, 0);
+
+      const end = new Date(endDate);
+      if (shift.dailyEndTime && shift.dailyStartTime && shift.dailyEndTime <= shift.dailyStartTime) {
+        end.setDate(end.getDate() + 1);
+      }
+      end.setHours(eh, em, 0, 0);
+
+      return { start, end };
+    }
+
+    return {
+      start: intervals[0].start,
+      end: intervals.reduce((max, it) => (it.end > max ? it.end : max), intervals[0].end),
+    };
   }
 
   async create(
-    data: { locationId: string; startAt: Date; endAt: Date },
+    data: {
+      locationId: string;
+      startDate: string;
+      endDate: string;
+      daysOfWeek: number[];
+      dailyStartTime: string;
+      dailyEndTime: string;
+    },
     user: User,
   ): Promise<Shift> {
     const can = await this.permissions.canManageLocation(user, data.locationId);
     if (!can) throw new ForbiddenException('You cannot create shifts for this location');
-    if (data.startAt >= data.endAt) {
-      throw new BadRequestException('startAt must be before endAt');
+
+    if (data.startDate > data.endDate) {
+      throw new BadRequestException('startDate must be on or before endDate');
     }
+    if (data.dailyStartTime === data.dailyEndTime) {
+      throw new BadRequestException('dailyStartTime and dailyEndTime must differ');
+    }
+    if (!Array.isArray(data.daysOfWeek) || data.daysOfWeek.length === 0) {
+      throw new BadRequestException('daysOfWeek must be a non-empty list');
+    }
+
     const shift = await this.shiftRepository.create({
       locationId: data.locationId,
-      startAt: data.startAt,
-      endAt: data.endAt,
+      startDate: new Date(data.startDate),
+      endDate: new Date(data.endDate),
+      daysOfWeek: data.daysOfWeek,
+      dailyStartTime: data.dailyStartTime,
+      dailyEndTime: data.dailyEndTime,
       published: false,
     });
     await this.auditService.log(
@@ -62,21 +110,54 @@ export class ShiftsService {
 
   async update(
     id: string,
-    data: { startAt?: Date; endAt?: Date },
+    data: {
+      startDate?: string;
+      endDate?: string;
+      daysOfWeek?: number[];
+      dailyStartTime?: string;
+      dailyEndTime?: string;
+    },
     user: User,
   ): Promise<Shift> {
     const shift = await this.shiftRepository.findByIdOrFail(id);
     const can = await this.permissions.canManageLocation(user, shift.locationId);
     if (!can) throw new ForbiddenException('You cannot edit this shift');
-    if (shift.published && this.isPastCutoff(shift.startAt)) {
+
+    const boundsBefore = this.getTemplateBounds(shift);
+    if (shift.published && this.isPastCutoff(boundsBefore.start)) {
       throw new BadRequestException('Cannot edit shift after cutoff (default 48h before start)');
     }
+
     const before = shift.toJSON() as unknown as Record<string, unknown>;
-    if (data.startAt !== undefined) shift.startAt = data.startAt;
-    if (data.endAt !== undefined) shift.endAt = data.endAt;
-    if (data.startAt && data.endAt && data.startAt >= data.endAt) {
-      throw new BadRequestException('startAt must be before endAt');
+
+    if (data.startDate !== undefined) {
+      shift.startDate = new Date(data.startDate);
     }
+    if (data.endDate !== undefined) {
+      shift.endDate = new Date(data.endDate);
+    }
+    if (data.dailyStartTime !== undefined) {
+      shift.dailyStartTime = data.dailyStartTime;
+    }
+    if (data.dailyEndTime !== undefined) {
+      shift.dailyEndTime = data.dailyEndTime;
+    }
+    if (data.daysOfWeek !== undefined) {
+      if (!Array.isArray(data.daysOfWeek) || data.daysOfWeek.length === 0) {
+        throw new BadRequestException('daysOfWeek must be a non-empty list');
+      }
+      shift.daysOfWeek = data.daysOfWeek;
+    }
+
+    const sDate = (shift.startDate as Date).toISOString().slice(0, 10);
+    const eDate = (shift.endDate as Date).toISOString().slice(0, 10);
+    if (sDate > eDate) {
+      throw new BadRequestException('startDate must be on or before endDate');
+    }
+    if (shift.dailyStartTime === shift.dailyEndTime) {
+      throw new BadRequestException('dailyStartTime and dailyEndTime must differ');
+    }
+
     await shift.save();
     await this.auditService.log(
       user.id,
@@ -98,22 +179,21 @@ export class ShiftsService {
     const shift = await this.shiftRepository.findByIdOrFail(shiftId);
     const can = await this.permissions.canManageLocation(user, shift.locationId);
     if (!can) throw new ForbiddenException('You cannot assign to this shift');
-    if (shift.published && this.isPastCutoff(shift.startAt)) {
+    const { start, end } = this.getTemplateBounds(shift);
+    if (shift.published && this.isPastCutoff(start)) {
       throw new BadRequestException('Cannot change assignment after cutoff');
     }
     const result = await this.constraints.validateAssignment(
       data.userId,
       shift.locationId,
       data.skillId,
-      shift.startAt,
-      shift.endAt,
+      shift,
     );
     if (!result.valid) {
       const alternatives = await this.constraints.getAlternatives(
         shift.locationId,
         data.skillId,
-        shift.startAt,
-        shift.endAt,
+        shift,
         data.userId,
       );
       return {
@@ -121,10 +201,9 @@ export class ShiftsService {
         constraintError: { ...result, alternatives },
       };
     }
-    const whatIf = await this.overtimeService.whatIf(
+    const whatIf = await this.overtimeService.whatIfTemplate(
       data.userId,
-      shift.startAt,
-      shift.endAt,
+      shift.id,
       data.overtimeOverrideReason ?? undefined,
     );
     if (!whatIf.canAssign) {
@@ -159,7 +238,8 @@ export class ShiftsService {
     if (!shift) throw new NotFoundException('Shift not found');
     const can = await this.permissions.canManageLocation(user, shift.locationId);
     if (!can) throw new ForbiddenException('You cannot remove this assignment');
-    if (shift.published && this.isPastCutoff(shift.startAt)) {
+    const { start } = this.getTemplateBounds(shift);
+    if (shift.published && this.isPastCutoff(start)) {
       throw new BadRequestException('Cannot change assignment after cutoff');
     }
     const before = assignment.toJSON() as unknown as Record<string, unknown>;
@@ -188,16 +268,6 @@ export class ShiftsService {
     const weekEnd = new Date(weekStart);
     weekEnd.setDate(weekEnd.getDate() + 7);
     return this.shiftRepository.updateWeekPublished(locationId, weekStart, weekEnd, true);
-  }
-
-  async unpublish(shiftId: string, user: User): Promise<Shift> {
-    const shift = await this.shiftRepository.findByIdOrFail(shiftId);
-    const can = await this.permissions.canManageLocation(user, shift.locationId);
-    if (!can) throw new ForbiddenException('You cannot unpublish this shift');
-    if (this.isPastCutoff(shift.startAt)) {
-      throw new BadRequestException('Cannot unpublish shift after cutoff');
-    }
-    return this.shiftRepository.updatePublished(shiftId, false);
   }
 
   async delete(id: string, user: User): Promise<void> {
@@ -252,17 +322,26 @@ export class ShiftsService {
     return this.assignmentRepository.findAllByUserIdWithShift(user.id);
   }
 
-  /** On-duty: shifts where startAt <= now < endAt (optionally filter by userId or locationId) */
+  /** On-duty: shifts where the template covers "now" (optionally filter by userId or locationId) */
   async findOnDuty(
     user: User,
     options: { userId?: string; locationId?: string },
   ): Promise<Shift[]> {
     const now = new Date();
+    // First, fetch candidate shifts by date range overlap (including possible overnight from previous day)
     let shifts = await this.shiftRepository.findInWindow({
-      startAt: { lte: now },
-      endAt: { gt: now },
+      startDateLte: now,
+      endDateGte: new Date(now.getTime() - 24 * 60 * 60 * 1000),
       published: true,
       locationId: options.locationId,
+    });
+    // Then, filter in-memory by derived interval covering "now"
+    shifts = shifts.filter((s) => {
+      const intervals = expandShiftToIntervals(s as any, {
+        start: new Date(now.getTime() - 24 * 60 * 60 * 1000),
+        end: addDays(now, 1),
+      });
+      return intervals.some((it) => it.start <= now && now < it.end);
     });
     if (options.userId) {
       shifts = shifts.filter((s) =>
