@@ -9,8 +9,13 @@ import { Modal } from "@/src/components/Modal";
 import { ShiftListTable } from "@/features/shifts/components/ShiftListTable";
 import { ShiftForm } from "@/features/shifts/components/ShiftForm";
 import { SHIFTS_WITH_LOCATIONS_QUERY, CREATE_SHIFT_MUTATION } from "@/lib/apollo/operations";
-import type { ShiftsWithLocationsQuery } from "@/generated/graphql-types";
+import type { LocationAttributes, ShiftAttributes } from "@shiftsync/shared";
 import { PlusIcon } from "@/src/components/icons/PlusIcon";
+
+type ShiftsWithLocationsData = {
+  shifts: ShiftAttributes[];
+  locations: LocationAttributes[];
+};
 
 export function ShiftsListContainer() {
   const { token } = useAuth();
@@ -23,7 +28,7 @@ export function ShiftsListContainer() {
   const [dailyEndTime, setDailyEndTime] = useState("");
   const [createError, setCreateError] = useState<string | null>(null);
 
-  const { data, loading, error } = useQuery<ShiftsWithLocationsQuery>(
+  const { data, loading, error } = useQuery<ShiftsWithLocationsData>(
     SHIFTS_WITH_LOCATIONS_QUERY,
     { skip: !token }
   );

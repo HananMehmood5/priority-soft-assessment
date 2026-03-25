@@ -13,7 +13,17 @@ module.exports = {
     "^.+\\.(t|j)sx?$": [
       "ts-jest",
       {
-        tsconfig: "<rootDir>/tsconfig.json",
+        tsconfig: {
+          jsx: "react-jsx",
+          module: "commonjs",
+          esModuleInterop: true,
+          strict: true,
+          skipLibCheck: true,
+          moduleResolution: "node",
+          isolatedModules: true,
+          resolveJsonModule: true,
+          lib: ["dom", "dom.iterable", "esnext"],
+        },
         useESM: false,
       },
     ],
