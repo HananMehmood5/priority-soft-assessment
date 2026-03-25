@@ -3,11 +3,13 @@
 import { useState } from 'react';
 import { useQuery } from '@apollo/client';
 import { useAuth } from '@/lib/auth-context';
+import type { LocationAttributes } from '@/app/types';
 import { UserRole } from '@shiftsync/shared';
 import {
   DISTRIBUTION_QUERY,
   PREMIUM_FAIRNESS_QUERY,
   DESIRED_HOURS_QUERY,
+  LOCATIONS_QUERY,
 } from '@/lib/apollo/operations';
 
 type DistributionEntry = {
@@ -76,16 +78,24 @@ export default function FairnessPage() {
       skip: !token,
     }
   );
+  const locationsQuery = useQuery<{
+    locations: Pick<LocationAttributes, 'id' | 'name' | 'timezone'>[];
+  }>(LOCATIONS_QUERY, {
+    skip: !token,
+  });
 
-  const loading = distQuery.loading || premQuery.loading || desiredQuery.loading;
+  const loading =
+    distQuery.loading || premQuery.loading || desiredQuery.loading || locationsQuery.loading;
   const error =
     distQuery.error?.message ??
     premQuery.error?.message ??
     desiredQuery.error?.message ??
+    locationsQuery.error?.message ??
     null;
   const distribution = distQuery.data?.reportDistribution ?? [];
   const premium = premQuery.data?.reportPremiumFairness ?? [];
   const desired = desiredQuery.data?.reportDesiredHours ?? [];
+  const locations = locationsQuery.data?.locations ?? [];
 
   const refetchAll = () => {
     distQuery.refetch();
@@ -108,9 +118,9 @@ export default function FairnessPage() {
           e.preventDefault();
           refetchAll();
         }}
-        className="mb-6 flex flex-wrap gap-3"
+        className="mb-6 grid gap-3 rounded-ps border border-ps-border bg-ps-bg-card p-4 sm:grid-cols-2 lg:grid-cols-5"
       >
-        <div>
+        <div className="min-w-0">
           <label htmlFor="start" className="mb-1 block text-ps-sm">
             Start date
           </label>
@@ -119,10 +129,10 @@ export default function FairnessPage() {
             type="date"
             value={dateStart}
             onChange={(e) => setDateStart(e.target.value)}
-            className="rounded-ps border border-ps-border bg-ps-bg-card px-3 py-2 text-sm text-ps-fg outline-none focus:border-ps-border-focus focus:ring-2 focus:ring-ps-border-focus"
+            className="w-full rounded-ps border border-ps-border bg-ps-bg px-3 py-2 text-sm text-ps-fg outline-none focus:border-ps-border-focus focus:ring-2 focus:ring-ps-border-focus"
           />
         </div>
-        <div>
+        <div className="min-w-0">
           <label htmlFor="end" className="mb-1 block text-ps-sm">
             End date
           </label>
@@ -131,22 +141,28 @@ export default function FairnessPage() {
             type="date"
             value={dateEnd}
             onChange={(e) => setDateEnd(e.target.value)}
-            className="rounded-ps border border-ps-border bg-ps-bg-card px-3 py-2 text-sm text-ps-fg outline-none focus:border-ps-border-focus focus:ring-2 focus:ring-ps-border-focus"
+            className="w-full rounded-ps border border-ps-border bg-ps-bg px-3 py-2 text-sm text-ps-fg outline-none focus:border-ps-border-focus focus:ring-2 focus:ring-ps-border-focus"
           />
         </div>
-        <div>
+        <div className="min-w-0">
           <label htmlFor="locationId" className="mb-1 block text-ps-sm">
-            Location ID (optional)
+            Location
           </label>
-          <input
+          <select
             id="locationId"
             value={locationId}
             onChange={(e) => setLocationId(e.target.value)}
-            placeholder="Filter by location…"
-            className="rounded-ps border border-ps-border bg-ps-bg-card px-3 py-2 text-sm text-ps-fg outline-none focus:border-ps-border-focus focus:ring-2 focus:ring-ps-border-focus"
-          />
+            className="w-full rounded-ps border border-ps-border bg-ps-bg px-3 py-2 text-sm text-ps-fg outline-none focus:border-ps-border-focus focus:ring-2 focus:ring-ps-border-focus"
+          >
+            <option value="">All locations</option>
+            {locations.map((location) => (
+              <option key={location.id} value={location.id}>
+                {location.name}
+              </option>
+            ))}
+          </select>
         </div>
-        <div>
+        <div className="min-w-0">
           <label htmlFor="role" className="mb-1 block text-ps-sm">
             Staff role (optional)
           </label>
@@ -154,7 +170,7 @@ export default function FairnessPage() {
             id="role"
             value={role}
             onChange={(e) => setRole(e.target.value as UserRole | '')}
-            className="rounded-ps border border-ps-border bg-ps-bg-card px-3 py-2 text-sm text-ps-fg outline-none focus:border-ps-border-focus focus:ring-2 focus:ring-ps-border-focus"
+            className="w-full rounded-ps border border-ps-border bg-ps-bg px-3 py-2 text-sm text-ps-fg outline-none focus:border-ps-border-focus focus:ring-2 focus:ring-ps-border-focus"
           >
             <option value="">All roles</option>
             <option value={UserRole.Staff}>Staff</option>
@@ -162,7 +178,7 @@ export default function FairnessPage() {
             <option value={UserRole.Admin}>Admin</option>
           </select>
         </div>
-        <div className="self-end">
+        <div className="self-end lg:justify-self-start">
           <button
             type="submit"
             disabled={loading}
@@ -172,7 +188,11 @@ export default function FairnessPage() {
           </button>
         </div>
       </form>
-      {error && <p className="mb-3 text-ps-error">{error}</p>}
+      {error && (
+        <p className="mb-4 rounded-ps border border-ps-error bg-ps-error/10 p-3 text-sm text-ps-error">
+          {error}
+        </p>
+      )}
       {loading ? (
         <p className="text-ps-fg-muted">Loading…</p>
       ) : (
@@ -180,7 +200,9 @@ export default function FairnessPage() {
           <section className="mb-6">
             <h2 className="mb-2 text-ps-lg font-semibold">Hours distribution</h2>
             {distribution.length === 0 ? (
-              <p className="text-ps-fg-muted">No data.</p>
+              <div className="rounded-ps border border-dashed border-ps-border p-4 text-sm text-ps-fg-muted">
+                No data.
+              </div>
             ) : (
               <div className="overflow-hidden rounded-ps border border-ps-border bg-ps-bg-card">
                 <table className="min-w-full border-collapse text-left text-sm">
@@ -209,7 +231,9 @@ export default function FairnessPage() {
           <section className="mb-6">
             <h2 className="mb-2 text-ps-lg font-semibold">Premium shift fairness</h2>
             {premium.length === 0 ? (
-              <p className="text-ps-fg-muted">No data.</p>
+              <div className="rounded-ps border border-dashed border-ps-border p-4 text-sm text-ps-fg-muted">
+                No data.
+              </div>
             ) : (
               <div className="overflow-hidden rounded-ps border border-ps-border bg-ps-bg-card">
                 <table className="min-w-full border-collapse text-left text-sm">
@@ -242,7 +266,9 @@ export default function FairnessPage() {
           <section>
             <h2 className="mb-2 text-ps-lg font-semibold">Desired vs actual hours</h2>
             {desired.length === 0 ? (
-              <p className="text-ps-fg-muted">No data.</p>
+              <div className="rounded-ps border border-dashed border-ps-border p-4 text-sm text-ps-fg-muted">
+                No data.
+              </div>
             ) : (
               <div className="overflow-hidden rounded-ps border border-ps-border bg-ps-bg-card">
                 <table className="min-w-full border-collapse text-left text-sm">
@@ -266,12 +292,12 @@ export default function FairnessPage() {
                         <td className="px-2 py-2">{d.actualHours.toFixed(1)}h</td>
                         <td className="px-2 py-2">
                           <span
-                            className={`inline-block rounded-full px-2 py-0.5 text-ps-xs ${
+                            className={`inline-block rounded-full border px-2.5 py-1 text-ps-xs ${
                               d.status === 'over'
-                                ? 'bg-ps-primary-muted text-ps-warning'
+                                ? 'border-rose-500/40 bg-rose-500/10 text-rose-300'
                                 : d.status === 'under'
-                                ? 'bg-ps-bg-card text-ps-fg-muted'
-                                : 'text-ps-fg-muted'
+                                ? 'border-amber-500/40 bg-amber-500/10 text-amber-300'
+                                : 'border-emerald-500/40 bg-emerald-500/10 text-emerald-300'
                             }`}
                           >
                             {d.status}

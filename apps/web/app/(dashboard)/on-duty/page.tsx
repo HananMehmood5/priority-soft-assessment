@@ -3,28 +3,94 @@
 import { useEffect, useState } from 'react';
 import { useQuery } from '@apollo/client';
 import { useAuth } from '@/lib/auth-context';
-import type { ShiftAttributes, ShiftAssignmentAttributes } from '@/app/types';
+import type { LocationAttributes, ShiftAssignmentAttributes, ShiftAttributes } from '@/app/types';
 import { UserRole } from '@shiftsync/shared';
 import { useSocket } from '@/lib/use-socket';
-import { ON_DUTY_QUERY } from '@/lib/apollo/operations';
+import { LOCATIONS_QUERY, ON_DUTY_QUERY } from '@/lib/apollo/operations';
+
+type AssignmentWithUser = ShiftAssignmentAttributes & {
+  user?: {
+    id: string;
+    name?: string | null;
+    email?: string;
+  } | null;
+};
 
 type ShiftWithAssignments = ShiftAttributes & {
-  assignments?: ShiftAssignmentAttributes[];
+  location?: Pick<LocationAttributes, 'id' | 'name' | 'timezone'> | null;
+  assignments?: AssignmentWithUser[];
 };
+
+type OnDutyQueryResult = {
+  onDutyShifts: ShiftWithAssignments[];
+};
+
+type LocationsQueryResult = {
+  locations: Pick<LocationAttributes, 'id' | 'name' | 'timezone'>[];
+};
+
+function formatTime(time: string): string {
+  const [hoursPart, minutesPart] = time.split(':');
+  const hours = Number(hoursPart);
+  const minutes = Number(minutesPart);
+  if (Number.isNaN(hours) || Number.isNaN(minutes)) return time;
+  const hour12 = hours % 12 || 12;
+  const suffix = hours >= 12 ? 'PM' : 'AM';
+  return `${hour12}:${String(minutes).padStart(2, '0')} ${suffix}`;
+}
+
+function formatDateRange(startDate: string, endDate: string): string {
+  const start = new Date(`${startDate}T00:00:00Z`);
+  const end = new Date(`${endDate}T00:00:00Z`);
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+    return `${startDate} - ${endDate}`;
+  }
+  const fullDate = new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+  const monthDay = new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric',
+  });
+
+  return startDate === endDate
+    ? fullDate.format(start)
+    : `${monthDay.format(start)} - ${fullDate.format(end)}`;
+}
+
+function formatAssignee(assignment: AssignmentWithUser): string {
+  const name = assignment.user?.name?.trim();
+  if (name) return name;
+  const email = assignment.user?.email?.trim();
+  if (email) return email;
+  if (assignment.userId.length <= 8) return assignment.userId;
+  return `User ${assignment.userId.slice(0, 8)}`;
+}
 
 export default function OnDutyPage() {
   const { token, user } = useAuth();
   const socket = useSocket();
   const [locationId, setLocationId] = useState('');
 
-  const { data, loading, error, refetch } = useQuery<{
-    onDutyShifts: ShiftWithAssignments[];
-  }>(ON_DUTY_QUERY, {
+  const { data, loading, error, refetch } = useQuery<OnDutyQueryResult>(ON_DUTY_QUERY, {
     variables: { locationId: locationId || null },
     skip: !token,
   });
 
+  const {
+    data: locationsData,
+    loading: locationsLoading,
+    error: locationsError,
+  } = useQuery<LocationsQueryResult>(LOCATIONS_QUERY, {
+    skip: !token,
+  });
+
   const shifts = data?.onDutyShifts ?? [];
+  const locations = locationsData?.locations ?? [];
+  const isLoading = loading || locationsLoading;
+  const queryError = error ?? locationsError;
 
   useEffect(() => {
     if (!socket) return;
@@ -46,85 +112,125 @@ export default function OnDutyPage() {
     return <p className="text-ps-error">You do not have access to the on-duty dashboard.</p>;
   }
 
-  const grouped = shifts.reduce<Record<string, ShiftWithAssignments[]>>((acc, s) => {
-    const key = s.locationId;
+  const grouped = shifts.reduce<Record<string, ShiftWithAssignments[]>>((acc, shift) => {
+    const key = shift.locationId;
     acc[key] = acc[key] || [];
-    acc[key].push(s);
+    acc[key].push(shift);
     return acc;
   }, {});
 
   return (
     <div>
-      <h1 className="mb-3 text-2xl font-bold">On-duty dashboard</h1>
-      <p className="mb-4 text-ps-fg-muted">
+      <h1 className="mb-2 text-2xl font-bold">On-duty dashboard</h1>
+      <p className="mb-5 text-ps-fg-muted">
         Who is currently on duty, by location. Updates automatically as the schedule changes.
       </p>
+
       <form
         onSubmit={(e) => {
           e.preventDefault();
           refetch();
         }}
-        className="mb-5 flex flex-wrap gap-3"
+        className="mb-6 flex flex-col gap-3 rounded-ps border border-ps-border bg-ps-bg-card p-4 sm:flex-row sm:items-end"
       >
-        <div>
+        <div className="min-w-0 flex-1">
           <label htmlFor="locationId" className="mb-1 block text-ps-sm">
-            Location ID (optional)
+            Location
           </label>
-          <input
+          <select
             id="locationId"
             value={locationId}
             onChange={(e) => setLocationId(e.target.value)}
-            placeholder="Filter by location…"
-            className="rounded-ps border border-ps-border bg-ps-bg-card px-3 py-2 text-sm text-ps-fg outline-none focus:border-ps-border-focus focus:ring-2 focus:ring-ps-border-focus"
-          />
+            className="w-full rounded-ps border border-ps-border bg-ps-bg px-3 py-2 text-sm text-ps-fg outline-none focus:border-ps-border-focus focus:ring-2 focus:ring-ps-border-focus"
+          >
+            <option value="">All locations</option>
+            {locations.map((location) => (
+              <option key={location.id} value={location.id}>
+                {location.name}
+              </option>
+            ))}
+          </select>
         </div>
-        <div className="self-end">
+        <div>
           <button
             type="submit"
-            disabled={loading}
+            disabled={isLoading}
             className="inline-flex items-center justify-center rounded-ps bg-ps-primary px-4 py-2 text-sm font-semibold text-ps-primary-foreground shadow-ps transition-colors hover:bg-ps-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {loading ? 'Loading…' : 'Refresh'}
+            {isLoading ? 'Loading…' : 'Refresh'}
           </button>
         </div>
       </form>
-      {error && <p className="mb-3 text-ps-error">{error.message}</p>}
-      {loading ? (
+
+      {queryError && (
+        <p className="mb-4 rounded-ps border border-ps-error bg-ps-error/10 p-3 text-sm text-ps-error">
+          {queryError.message}
+        </p>
+      )}
+
+      {isLoading ? (
         <p className="text-ps-fg-muted">Loading…</p>
       ) : Object.keys(grouped).length === 0 ? (
-        <p className="text-ps-fg-muted">No one is currently on duty.</p>
+        <div className="rounded-ps border border-dashed border-ps-border p-6 text-center text-ps-fg-muted">
+          No one is currently on duty for the selected location.
+        </div>
       ) : (
         <div className="flex flex-col gap-4">
           {Object.entries(grouped).map(([locId, list]) => (
-            <div
-              key={locId}
-              className="rounded-ps border border-ps-border bg-ps-bg-card p-4"
-            >
-              <h2 className="mb-2 text-ps-lg font-semibold">Location {locId}</h2>
-              <table className="min-w-full border-collapse text-left text-sm">
-                <thead>
-                  <tr className="border-b border-ps-border text-left">
-                    <th className="px-2 py-2 font-semibold">Shift</th>
-                    <th className="px-2 py-2 font-semibold">Time</th>
-                    <th className="px-2 py-2 font-semibold">Assignments</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {list.map((s) => (
-                    <tr key={s.id} className="border-b border-ps-border">
-                      <td className="px-2 py-2">{s.id}</td>
-                      <td className="px-2 py-2">
-                        {s.dailyStartTime}–{s.dailyEndTime} from {s.startDate} to {s.endDate}
-                      </td>
-                      <td className="px-2 py-2 text-ps-xs text-ps-fg-muted">
-                        {s.assignments && s.assignments.length > 0
-                          ? s.assignments.map((a) => a.userId).join(', ')
-                          : 'Unassigned'}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div key={locId} className="rounded-ps border border-ps-border bg-ps-bg-card p-4">
+              <h2 className="text-ps-lg font-semibold">
+                {list[0]?.location?.name ||
+                  locations.find((location) => location.id === locId)?.name ||
+                  `Location ${locId.slice(0, 8)}`}
+              </h2>
+              <p className="mb-3 text-xs text-ps-fg-muted">
+                {list[0]?.location?.timezone
+                  ? `Timezone: ${list[0].location.timezone}`
+                  : `Location ID: ${locId}`}
+              </p>
+
+              <div className="space-y-3">
+                {list.map((shift) => (
+                  <article key={shift.id} className="rounded-ps border border-ps-border bg-ps-bg p-3">
+                    <div className="grid gap-3 md:grid-cols-[2fr_2fr_3fr]">
+                      <div>
+                        <p className="text-xs uppercase tracking-wide text-ps-fg-muted">Shift</p>
+                        <p className="mt-1 text-sm font-medium text-ps-fg">
+                          {shift.id.length <= 8 ? shift.id : `#${shift.id.slice(0, 8)}`}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs uppercase tracking-wide text-ps-fg-muted">Schedule</p>
+                        <p className="mt-1 text-sm text-ps-fg">
+                          {formatTime(shift.dailyStartTime)} - {formatTime(shift.dailyEndTime)}
+                        </p>
+                        <p className="text-xs text-ps-fg-muted">
+                          {formatDateRange(shift.startDate, shift.endDate)}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs uppercase tracking-wide text-ps-fg-muted">
+                          Assigned team
+                        </p>
+                        <div className="mt-1 flex flex-wrap gap-2">
+                          {shift.assignments && shift.assignments.length > 0 ? (
+                            shift.assignments.map((assignment) => (
+                              <span
+                                key={assignment.id}
+                                className="rounded-full border border-ps-border px-2 py-1 text-xs text-ps-fg"
+                              >
+                                {formatAssignee(assignment)}
+                              </span>
+                            ))
+                          ) : (
+                            <span className="text-sm text-ps-fg-muted">Unassigned</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </article>
+                ))}
+              </div>
             </div>
           ))}
         </div>

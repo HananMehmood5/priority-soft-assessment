@@ -230,6 +230,20 @@ export const CREATE_SHIFT_MUTATION = gql`
   }
 `;
 
+export const UPDATE_SHIFT_MUTATION = gql`
+  mutation UpdateShift($id: String!, $input: UpdateShiftInput!) {
+    updateShift(id: $id, input: $input) {
+      id
+      startDate
+      endDate
+      daysOfWeek
+      dailyStartTime
+      dailyEndTime
+      updatedAt
+    }
+  }
+`;
+
 export const PUBLISH_SHIFT_MUTATION = gql`
   mutation PublishShift($shiftId: String!) {
     publishShift(shiftId: $shiftId) {
@@ -715,6 +729,11 @@ export const ON_DUTY_QUERY = gql`
     onDutyShifts(locationId: $locationId) {
       id
       locationId
+      location {
+        id
+        name
+        timezone
+      }
       startDate
       endDate
       daysOfWeek
@@ -725,6 +744,11 @@ export const ON_DUTY_QUERY = gql`
         id
         userId
         skillId
+        user {
+          id
+          name
+          email
+        }
       }
     }
   }

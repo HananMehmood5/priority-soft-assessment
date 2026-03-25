@@ -3,13 +3,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import { useQuery, useMutation } from "@apollo/client";
-import type { ShiftAttributes, SkillAttributes } from "@shiftsync/shared";
+import type { ShiftAttributes, SkillAttributes, LocationAttributes } from "@shiftsync/shared";
 
 import { useAuth } from "@/lib/auth-context";
 import { ShiftDetailsView } from "@/features/shifts/components/ShiftDetailsView";
 import { ShiftAssignmentsSection } from "@/features/shifts/components/ShiftAssignmentsSection";
 import { ShiftAuditTimeline } from "@/features/shifts/components/ShiftAuditTimeline";
 import { ShiftAssignmentsTable } from "@/features/shifts/components/ShiftAssignmentsTable";
+import { ShiftForm } from "@/features/shifts/components/ShiftForm";
 import { Modal } from "@/src/components/Modal";
 import type { OvertimeWhatIf } from "@/features/shifts/types/OvertimeWhatIf";
 import type { ConstraintError } from "@/features/shifts/types/ConstraintError";
@@ -24,8 +25,9 @@ import {
   OVERTIME_WHAT_IF_QUERY,
   SHIFT_HISTORY_QUERY,
   PUBLISH_SHIFT_MUTATION,
-  UNPUBLISH_SHIFT_MUTATION,
   DELETE_SHIFT_MUTATION,
+  LOCATIONS_QUERY,
+  UPDATE_SHIFT_MUTATION,
 } from "@/lib/apollo/operations";
 
 type AddAssignmentResult = {
@@ -45,12 +47,18 @@ export function ShiftDetailsContainer() {
   const [assignmentError, setAssignmentError] = useState<string | null>(null);
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [addAssignmentOpen, setAddAssignmentOpen] = useState(false);
+  const [editDetailsOpen, setEditDetailsOpen] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [daysOfWeek, setDaysOfWeek] = useState<number[]>([0, 1, 2, 3, 4, 5, 6]);
+  const [dailyStartTime, setDailyStartTime] = useState("");
+  const [dailyEndTime, setDailyEndTime] = useState("");
 
   const shiftQuery = useQuery<{ shift: ShiftAttributes | null }>(SHIFT_QUERY, {
     variables: { id },
     skip: !token || !id,
   });
-  console.log("shiftQuery", shiftQuery);
   const shift = shiftQuery.data?.shift ?? null;
   const skillsQuery = useQuery<{ skills: Pick<SkillAttributes, "id" | "name">[] }>(
     SKILLS_QUERY_MINIMAL,
@@ -70,6 +78,9 @@ export function ShiftDetailsContainer() {
     variables: { shiftId: id },
     skip: !token || !id,
   });
+  const locationsQuery = useQuery<{
+    locations: LocationAttributes[];
+  }>(LOCATIONS_QUERY, { skip: !token });
   const skills = useMemo(() => skillsQuery.data?.skills ?? [], [skillsQuery.data?.skills]);
   const staffOptions = useMemo(() => {
     const list = staffQuery.data?.staff ?? [];
@@ -101,6 +112,12 @@ export function ShiftDetailsContainer() {
 
   const [publishShift, { loading: publishing }] = useMutation(PUBLISH_SHIFT_MUTATION, {
     refetchQueries: [{ query: SHIFT_QUERY, variables: { id } }],
+  });
+  const [updateShift, { loading: updatingShift }] = useMutation(UPDATE_SHIFT_MUTATION, {
+    refetchQueries: [
+      { query: SHIFT_QUERY, variables: { id } },
+      { query: SHIFT_HISTORY_QUERY, variables: { shiftId: id } },
+    ],
   });
 
   useEffect(() => {
@@ -157,6 +174,40 @@ export function ShiftDetailsContainer() {
     }
   };
 
+  const openEditDetailsModal = () => {
+    if (!shift) return;
+    setStartDate(shift.startDate);
+    setEndDate(shift.endDate);
+    setDaysOfWeek(Array.isArray(shift.daysOfWeek) ? [...shift.daysOfWeek].sort((a, b) => a - b) : [0, 1, 2, 3, 4, 5, 6]);
+    setDailyStartTime(shift.dailyStartTime);
+    setDailyEndTime(shift.dailyEndTime);
+    setEditError(null);
+    setEditDetailsOpen(true);
+  };
+
+  const handleUpdateShift = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!shift) return;
+    setEditError(null);
+    try {
+      await updateShift({
+        variables: {
+          id: shift.id,
+          input: {
+            startDate,
+            endDate,
+            daysOfWeek,
+            dailyStartTime,
+            dailyEndTime,
+          },
+        },
+      });
+      setEditDetailsOpen(false);
+    } catch (err: unknown) {
+      setEditError((err as Error)?.message ?? "Unable to update shift details.");
+    }
+  };
+
   const [deleteShiftMutation, { loading: deleting }] = useMutation(DELETE_SHIFT_MUTATION, {
     refetchQueries: [{ query: SHIFTS_WITH_LOCATIONS_QUERY }],
   });
@@ -179,6 +230,9 @@ export function ShiftDetailsContainer() {
     <div>
       <ShiftDetailsView
         shift={shift}
+        canEdit={user?.role === UserRole.Admin || user?.role === UserRole.Manager}
+        onEdit={openEditDetailsModal}
+        editing={updatingShift}
         onTogglePublish={handleTogglePublish}
         publishError={publishError}
         publishing={publishing}
@@ -245,6 +299,62 @@ export function ShiftDetailsContainer() {
             }}
             hideHeading
             formId="add-assignment-form"
+          />
+        </Modal>
+      )}
+
+      {editDetailsOpen && (
+        <Modal
+          open
+          onClose={() => !updatingShift && setEditDetailsOpen(false)}
+          title="Edit shift details"
+          maxWidth="xl"
+          footer={
+            <div className="flex items-center justify-between gap-3">
+              <button
+                type="button"
+                onClick={() => !updatingShift && setEditDetailsOpen(false)}
+                className="inline-flex items-center rounded-ps px-3 py-2 text-ps-sm text-ps-fg-muted hover:bg-ps-surface-hover hover:text-ps-fg"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                form="edit-shift-form"
+                disabled={updatingShift}
+                className="inline-flex min-w-[130px] items-center justify-center rounded-ps bg-ps-primary px-5 py-2.5 text-sm font-semibold text-ps-primary-foreground shadow-ps transition-colors hover:bg-ps-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {updatingShift ? "Saving…" : "Save changes"}
+              </button>
+            </div>
+          }
+        >
+          <ShiftForm
+            locations={
+              shift.location && locationsQuery.data?.locations
+                ? locationsQuery.data.locations.filter((location) => location.id === shift.locationId)
+                : []
+            }
+            locationId={shift.locationId}
+            startDate={startDate}
+            endDate={endDate}
+            daysOfWeek={daysOfWeek}
+            dailyStartTime={dailyStartTime}
+            dailyEndTime={dailyEndTime}
+            submitting={updatingShift}
+            error={editError}
+            onLocationChange={() => undefined}
+            onStartDateChange={setStartDate}
+            onEndDateChange={setEndDate}
+            onDaysOfWeekChange={setDaysOfWeek}
+            onDailyStartTimeChange={setDailyStartTime}
+            onDailyEndTimeChange={setDailyEndTime}
+            onSubmit={handleUpdateShift}
+            showSubmitButton={false}
+            showLocationField={false}
+            submitLabel="Save changes"
+            submittingLabel="Saving…"
+            formId="edit-shift-form"
           />
         </Modal>
       )}

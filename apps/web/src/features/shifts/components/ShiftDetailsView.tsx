@@ -5,6 +5,9 @@ import { formatDate } from "@/lib/format-date";
 
 type Props = {
   shift: ShiftAttributes;
+  canEdit?: boolean;
+  onEdit?: () => void;
+  editing?: boolean;
   onTogglePublish?: () => void;
   publishing?: boolean;
   publishError?: string | null;
@@ -15,6 +18,9 @@ type Props = {
 
 export function ShiftDetailsView({
   shift,
+  canEdit,
+  onEdit,
+  editing,
   onTogglePublish,
   publishing,
   publishError,
@@ -60,6 +66,17 @@ export function ShiftDetailsView({
             {shift.published ? "Published" : "Draft"}
           </span>
           <div className="flex items-center gap-2">
+            {canEdit && onEdit && (
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={onEdit}
+                loading={editing}
+              >
+                Edit details
+              </Button>
+            )}
             {!shift.published && onTogglePublish && (
               <Button
                 type="button"

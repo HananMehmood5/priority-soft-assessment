@@ -36,6 +36,17 @@ export class ShiftsService {
     return Date.now() >= shiftStartAt.getTime() - cutoffMs;
   }
 
+  /**
+   * Sequelize date-only fields can come back as either Date or string depending on dialect/config.
+   * Normalize both shapes to yyyy-mm-dd for safe comparisons.
+   */
+  private toDateOnly(value: Date | string): string {
+    if (value instanceof Date) {
+      return value.toISOString().slice(0, 10);
+    }
+    return value.includes('T') ? value.slice(0, 10) : value;
+  }
+
   /** Derive a single concrete interval covering the whole shift template. */
   private getTemplateBounds(shift: Shift): { start: Date; end: Date } {
     const intervals = expandShiftToIntervals(shift as any);
@@ -149,8 +160,8 @@ export class ShiftsService {
       shift.daysOfWeek = data.daysOfWeek;
     }
 
-    const sDate = (shift.startDate as Date).toISOString().slice(0, 10);
-    const eDate = (shift.endDate as Date).toISOString().slice(0, 10);
+    const sDate = this.toDateOnly(shift.startDate as Date | string);
+    const eDate = this.toDateOnly(shift.endDate as Date | string);
     if (sDate > eDate) {
       throw new BadRequestException('startDate must be on or before endDate');
     }
