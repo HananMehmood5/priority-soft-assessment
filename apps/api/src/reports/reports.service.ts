@@ -1,6 +1,7 @@
 import { ForbiddenException, Injectable } from '@nestjs/common';
+import { getDay, getHours, endOfWeek, startOfWeek } from 'date-fns';
+import { toZonedTime } from 'date-fns-tz';
 import { Op } from 'sequelize';
-import { DateTime } from 'luxon';
 import { UserRole } from '@shiftsync/shared';
 import { Shift, ShiftAssignment, User } from '../database/models';
 import { ShiftRepository } from '../database/repositories/shift.repository';
@@ -67,9 +68,9 @@ export class ReportsService {
   private isPremiumShift(shift: Shift, locationTimezone: string): boolean {
     const first = expandShiftToIntervals(shift as any)[0];
     if (!first) return false;
-    const local = DateTime.fromJSDate(first.start, { zone: locationTimezone });
-    const weekday = local.weekday; // 1=Mon, 5=Fri, 6=Sat
-    const hour = local.hour;
+    const zoned = toZonedTime(first.start, locationTimezone);
+    const weekday = getDay(zoned); // 0=Sun, 5=Fri, 6=Sat
+    const hour = getHours(zoned);
     return (weekday === 5 || weekday === 6) && hour >= 17;
   }
 
@@ -162,8 +163,8 @@ export class ReportsService {
   ): Promise<DesiredHoursEntry[]> {
     const visibleIds = await this.getVisibleLocationIds(user);
     if (visibleIds !== null && visibleIds.length === 0) return [];
-    const weekStart = DateTime.fromJSDate(start).startOf('week').toJSDate();
-    const weekEnd = DateTime.fromJSDate(end).endOf('week').toJSDate();
+    const weekStart = startOfWeek(start, { weekStartsOn: 1 });
+    const weekEnd = endOfWeek(end, { weekStartsOn: 1 });
     const shiftWhere: Record<string, unknown> = {
       startDate: { [Op.lte]: weekEnd },
       endDate: { [Op.gte]: weekStart },

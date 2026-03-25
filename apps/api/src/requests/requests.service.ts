@@ -1,6 +1,7 @@
 import { Injectable, ForbiddenException, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectConnection } from '@nestjs/sequelize';
 import { Sequelize } from 'sequelize-typescript';
+import { subHours } from 'date-fns';
 import { RequestStatus, RequestType } from '@shiftsync/shared';
 import { ShiftRequest, ShiftAssignment, Shift, User } from '../database/models';
 import { ShiftRepository } from '../database/repositories/shift.repository';
@@ -32,7 +33,7 @@ export class RequestsService {
   }
 
   private isDropExpired(shiftStartAt: Date): boolean {
-    const expiry = new Date(shiftStartAt.getTime() - DROP_EXPIRY_HOURS * 60 * 60 * 1000);
+    const expiry = subHours(shiftStartAt, DROP_EXPIRY_HOURS);
     return Date.now() >= expiry.getTime();
   }
 
