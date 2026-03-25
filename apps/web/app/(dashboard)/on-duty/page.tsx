@@ -213,14 +213,8 @@ export default function OnDutyPage() {
         </div>
       </form>
 
-      {queryError && (
-        <p className="mb-4 rounded-ps border border-ps-error bg-ps-error/10 p-3 text-sm text-ps-error">
-          {queryError.message}
-        </p>
-      )}
-
       {isLoading ? (
-        <p className="text-ps-fg-muted">Loading…</p>
+        <PageSkeleton lines={4} />
       ) : Object.keys(grouped).length === 0 ? (
         <div className="rounded-ps border border-dashed border-ps-border p-6 text-center text-ps-fg-muted">
           No one is currently on duty for the selected location.
