@@ -8,7 +8,7 @@ import { ShiftRepository } from '../database/repositories/shift.repository';
 import { ShiftAssignmentRepository } from '../database/repositories/shift-assignment.repository';
 import { UserRepository } from '../database/repositories/user.repository';
 import { LocationRepository } from '../database/repositories/location.repository';
-import { expandShiftToIntervals } from '../common/shift-time.utils';
+import { expandShiftToIntervals, getShiftTimeZone } from '../common/shift-time.utils';
 
 export interface DistributionEntry {
   userId: string;
@@ -66,7 +66,7 @@ export class ReportsService {
 
   /** Premium = Friday or Saturday, and "evening" = start at or after 17:00 local (5pm) */
   private isPremiumShift(shift: Shift, locationTimezone: string): boolean {
-    const first = expandShiftToIntervals(shift as any)[0];
+    const first = expandShiftToIntervals(shift as any, undefined, locationTimezone)[0];
     if (!first) return false;
     const zoned = toZonedTime(first.start, locationTimezone);
     const weekday = getDay(zoned); // 0=Sun, 5=Fri, 6=Sat
@@ -100,7 +100,7 @@ export class ReportsService {
       if (!shift) continue;
       const uid = a.userId;
       const u = (a as { user: User }).user;
-      const intervals = expandShiftToIntervals(shift as any, { start, end });
+      const intervals = expandShiftToIntervals(shift as any, { start, end }, getShiftTimeZone(shift as any));
       const hours = intervals.reduce((sum, it) => sum + (it.end.getTime() - it.start.getTime()) / 3600000, 0);
       if (!byUser.has(uid)) byUser.set(uid, { name: u?.name ?? null, hours: 0 });
       byUser.get(uid)!.hours += hours;
@@ -131,7 +131,7 @@ export class ReportsService {
       const loc = (shift as { location?: { timezone?: string } }).location;
       const tz = loc?.timezone ?? 'UTC';
       const isPremium = this.isPremiumShift(shift, tz);
-      const intervals = expandShiftToIntervals(shift as any, { start, end });
+      const intervals = expandShiftToIntervals(shift as any, { start, end }, getShiftTimeZone(shift as any));
       const hours = intervals.reduce((sum, it) => sum + (it.end.getTime() - it.start.getTime()) / 3600000, 0);
       const assignments = (shift as { assignments?: ShiftAssignment[] }).assignments;
       for (const a of assignments || []) {
@@ -175,7 +175,7 @@ export class ReportsService {
     for (const a of assignments) {
       const shift = (a as { shift: Shift }).shift;
       if (!shift) continue;
-      const intervals = expandShiftToIntervals(shift as any, { start: weekStart, end: weekEnd });
+      const intervals = expandShiftToIntervals(shift as any, { start: weekStart, end: weekEnd }, getShiftTimeZone(shift as any));
       const hours = intervals.reduce((sum, it) => sum + (it.end.getTime() - it.start.getTime()) / 3600000, 0);
       hoursByUser.set(a.userId, (hoursByUser.get(a.userId) ?? 0) + hours);
     }

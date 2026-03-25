@@ -1,12 +1,19 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { Op } from 'sequelize';
+import { Op, Transaction } from 'sequelize';
 import type { ShiftRequestBaseAttributes } from '@shiftsync/shared';
 import { RequestType, RequestStatus } from '@shiftsync/shared';
 import { ShiftRequest } from '../models/shift-request.model';
 import { ShiftAssignment } from '../models/shift-assignment.model';
 import { Shift } from '../models/shift.model';
+import { Location } from '../models/location.model';
 import { User } from '../models/user.model';
+
+const assignmentWithShiftAndLocation = {
+  model: ShiftAssignment,
+  as: 'assignment' as const,
+  include: [{ model: Shift, as: 'shift', include: [Location] }],
+};
 
 @Injectable()
 export class ShiftRequestRepository {
@@ -39,15 +46,27 @@ export class ShiftRequestRepository {
 
   async findByPkWithAssignmentAndShift(id: string): Promise<ShiftRequest | null> {
     return this.requestModel.findByPk(id, {
-      include: [{ model: ShiftAssignment, as: 'assignment', include: [{ model: Shift, as: 'shift' }] }],
+      include: [assignmentWithShiftAndLocation],
     });
   }
 
   async findByPkWithFullForApprove(id: string): Promise<ShiftRequest | null> {
     return this.requestModel.findByPk(id, {
       include: [
-        { model: ShiftAssignment, as: 'assignment', include: [{ model: Shift, as: 'shift' }] },
-        { model: ShiftAssignment, as: 'counterpartAssignment', include: [{ model: Shift, as: 'shift' }] },
+        { model: ShiftAssignment, as: 'assignment', include: [{ model: Shift, as: 'shift', include: [Location] }] },
+        { model: ShiftAssignment, as: 'counterpartAssignment', include: [{ model: Shift, as: 'shift', include: [Location] }] },
+        { model: User, as: 'claimer' },
+      ],
+    });
+  }
+
+  async findByPkWithFullForApproveLocked(id: string, transaction: Transaction): Promise<ShiftRequest | null> {
+    return this.requestModel.findByPk(id, {
+      transaction,
+      lock: Transaction.LOCK.UPDATE,
+      include: [
+        { model: ShiftAssignment, as: 'assignment', include: [{ model: Shift, as: 'shift', include: [Location] }] },
+        { model: ShiftAssignment, as: 'counterpartAssignment', include: [{ model: Shift, as: 'shift', include: [Location] }] },
         { model: User, as: 'claimer' },
       ],
     });
@@ -74,6 +93,15 @@ export class ShiftRequestRepository {
     return request;
   }
 
+  /** Atomically accept swap only if still pending. Returns true if updated. */
+  async updateAcceptSwapIfPending(id: string, counterpartAssignmentId: string): Promise<boolean> {
+    const [affected] = await this.requestModel.update(
+      { counterpartAssignmentId, status: RequestStatus.Accepted },
+      { where: { id, status: RequestStatus.Pending } },
+    );
+    return affected > 0;
+  }
+
   async updateAcceptDrop(id: string, claimerUserId: string): Promise<ShiftRequest> {
     const request = await this.findByPkOrFail(id);
     await request.update({
@@ -81,6 +109,15 @@ export class ShiftRequestRepository {
       status: RequestStatus.Accepted,
     });
     return request;
+  }
+
+  /** Atomically accept drop only if still pending. Returns true if updated. */
+  async updateAcceptDropIfPending(id: string, claimerUserId: string): Promise<boolean> {
+    const [affected] = await this.requestModel.update(
+      { claimerUserId, status: RequestStatus.Accepted },
+      { where: { id, status: RequestStatus.Pending } },
+    );
+    return affected > 0;
   }
 
   async updateStatus(id: string, status: RequestStatus): Promise<ShiftRequest> {
@@ -117,7 +154,7 @@ export class ShiftRequestRepository {
     return this.requestModel.findAll({
       where: { type: RequestType.Drop, status: RequestStatus.Pending },
       order: [['createdAt', 'DESC']],
-      include: [{ model: ShiftAssignment, as: 'assignment', include: [{ model: Shift, as: 'shift' }] }],
+      include: [assignmentWithShiftAndLocation],
     });
   }
 
@@ -126,7 +163,7 @@ export class ShiftRequestRepository {
     return this.requestModel.findAll({
       where: { type: RequestType.Swap, status: RequestStatus.Pending },
       order: [['createdAt', 'DESC']],
-      include: [{ model: ShiftAssignment, as: 'assignment', include: [{ model: Shift, as: 'shift' }] }],
+      include: [assignmentWithShiftAndLocation],
     });
   }
 

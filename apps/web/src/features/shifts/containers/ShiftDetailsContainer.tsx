@@ -39,6 +39,8 @@ export function ShiftDetailsContainer() {
   const params = useParams();
   const id = params.id as string;
   const { token, user } = useAuth();
+  const canManageAssignments =
+    user?.role === UserRole.Admin || user?.role === UserRole.Manager;
   const [userId, setUserId] = useState("");
   const [skillId, setSkillId] = useState("");
   const [constraintError, setConstraintError] = useState<ConstraintError | null>(null);
@@ -72,7 +74,7 @@ export function ShiftDetailsContainer() {
       skillId: skillId || null,
       role: UserRole.Staff,
     },
-    skip: !token || !shift?.locationId || !skillId,
+    skip: !token || !shift?.locationId || !skillId || !canManageAssignments,
   });
   const historyQuery = useQuery<{ shiftHistory: AuditEntry[] }>(SHIFT_HISTORY_QUERY, {
     variables: { shiftId: id },
@@ -98,7 +100,7 @@ export function ShiftDetailsContainer() {
             shiftId: shift.id,
           }
         : undefined,
-    skip: !token || !shift || !userId,
+    skip: !token || !shift || !userId || !canManageAssignments,
   });
 
   const [addAssignment, { loading: assigning }] = useMutation<{
@@ -242,9 +244,14 @@ export function ShiftDetailsContainer() {
       />
       <ShiftAssignmentsTable
         assignments={shift.assignments ?? []}
-        onAddAssignmentClick={() => {
-          setAddAssignmentOpen(true);
-        }}
+        canAddAssignment={canManageAssignments}
+        onAddAssignmentClick={
+          canManageAssignments
+            ? () => {
+                setAddAssignmentOpen(true);
+              }
+            : undefined
+        }
       />
       <ShiftAuditTimeline history={history} error={historyError} />
 

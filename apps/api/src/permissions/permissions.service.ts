@@ -29,4 +29,16 @@ export class PermissionsService {
     const link = await this.locationRepository.findManagerLocation(user.id, locationId);
     return !!link;
   }
+
+  /**
+   * Locations a user may read schedule/request marketplace data for.
+   * Admin: null (all). Manager: managed locations. Staff: certified locations.
+   */
+  async getLocationScopeForRead(user: User): Promise<string[] | null> {
+    if (user.role === UserRole.Admin) return null;
+    if (user.role === UserRole.Manager) {
+      return this.locationRepository.getManagerLocationIdsByUserId(user.id);
+    }
+    return this.locationRepository.getStaffLocationIdsByUserId(user.id);
+  }
 }

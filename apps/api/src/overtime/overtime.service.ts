@@ -10,7 +10,7 @@ import {
   toISODate,
   toOrdinal,
 } from '../common/utils/date.utils';
-import { expandShiftToIntervals } from '../common/shift-time.utils';
+import { expandShiftToIntervals, getShiftTimeZone } from '../common/shift-time.utils';
 import { ShiftAssignment, Shift } from '../database/models';
 import { ShiftRepository } from '../database/repositories/shift.repository';
 import { ShiftAssignmentRepository } from '../database/repositories/shift-assignment.repository';
@@ -79,7 +79,7 @@ export class OvertimeService {
     for (const a of assignments) {
       const s = (a as { shift: Shift }).shift;
       if (!s) continue;
-      const intervals = expandShiftToIntervals(s as any, { start: weekStart, end: weekEndDate });
+      const intervals = expandShiftToIntervals(s as any, { start: weekStart, end: weekEndDate }, getShiftTimeZone(s as any));
       for (const it of intervals) total += hoursBetween(it.start, it.end);
     }
     return total;
@@ -96,7 +96,7 @@ export class OvertimeService {
     for (const a of assignments) {
       const s = (a as { shift: Shift }).shift;
       if (!s) continue;
-      const intervals = expandShiftToIntervals(s as any, { start: dayStart, end: dayEnd });
+      const intervals = expandShiftToIntervals(s as any, { start: dayStart, end: dayEnd }, getShiftTimeZone(s as any));
       for (const it of intervals) total += hoursBetween(it.start, it.end);
     }
     return total;
@@ -113,7 +113,7 @@ export class OvertimeService {
     for (const a of assignments) {
       const s = (a as { shift: Shift }).shift;
       if (!s) continue;
-      const intervals = expandShiftToIntervals(s as any, { start: weekStart, end: weekEndForConsec });
+      const intervals = expandShiftToIntervals(s as any, { start: weekStart, end: weekEndForConsec }, getShiftTimeZone(s as any));
       for (const it of intervals) days.add(toOrdinal(it.start));
     }
     if (includeDate && isInRange(includeDate, weekStart, weekEndForConsec)) {
@@ -211,7 +211,7 @@ export class OvertimeService {
     overtimeOverrideReason?: string | null,
   ): Promise<WhatIfResult> {
     const shift = await this.shiftRepository.findByIdOrFail(shiftId);
-    const intervals = expandShiftToIntervals(shift as any);
+    const intervals = expandShiftToIntervals(shift as any, undefined, getShiftTimeZone(shift as any));
     if (intervals.length === 0) {
       return {
         weeklyHours: 0,
@@ -271,7 +271,7 @@ export class OvertimeService {
       for (const a of assigned) {
         const s = (a as { shift: Shift }).shift;
         if (!s) continue;
-        const its = expandShiftToIntervals(s as any, { start: weekStart, end: weekEndForConsec });
+        const its = expandShiftToIntervals(s as any, { start: weekStart, end: weekEndForConsec }, getShiftTimeZone(s as any));
         for (const it of its) daySet.add(toOrdinal(it.start));
       }
       for (const d of days) daySet.add(d);
@@ -350,7 +350,7 @@ export class OvertimeService {
       for (const a of ass || []) {
         const user = (a as { user?: { name: string | null } }).user;
         const userId = a.userId;
-        const intervals = expandShiftToIntervals(shift as any, { start, end });
+        const intervals = expandShiftToIntervals(shift as any, { start, end }, getShiftTimeZone(shift as any));
         for (const it of intervals) {
           const weekStart = this.getWeekStart(it.start);
           const weekKey = toISODate(weekStart);

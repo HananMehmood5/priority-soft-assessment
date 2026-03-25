@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react';
 import { useQuery } from '@apollo/client';
 import { useAuth } from '@/lib/auth-context';
 import type { ShiftAttributes, LocationAttributes } from '@/app/types';
-import { formatDateTime, formatDate } from '@/lib/format-date';
+import { formatDateTime, formatDate, parseCalendarDateInput } from '@/lib/format-date';
 import { SHIFTS_WITH_LOCATIONS_QUERY } from '@/lib/apollo/operations';
 
 type ViewMode = 'week' | 'day';
@@ -23,7 +23,7 @@ export default function CalendarPage() {
   const shifts = useMemo(() => data?.shifts ?? [], [data?.shifts]);
   const locations = useMemo(() => data?.locations ?? [], [data?.locations]);
 
-  const activeDate = useMemo(() => new Date(date), [date]);
+  const activeDate = useMemo(() => parseCalendarDateInput(date), [date]);
 
   type ShiftOccurrence = {
     key: string;
@@ -49,8 +49,8 @@ export default function CalendarPage() {
       const cursor = new Date(`${startDate}T00:00:00`);
       const end = new Date(`${endDate}T00:00:00`);
       while (cursor <= end) {
-        const weekdayUtc = cursor.getUTCDay(); // 0=Sun..6=Sat
-        if (!daysOfWeekSet.has(weekdayUtc)) {
+        const weekdayLocal = cursor.getDay(); // 0=Sun..6=Sat (local, matches template days)
+        if (!daysOfWeekSet.has(weekdayLocal)) {
           cursor.setDate(cursor.getDate() + 1);
           continue;
         }

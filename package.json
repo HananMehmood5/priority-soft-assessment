@@ -14,6 +14,7 @@
     "codegen": "graphql-codegen --config codegen.ts",
     "web:dev": "yarn workspace web dev",
     "web:build": "yarn workspace web build",
+    "web:test": "yarn workspace web test",
     "api:start": "yarn workspace api start:prod",
     "lint": "ESLINT_USE_FLAT_CONFIG=false eslint .",
     "lint:fix": "ESLINT_USE_FLAT_CONFIG=false eslint . --fix",

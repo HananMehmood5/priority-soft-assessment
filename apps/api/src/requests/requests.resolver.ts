@@ -36,8 +36,10 @@ export class RequestsResolver {
   }
 
   @Query(() => [RequestEntity])
-  async availableDrops(): Promise<ShiftRequest[]> {
-    return this.requestsService.findAvailableDrops();
+  async availableDrops(
+    @CurrentUser() user: import('../database/models').User,
+  ): Promise<ShiftRequest[]> {
+    return this.requestsService.findAvailableDrops(user);
   }
 
   @Query(() => [RequestEntity])

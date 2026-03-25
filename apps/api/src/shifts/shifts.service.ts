@@ -9,7 +9,7 @@ import { ConstraintsService, ConstraintResult } from '../constraints/constraints
 import { RequestsService } from '../requests/requests.service';
 import { OvertimeService } from '../overtime/overtime.service';
 import { AuditService } from '../audit/audit.service';
-import { expandShiftToIntervals } from '../common/shift-time.utils';
+import { expandShiftToIntervals, getShiftTimeZone } from '../common/shift-time.utils';
 import { addDays } from '../common/utils/date.utils';
 
 const DEFAULT_CUTOFF_HOURS = 48;
@@ -49,7 +49,7 @@ export class ShiftsService {
 
   /** Derive a single concrete interval covering the whole shift template. */
   private getTemplateBounds(shift: Shift): { start: Date; end: Date } {
-    const intervals = expandShiftToIntervals(shift as any);
+    const intervals = expandShiftToIntervals(shift as any, undefined, getShiftTimeZone(shift as any));
     if (intervals.length === 0) {
       // Fallback to previous behavior if the template is invalid/empty.
       const startDate = shift.startDate as Date;
@@ -348,10 +348,14 @@ export class ShiftsService {
     });
     // Then, filter in-memory by derived interval covering "now"
     shifts = shifts.filter((s) => {
-      const intervals = expandShiftToIntervals(s as any, {
-        start: new Date(now.getTime() - 24 * 60 * 60 * 1000),
-        end: addDays(now, 1),
-      });
+      const intervals = expandShiftToIntervals(
+        s as any,
+        {
+          start: new Date(now.getTime() - 24 * 60 * 60 * 1000),
+          end: addDays(now, 1),
+        },
+        getShiftTimeZone(s as any),
+      );
       return intervals.some((it) => it.start <= now && now < it.end);
     });
     if (options.userId) {
@@ -361,9 +365,10 @@ export class ShiftsService {
         ),
       );
     }
-    const locationIds = await this.permissions.getManagerLocationIds(user);
-    if (locationIds !== null && locationIds.length > 0) {
-      shifts = shifts.filter((s) => locationIds.includes(s.locationId));
+    const scope = await this.permissions.getLocationScopeForRead(user);
+    if (scope !== null) {
+      if (scope.length === 0) return [];
+      shifts = shifts.filter((s) => scope.includes(s.locationId));
     }
     return shifts;
   }

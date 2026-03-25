@@ -82,9 +82,12 @@ export default function OnDutyPage() {
   const socket = useSocket();
   const [locationId, setLocationId] = useState('');
 
+  const canAccess =
+    user?.role === UserRole.Admin || user?.role === UserRole.Manager;
+
   const { data, loading, error, refetch } = useQuery<OnDutyQueryResult>(ON_DUTY_QUERY, {
     variables: { locationId: locationId || null },
-    skip: !token,
+    skip: !token || !canAccess,
   });
 
   const {
@@ -92,7 +95,7 @@ export default function OnDutyPage() {
     loading: locationsLoading,
     error: locationsError,
   } = useQuery<LocationsQueryResult>(LOCATIONS_QUERY, {
-    skip: !token,
+    skip: !token || !canAccess,
   });
 
   const shifts = data?.onDutyShifts ?? [];
@@ -116,7 +119,8 @@ export default function OnDutyPage() {
     };
   }, [socket, refetch]);
 
-  if (!user || (user.role !== UserRole.Admin && user.role !== UserRole.Manager)) {
+  if (!user) return <p className="text-ps-fg-muted">Loading…</p>;
+  if (!canAccess) {
     return <p className="text-ps-error">You do not have access to the on-duty dashboard.</p>;
   }
 

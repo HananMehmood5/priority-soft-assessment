@@ -83,6 +83,42 @@ describe('Shifts (e2e)', () => {
     expect(res.body.errors).toBeDefined();
   });
 
+  test('onDutyShifts for manager2 does not return shifts outside managed locations', async () => {
+    const mgr2Login = await graphqlRequest(app, {
+      query: `mutation Login($input: LoginInput!) { login(input: $input) }`,
+      variables: {
+        input: { email: 'manager2@coastaleats.com', password: 'password123' },
+      },
+    }).expect(200);
+    const mgr2Token = mgr2Login.body.data?.login;
+    expect(mgr2Token).toBeTruthy();
+
+    const locRes = await graphqlRequest(
+      app,
+      { query: `query L { locations { id name } }` },
+      mgr2Token,
+    ).expect(200);
+    const downtown = locRes.body.data?.locations?.find(
+      (l: { name: string }) => l.name === 'Coastal Eats Downtown',
+    )?.id;
+    expect(downtown).toBeTruthy();
+
+    const res = await graphqlRequest(
+      app,
+      {
+        query: `query O($locationId: String) {
+          onDutyShifts(locationId: $locationId) { id locationId }
+        }`,
+        variables: { locationId: downtown },
+      },
+      mgr2Token,
+    ).expect(200);
+
+    expect(res.body.errors).toBeUndefined();
+    const rows = res.body.data?.onDutyShifts ?? [];
+    expect(rows.length).toBe(0);
+  });
+
   test('createShift validates DTO inputs', async () => {
     const startDate = new Date(Date.now() + 7 * 24 * 3600 * 1000).toISOString().slice(0, 10);
     const endDate = startDate;

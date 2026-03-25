@@ -34,16 +34,18 @@ export default function AuditPage() {
     setDateEnd(range.end);
   }, []);
 
+  const isAdmin = user?.role === UserRole.Admin;
+
   const { data, loading, error, refetch } = useQuery<{
     auditExport: AuditEntry[];
   }>(AUDIT_EXPORT_QUERY, {
     variables: {
       // These are only used when the query runs, but we keep them safe for render.
-      start: dateStart ? new Date(dateStart).toISOString() : new Date(0).toISOString(),
-      end: dateEnd ? new Date(dateEnd).toISOString() : new Date(0).toISOString(),
+      start: dateStart ? new Date(`${dateStart}T00:00:00`).toISOString() : new Date(0).toISOString(),
+      end: dateEnd ? new Date(`${dateEnd}T23:59:59.999`).toISOString() : new Date(0).toISOString(),
       locationId: null,
     },
-    skip: !token || !dateStart || !dateEnd,
+    skip: !token || !dateStart || !dateEnd || !isAdmin,
   });
 
   const entries = data?.auditExport ?? [];
@@ -71,7 +73,8 @@ export default function AuditPage() {
     URL.revokeObjectURL(url);
   };
 
-  if (!user || user.role !== UserRole.Admin) {
+  if (!user) return <p className="text-ps-fg-muted">Loading…</p>;
+  if (!isAdmin) {
     return <p className="text-ps-error">Only admins can access the audit export.</p>;
   }
 

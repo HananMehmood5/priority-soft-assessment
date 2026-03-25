@@ -52,6 +52,8 @@ export default function OvertimeDashboardPage() {
   const startIso = toISOStringOrNull(dateStart);
   const endIso = toISOStringOrNull(dateEnd);
   const hasValidRange = Boolean(startIso && endIso);
+  const canAccess =
+    user?.role === UserRole.Admin || user?.role === UserRole.Manager;
 
   const { data, loading, error, refetch } = useQuery<{
     overtimeDashboard: DashboardOvertimeEntry[];
@@ -61,12 +63,12 @@ export default function OvertimeDashboardPage() {
       end: endIso,
       locationId: locationId || null,
     },
-    skip: !token || !hasValidRange,
+    skip: !token || !hasValidRange || !canAccess,
   });
   const locationsQuery = useQuery<{
     locations: Pick<LocationAttributes, 'id' | 'name' | 'timezone'>[];
   }>(LOCATIONS_QUERY, {
-    skip: !token,
+    skip: !token || !canAccess,
   });
 
   const entries = data?.overtimeDashboard ?? [];
@@ -74,7 +76,8 @@ export default function OvertimeDashboardPage() {
   const isLoading = loading || locationsQuery.loading;
   const queryError = error?.message ?? locationsQuery.error?.message ?? null;
 
-  if (!user || (user.role !== UserRole.Admin && user.role !== UserRole.Manager)) {
+  if (!user) return <p className="text-ps-fg-muted">Loading…</p>;
+  if (!canAccess) {
     return <p className="text-ps-error">You do not have access to the overtime dashboard.</p>;
   }
 

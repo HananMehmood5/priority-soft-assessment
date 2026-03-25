@@ -1,4 +1,10 @@
-import { Injectable, ForbiddenException, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  ForbiddenException,
+  NotFoundException,
+  BadRequestException,
+  ConflictException,
+} from '@nestjs/common';
 import { InjectConnection } from '@nestjs/sequelize';
 import { Sequelize } from 'sequelize-typescript';
 import { subHours } from 'date-fns';
@@ -9,7 +15,7 @@ import { ShiftAssignmentRepository } from '../database/repositories/shift-assign
 import { ShiftRequestRepository } from '../database/repositories/shift-request.repository';
 import { PermissionsService } from '../permissions/permissions.service';
 import { ConstraintsService, ConstraintResult } from '../constraints/constraints.service';
-import { getShiftFirstStart } from '../common/shift-time.utils';
+import { getShiftFirstStart, getShiftTimeZone } from '../common/shift-time.utils';
 
 const MAX_PENDING_PER_STAFF = 3;
 const DROP_EXPIRY_HOURS = 24;
@@ -64,7 +70,7 @@ export class RequestsService {
   async createDrop(assignmentId: string, user: User): Promise<ShiftRequest> {
     const assignment = await this.assignmentRepository.findByIdOrFailWithShift(assignmentId);
     const shift = (assignment as { shift: Shift }).shift;
-    const firstStart = getShiftFirstStart(shift as any);
+    const firstStart = getShiftFirstStart(shift as any, getShiftTimeZone(shift as any));
     if (!firstStart) {
       throw new BadRequestException('Unable to determine shift start');
     }
@@ -134,7 +140,10 @@ export class RequestsService {
       );
       return { request: null as any, constraintError: { ...r2, alternatives } };
     }
-    await this.requestRepository.updateAcceptSwap(requestId, counterpartAssignmentId);
+    const accepted = await this.requestRepository.updateAcceptSwapIfPending(requestId, counterpartAssignmentId);
+    if (!accepted) {
+      throw new ConflictException('Swap request is no longer pending or was already processed');
+    }
     const updated = await this.requestRepository.findByPkWithAssignmentAndCounterpartAndClaimer(requestId);
     return { request: updated as ShiftRequest };
   }
@@ -149,7 +158,7 @@ export class RequestsService {
     }
     const assignment = (request as { assignment: ShiftAssignment & { shift: Shift } }).assignment;
     const shift = assignment.shift;
-    const firstStart = getShiftFirstStart(shift as any);
+    const firstStart = getShiftFirstStart(shift as any, getShiftTimeZone(shift as any));
     if (!firstStart) {
       throw new BadRequestException('Unable to determine shift start');
     }
@@ -170,20 +179,23 @@ export class RequestsService {
       );
       return { request: null as any, constraintError: { ...result, alternatives } };
     }
-    await this.requestRepository.updateAcceptDrop(requestId, user.id);
+    const acceptedDrop = await this.requestRepository.updateAcceptDropIfPending(requestId, user.id);
+    if (!acceptedDrop) {
+      throw new ConflictException('Drop request is no longer pending or was already processed');
+    }
     const updated = await this.requestRepository.findByPkWithAssignmentAndCounterpartAndClaimer(requestId);
     return { request: updated as ShiftRequest };
   }
 
   async approve(requestId: string, user: User): Promise<ShiftRequest> {
-    const request = await this.requestRepository.findByPkWithFullForApprove(requestId);
-    if (!request) throw new NotFoundException('Request not found');
-    if (request.status !== RequestStatus.Accepted) {
-      throw new BadRequestException('Only accepted requests can be approved');
-    }
-    const can = await this.canManageRequest(user, request);
-    if (!can) throw new ForbiddenException('You cannot approve this request');
     await this.sequelize.transaction(async (transaction) => {
+      const request = await this.requestRepository.findByPkWithFullForApproveLocked(requestId, transaction);
+      if (!request) throw new NotFoundException('Request not found');
+      if (request.status !== RequestStatus.Accepted) {
+        throw new ConflictException('Only accepted requests can be approved');
+      }
+      const can = await this.canManageRequest(user, request);
+      if (!can) throw new ForbiddenException('You cannot approve this request');
       if (request.type === RequestType.Swap) {
         const fromA = (request as { assignment: ShiftAssignment }).assignment;
         const toA = (request as { counterpartAssignment: ShiftAssignment }).counterpartAssignment;
@@ -248,16 +260,30 @@ export class RequestsService {
   }
 
   /** Pending drop requests that staff can accept (pick up). */
-  async findAvailableDrops(): Promise<ShiftRequest[]> {
-    return this.requestRepository.findAllPendingDrops();
+  async findAvailableDrops(user: User): Promise<ShiftRequest[]> {
+    const all = await this.requestRepository.findAllPendingDrops();
+    const scope = await this.permissions.getLocationScopeForRead(user);
+    if (scope === null) return all;
+    if (scope.length === 0) return [];
+    return all.filter((r) => {
+      const shift = (r as { assignment?: { shift?: Shift } }).assignment?.shift;
+      return shift && scope.includes(shift.locationId);
+    });
   }
 
   /** Pending swap requests that staff can accept (excludes own requests). */
   async findAvailableSwaps(user: User): Promise<ShiftRequest[]> {
     const all = await this.requestRepository.findAllPendingSwaps();
-    return all.filter((r) => {
+    let rows = all.filter((r) => {
       const a = (r as { assignment?: { userId: string } }).assignment;
       return a && a.userId !== user.id;
+    });
+    const scope = await this.permissions.getLocationScopeForRead(user);
+    if (scope === null) return rows;
+    if (scope.length === 0) return [];
+    return rows.filter((r) => {
+      const shift = (r as { assignment?: { shift?: Shift } }).assignment?.shift;
+      return shift && scope.includes(shift.locationId);
     });
   }
 

@@ -74,7 +74,9 @@ export default function FairnessPage() {
   const [dateEnd, setDateEnd] = useState(getDefaultRange().end);
 
   const baseVars = useMemo(() => vars(dateStart, dateEnd, locationId), [dateStart, dateEnd, locationId]);
-  const shouldSkipReportQueries = !token || !baseVars;
+  const canAccess =
+    user?.role === UserRole.Admin || user?.role === UserRole.Manager;
+  const shouldSkipReportQueries = !token || !baseVars || !canAccess;
 
   const distQuery = useQuery<{ reportDistribution: DistributionEntry[] }>(
     DISTRIBUTION_QUERY,
@@ -94,7 +96,7 @@ export default function FairnessPage() {
   const locationsQuery = useQuery<{
     locations: Pick<LocationAttributes, 'id' | 'name' | 'timezone'>[];
   }>(LOCATIONS_QUERY, {
-    skip: !token,
+    skip: !token || !canAccess,
   });
 
   const loading =
@@ -118,7 +120,8 @@ export default function FairnessPage() {
     locationsQuery.refetch();
   };
 
-  if (!user || (user.role !== UserRole.Admin && user.role !== UserRole.Manager)) {
+  if (!user) return <p className="text-ps-fg-muted">Loading…</p>;
+  if (!canAccess) {
     return <p className="text-ps-error">You do not have access to fairness reports.</p>;
   }
 

@@ -10,6 +10,8 @@ type AssignmentRow = ShiftAssignmentAttributes & {
 
 type Props = {
   assignments: AssignmentRow[];
+  /** When false, never show Add assignment (e.g. staff). */
+  canAddAssignment?: boolean;
   onAddAssignmentClick?: () => void;
 };
 
@@ -22,12 +24,18 @@ function getAssignmentUserLabel(row: AssignmentRow): string {
   return `User ${row.userId.slice(0, 8)}`;
 }
 
-export function ShiftAssignmentsTable({ assignments, onAddAssignmentClick }: Props) {
+export function ShiftAssignmentsTable({
+  assignments,
+  canAddAssignment = true,
+  onAddAssignmentClick,
+}: Props) {
+  const showAdd = canAddAssignment && Boolean(onAddAssignmentClick);
+
   return (
     <section className="mt-8">
       <div className="mb-3 flex items-center justify-between gap-3">
         <h2 className="text-base font-semibold text-ps-fg">Current assignments</h2>
-        {onAddAssignmentClick && (
+        {showAdd && onAddAssignmentClick && (
           <Button type="button" size="sm" variant="primary" onClick={onAddAssignmentClick}>
             <span className="mr-1" aria-hidden="true">
               +
@@ -40,7 +48,11 @@ export function ShiftAssignmentsTable({ assignments, onAddAssignmentClick }: Pro
       <Table<AssignmentRow>
         data={assignments}
         emptyMessage="No one is assigned to this shift yet."
-        emptyDescription="Use the Add assignment button to assign staff to this shift."
+        emptyDescription={
+          showAdd
+            ? "Use the Add assignment button to assign staff to this shift."
+            : "Assignments are managed by a manager or admin."
+        }
         columns={[
           {
             header: "Staff",

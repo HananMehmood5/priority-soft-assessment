@@ -6,7 +6,7 @@ import { ShiftAssignmentRepository } from '../database/repositories/shift-assign
 import { LocationRepository } from '../database/repositories/location.repository';
 import { SkillRepository } from '../database/repositories/skill.repository';
 import { UserRepository } from '../database/repositories/user.repository';
-import { expandShiftToIntervals } from '../common/shift-time.utils';
+import { expandShiftToIntervals, getShiftTimeZone } from '../common/shift-time.utils';
 
 export interface ConstraintResult {
   valid: boolean;
@@ -33,7 +33,7 @@ export class ConstraintsService {
       if (excludeAssignmentId && a.id === excludeAssignmentId) continue;
       const s = (a as { shift: Shift }).shift;
       if (!s) continue;
-      const intervals = expandShiftToIntervals(s as any);
+      const intervals = expandShiftToIntervals(s as any, undefined, getShiftTimeZone(s as any));
       for (const it of intervals) out.push({ assignmentId: a.id, start: it.start, end: it.end });
     }
     return out;
@@ -45,7 +45,7 @@ export class ConstraintsService {
     newShift: Shift,
     excludeAssignmentId?: string,
   ): Promise<ConstraintResult> {
-    const newIntervals = expandShiftToIntervals(newShift as any);
+    const newIntervals = expandShiftToIntervals(newShift as any, undefined, getShiftTimeZone(newShift as any));
     const existing = await this.getUserAssignedIntervals(userId, excludeAssignmentId);
     for (const n of newIntervals) {
       for (const e of existing) {
@@ -64,7 +64,7 @@ export class ConstraintsService {
     excludeAssignmentId?: string,
   ): Promise<ConstraintResult> {
     const TEN_HOURS_MS = 10 * 60 * 60 * 1000;
-    const newIntervals = expandShiftToIntervals(newShift as any);
+    const newIntervals = expandShiftToIntervals(newShift as any, undefined, getShiftTimeZone(newShift as any));
     const existing = await this.getUserAssignedIntervals(userId, excludeAssignmentId);
     for (const n of newIntervals) {
       for (const e of existing) {
@@ -181,7 +181,7 @@ export class ConstraintsService {
     if (!r.valid) return r;
     r = await this.checkLocation(userId, locationId);
     if (!r.valid) return r;
-    const intervals = expandShiftToIntervals(shift as any);
+    const intervals = expandShiftToIntervals(shift as any, undefined, getShiftTimeZone(shift as any));
     for (const it of intervals) {
       r = await this.checkAvailability(userId, locationId, it.start, it.end);
       if (!r.valid) return r;

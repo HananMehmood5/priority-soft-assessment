@@ -5,7 +5,10 @@ import { Op } from 'sequelize';
 import { WhereOptions } from 'sequelize';
 import { ShiftAssignment } from '../models/shift-assignment.model';
 import { Shift } from '../models/shift.model';
+import { Location } from '../models/location.model';
 import { User } from '../models/user.model';
+
+const shiftWithLocation = { model: Shift, as: 'shift' as const, include: [Location] };
 
 @Injectable()
 export class ShiftAssignmentRepository {
@@ -26,13 +29,13 @@ export class ShiftAssignmentRepository {
 
   async findByIdWithShift(id: string): Promise<ShiftAssignment | null> {
     return this.assignmentModel.findByPk(id, {
-      include: [{ model: Shift, as: 'shift' }],
+      include: [shiftWithLocation],
     });
   }
 
   async findByIdOrFailWithShift(id: string): Promise<ShiftAssignment> {
     const assignment = await this.assignmentModel.findByPk(id, {
-      include: [{ model: Shift, as: 'shift' }],
+      include: [shiftWithLocation],
     });
     if (!assignment) throw new NotFoundException('Assignment not found');
     return assignment;
@@ -101,6 +104,7 @@ export class ShiftAssignmentRepository {
           as: 'shift',
           required: true,
           where: shiftWhere,
+          include: [Location],
         },
       ],
     });
@@ -110,7 +114,7 @@ export class ShiftAssignmentRepository {
   async findAllByUserIdWithShift(userId: string): Promise<ShiftAssignment[]> {
     return this.assignmentModel.findAll({
       where: { userId },
-      include: [{ model: Shift, as: 'shift', required: true }],
+      include: [{ model: Shift, as: 'shift', required: true, include: [Location] }],
     });
   }
 
@@ -118,7 +122,7 @@ export class ShiftAssignmentRepository {
   async findAllWithShiftWhereAndUser(shiftWhere: WhereOptions): Promise<ShiftAssignment[]> {
     return this.assignmentModel.findAll({
       include: [
-        { model: Shift, as: 'shift', required: true, where: shiftWhere },
+        { model: Shift, as: 'shift', required: true, where: shiftWhere, include: [Location] },
         { model: User, as: 'user', attributes: ['id', 'name'] },
       ],
     });

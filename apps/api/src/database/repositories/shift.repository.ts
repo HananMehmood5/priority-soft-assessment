@@ -16,7 +16,7 @@ export class ShiftRepository {
   }
 
   async findByIdOrFail(id: string): Promise<Shift> {
-    const shift = await this.shiftModel.findByPk(id);
+    const shift = await this.shiftModel.findByPk(id, { include: ['location'] });
     if (!shift) throw new NotFoundException('Shift not found');
     return shift;
   }
@@ -117,7 +117,7 @@ export class ShiftRepository {
     if (locationId) where.locationId = locationId;
     return this.shiftModel.findAll({
       where,
-      include: [{ association: 'assignments', include: ['user'] }],
+      include: [{ association: 'assignments', include: ['user'] }, 'location'],
       order: [['startDate', 'ASC']],
     });
   }

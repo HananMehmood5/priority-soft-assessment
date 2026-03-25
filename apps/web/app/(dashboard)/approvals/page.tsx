@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useQuery, useMutation } from '@apollo/client';
 import { useAuth } from '@/lib/auth-context';
 import { formatDateTime } from '@/lib/format-date';
-import { RequestType, RequestStatus } from '@shiftsync/shared';
+import { RequestType, RequestStatus, UserRole } from '@shiftsync/shared';
 import {
   PENDING_REQUESTS_QUERY,
   APPROVE_MUTATION,
@@ -23,12 +23,15 @@ type RequestRow = {
 };
 
 export default function ApprovalsPage() {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const [acting, setActing] = useState<string | null>(null);
+
+  const canAccess =
+    user?.role === UserRole.Admin || user?.role === UserRole.Manager;
 
   const { data, loading, error } = useQuery<{ pendingRequests: RequestRow[] }>(
     PENDING_REQUESTS_QUERY,
-    { skip: !token }
+    { skip: !token || !canAccess }
   );
   const [approveRequest] = useMutation(APPROVE_MUTATION, {
     refetchQueries: [{ query: PENDING_REQUESTS_QUERY }],
@@ -64,6 +67,11 @@ export default function ApprovalsPage() {
   };
 
   const canApprove = (r: RequestRow) => r.status === RequestStatus.Accepted;
+
+  if (!user) return <p className="text-ps-fg-muted">Loading…</p>;
+  if (!canAccess) {
+    return <p className="text-ps-error">You do not have access to the approval queue.</p>;
+  }
 
   if (loading) return <p className="text-ps-fg-muted">Loading…</p>;
   if (error) return <p className="text-ps-error">{error.message}</p>;
