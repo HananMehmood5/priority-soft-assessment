@@ -4,9 +4,9 @@ module.exports = {
   roots: ["<rootDir>/src", "<rootDir>/libs", "<rootDir>/app"],
   testMatch: ["**/__tests__/**/*.test.[jt]s?(x)"],
   moduleNameMapper: {
-    "^@/(.*)$": "<rootDir>/$1",
-    "^@/libs/(.*)$": "<rootDir>/libs/$1",
     "^@/features/(.*)$": "<rootDir>/src/features/$1",
+    "^@/libs/(.*)$": "<rootDir>/libs/$1",
+    "^@/(.*)$": "<rootDir>/$1",
     "^@shiftsync/shared$": "<rootDir>/../../packages/shared/src/index.ts",
   },
   transform: {

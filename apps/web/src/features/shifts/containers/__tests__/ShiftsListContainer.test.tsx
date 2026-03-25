@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { MockedProvider } from "@apollo/client/testing";
 import { ShiftsListContainer } from "../ShiftsListContainer";
-import { SHIFTS_QUERY, LOCATIONS_QUERY } from "@/lib/apollo/operations";
+import { SHIFTS_WITH_LOCATIONS_QUERY } from "@/lib/apollo/operations";
 
 jest.mock("@/lib/auth-context", () => ({
   useAuth: () => ({ token: "test-token" }),
@@ -9,12 +9,8 @@ jest.mock("@/lib/auth-context", () => ({
 
 const mocks = [
   {
-    request: { query: SHIFTS_QUERY },
-    result: { data: { shifts: [] } },
-  },
-  {
-    request: { query: LOCATIONS_QUERY },
-    result: { data: { locations: [] } },
+    request: { query: SHIFTS_WITH_LOCATIONS_QUERY },
+    result: { data: { shifts: [], locations: [] } },
   },
 ];
 

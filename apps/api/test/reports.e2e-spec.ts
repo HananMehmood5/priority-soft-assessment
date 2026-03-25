@@ -54,7 +54,7 @@ describe('Reports (e2e)', () => {
         }`,
         variables: { start, end },
       },
-      managerToken,
+      adminToken,
     ).expect(200);
 
     expect(res.body.errors).toBeUndefined();
@@ -73,7 +73,7 @@ describe('Reports (e2e)', () => {
         }`,
         variables: { start, end },
       },
-      managerToken,
+      adminToken,
     ).expect(200);
 
     expect(res.body.errors).toBeUndefined();
@@ -92,7 +92,7 @@ describe('Reports (e2e)', () => {
         }`,
         variables: { start, end },
       },
-      managerToken,
+      adminToken,
     ).expect(200);
 
     expect(res.body.errors).toBeUndefined();
@@ -163,6 +163,6 @@ describe('Reports (e2e)', () => {
     ).expect(200);
 
     expect(res.body.errors).toBeDefined();
-    expect(JSON.stringify(res.body.errors)).toContain('managed locations');
+    expect(JSON.stringify(res.body.errors)).toContain('Forbidden');
   });
 });

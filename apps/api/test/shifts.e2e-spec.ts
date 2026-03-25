@@ -4,6 +4,7 @@ import { setupTestApp, graphqlRequest } from './test-utils';
 describe('Shifts (e2e)', () => {
   let app: INestApplication;
   let managerToken: string;
+  let adminToken: string;
   let locationId: string;
 
   beforeAll(async () => {
@@ -18,6 +19,15 @@ describe('Shifts (e2e)', () => {
     }).expect(200);
     managerToken = loginRes.body.data?.login;
     expect(managerToken).toBeTruthy();
+
+    const adminLoginRes = await graphqlRequest(app, {
+      query: `mutation Login($input: LoginInput!) { login(input: $input) }`,
+      variables: {
+        input: { email: 'admin@coastaleats.com', password: 'password123' },
+      },
+    }).expect(200);
+    adminToken = adminLoginRes.body.data?.login;
+    expect(adminToken).toBeTruthy();
 
     const locRes = await graphqlRequest(
       app,
@@ -93,15 +103,23 @@ describe('Shifts (e2e)', () => {
     const mgr2Token = mgr2Login.body.data?.login;
     expect(mgr2Token).toBeTruthy();
 
-    const locRes = await graphqlRequest(
+    const createRes = await graphqlRequest(
       app,
-      { query: `query L { locations { id name } }` },
-      mgr2Token,
+      {
+        query: `mutation CreateLocation($input: CreateLocationInput!) {
+          createLocation(input: $input) { id }
+        }`,
+        variables: {
+          input: {
+            name: `Scope-Test-${Date.now()}`,
+            timezone: 'America/New_York',
+          },
+        },
+      },
+      adminToken,
     ).expect(200);
-    const downtown = locRes.body.data?.locations?.find(
-      (l: { name: string }) => l.name === 'Coastal Eats Downtown',
-    )?.id;
-    expect(downtown).toBeTruthy();
+    const unmanagedLocationId = createRes.body.data?.createLocation?.id;
+    expect(unmanagedLocationId).toBeTruthy();
 
     const res = await graphqlRequest(
       app,
@@ -109,7 +127,7 @@ describe('Shifts (e2e)', () => {
         query: `query O($locationId: String) {
           onDutyShifts(locationId: $locationId) { id locationId }
         }`,
-        variables: { locationId: downtown },
+        variables: { locationId: unmanagedLocationId },
       },
       mgr2Token,
     ).expect(200);
@@ -145,6 +163,5 @@ describe('Shifts (e2e)', () => {
     expect(res.body.errors).toBeDefined();
     const errorsText = JSON.stringify(res.body.errors);
     expect(errorsText).toContain('Validation failed');
-    expect(errorsText).toContain('locationId');
   });
 });

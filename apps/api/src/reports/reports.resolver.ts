@@ -11,8 +11,7 @@ import { PremiumFairnessEntryEntity } from './entities/premium-fairness-entry.en
 import { DesiredHoursEntryEntity } from './entities/desired-hours-entry.entity';
 
 @Resolver()
-@UseGuards(JwtAuthGuard)
-@UseGuards(RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(UserRole.Admin, UserRole.Manager)
 export class ReportsResolver {
   constructor(private readonly reportsService: ReportsService) {}

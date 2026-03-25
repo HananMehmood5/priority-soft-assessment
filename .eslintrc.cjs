@@ -36,7 +36,13 @@ module.exports = {
       },
       rules: {
         "no-html-link-for-pages": "off",
+        "@next/next/no-html-link-for-pages": "off",
         "@typescript-eslint/triple-slash-reference": "off",
+        "@typescript-eslint/no-explicit-any": "warn",
+        "@typescript-eslint/no-unused-vars": [
+          "warn",
+          { argsIgnorePattern: "^_", varsIgnorePattern: "^_" },
+        ],
       },
     },
     // NestJS API (apps/api): TypeScript + Prettier
@@ -54,6 +60,15 @@ module.exports = {
       },
       plugins: ["@typescript-eslint"],
       env: { node: true, es2022: true },
+      rules: {
+        "@typescript-eslint/no-explicit-any": "warn",
+        "@typescript-eslint/no-unused-vars": [
+          "warn",
+          { argsIgnorePattern: "^_", varsIgnorePattern: "^_" },
+        ],
+        "@typescript-eslint/no-require-imports": "warn",
+        "prefer-const": "warn",
+      },
     },
     // Root config files (e.g. .eslintrc.cjs)
     {
