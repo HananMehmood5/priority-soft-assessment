@@ -5,36 +5,24 @@ import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { UserRole } from '@shiftsync/shared';
-import { useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { Dialog, DialogBackdrop, DialogPanel, DialogTitle } from '@headlessui/react';
 import { NotificationsPanel } from './notifications-panel';
+import { MenuIcon, CloseIcon } from '@/src/components/icons/NavIcons';
 import {
-  HomeIcon,
-  LocationIcon,
-  SkillsIcon,
-  CalendarIcon,
-  MyShiftsIcon,
-  RequestIcon,
-  DropIcon,
-  SwapIcon,
-  ShiftsIcon,
-  OnDutyIcon,
-  FairnessIcon,
-  ApprovalsIcon,
-  OvertimeIcon,
-  AuditIcon,
-  PeopleIcon,
-} from '@/src/components/icons/NavIcons';
+  EMPLOYEE_NAV_SECTIONS,
+  MANAGER_NAV_SECTION,
+  type NavSection,
+} from './dashboard-nav-config';
+import { DashboardNavLinks } from './DashboardNavLinks';
 
-const NAV = [
-  { href: '/', label: 'Home', Icon: HomeIcon },
-  { href: '/locations', label: 'Locations', Icon: LocationIcon },
-  { href: '/skills', label: 'Skills', Icon: SkillsIcon },
-  { href: '/calendar', label: 'Calendar', Icon: CalendarIcon },
-  { href: '/my-shifts', label: 'My shifts', Icon: MyShiftsIcon },
-  { href: '/requests', label: 'Requests', Icon: RequestIcon },
-  { href: '/drops', label: 'Available drops', Icon: DropIcon },
-  { href: '/swaps', label: 'Available swaps', Icon: SwapIcon },
-] as const;
+function buildNavSections(showManager: boolean): NavSection[] {
+  const sections = [...EMPLOYEE_NAV_SECTIONS];
+  if (showManager) {
+    sections.push(MANAGER_NAV_SECTION);
+  }
+  return sections;
+}
 
 export default function DashboardLayout({
   children,
@@ -44,6 +32,14 @@ export default function DashboardLayout({
   const { token, user, loading, logout } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
+  const [navOpen, setNavOpen] = useState(false);
+
+  const showManager =
+    user?.role === UserRole.Admin || user?.role === UserRole.Manager;
+  const navSections = useMemo(
+    () => buildNavSections(!!showManager),
+    [showManager],
+  );
 
   useEffect(() => {
     if (loading) return;
@@ -52,6 +48,10 @@ export default function DashboardLayout({
       return;
     }
   }, [loading, token, router]);
+
+  useEffect(() => {
+    setNavOpen(false);
+  }, [pathname]);
 
   if (loading) {
     return (
@@ -65,9 +65,94 @@ export default function DashboardLayout({
     return null;
   }
 
+  const renderUserFooter = (onNavigate?: () => void) => (
+    <div className="mt-auto border-t border-ps-border pt-6">
+      <p className="mb-1 text-ps-sm text-ps-fg-muted">{user?.email}</p>
+      <p className="mb-3 text-ps-sm">
+        {user?.name ?? '—'} · {user?.role}
+      </p>
+      <Link
+        href="/profile"
+        onClick={onNavigate}
+        className="mb-2 inline-block text-ps-xs text-ps-primary hover:no-underline"
+      >
+        View profile
+      </Link>
+      <button
+        type="button"
+        onClick={() => {
+          onNavigate?.();
+          logout();
+        }}
+        className="inline-flex w-full items-center justify-center rounded-ps border border-ps-border px-3 py-2 text-sm font-medium text-ps-fg transition-colors hover:border-ps-fg-subtle hover:bg-ps-surface-hover disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        Sign out
+      </button>
+    </div>
+  );
+
   return (
-    <div className="flex min-h-screen">
-      <aside className="flex w-60 flex-col gap-4 border-r border-ps-border bg-ps-bg-card p-6">
+    <div className="flex min-h-screen flex-col lg:flex-row">
+      <header className="sticky top-0 z-30 flex items-center justify-between gap-3 border-b border-ps-border bg-ps-bg-card px-4 py-3 lg:hidden">
+        <button
+          type="button"
+          onClick={() => setNavOpen(true)}
+          className="inline-flex items-center justify-center rounded-ps border border-ps-border p-2 text-ps-fg transition-colors hover:bg-ps-surface-hover"
+          aria-expanded={navOpen}
+          aria-haspopup="dialog"
+          aria-controls="dashboard-mobile-nav"
+          aria-label="Open menu"
+        >
+          <MenuIcon className="h-5 w-5" />
+        </button>
+        <Link href="/" className="flex min-w-0 flex-1 justify-center">
+          <Image
+            src="/priority-soft-logo.png"
+            alt="Priority Soft"
+            width={140}
+            height={28}
+            className="h-7 w-auto max-w-full"
+            priority
+          />
+        </Link>
+        <div className="shrink-0">
+          <NotificationsPanel placement="header" />
+        </div>
+      </header>
+
+      <Dialog
+        open={navOpen}
+        onClose={setNavOpen}
+        className="relative z-40 lg:hidden"
+      >
+        <DialogBackdrop className="fixed inset-0 bg-black/60" />
+        <DialogPanel
+          id="dashboard-mobile-nav"
+          className="fixed inset-y-0 left-0 flex w-[min(18rem,88vw)] flex-col overflow-y-auto border-r border-ps-border bg-ps-bg-card p-6 shadow-ps-lg"
+        >
+          <div className="mb-6 flex items-center justify-between gap-2">
+            <DialogTitle className="text-lg font-semibold text-ps-fg">
+              Menu
+            </DialogTitle>
+            <button
+              type="button"
+              onClick={() => setNavOpen(false)}
+              className="rounded-ps p-2 text-ps-fg-muted transition-colors hover:bg-ps-surface-hover hover:text-ps-fg"
+              aria-label="Close menu"
+            >
+              <CloseIcon className="h-5 w-5" />
+            </button>
+          </div>
+          <DashboardNavLinks
+            pathname={pathname}
+            sections={navSections}
+            onNavigate={() => setNavOpen(false)}
+          />
+          {renderUserFooter(() => setNavOpen(false))}
+        </DialogPanel>
+      </Dialog>
+
+      <aside className="hidden w-60 shrink-0 flex-col gap-4 border-r border-ps-border bg-ps-bg-card p-6 lg:flex">
         <div className="mb-3">
           <Link href="/" className="inline-flex items-center gap-3">
             <Image
@@ -83,152 +168,13 @@ export default function DashboardLayout({
         <div className="mb-4">
           <NotificationsPanel placement="sidebar" />
         </div>
-        <nav className="flex flex-col gap-1">
-          {NAV.map(({ href, label, Icon }) => (
-            <Link
-              key={href}
-              href={href}
-              className={[
-                'flex items-center gap-2 rounded-ps px-3 py-2 text-sm',
-                pathname === href
-                  ? 'bg-ps-primary-muted font-semibold text-ps-primary'
-                  : 'text-ps-fg',
-              ]
-                .filter(Boolean)
-                .join(' ')}
-            >
-              <Icon className="h-4 w-4" />
-              {label}
-            </Link>
-          ))}
-          {(user?.role === UserRole.Admin || user?.role === UserRole.Manager) && (
-            <>
-              <Link
-                href="/people"
-                className={[
-                  'flex items-center gap-2 rounded-ps px-3 py-2 text-sm',
-                  pathname === '/people'
-                    ? 'bg-ps-primary-muted font-semibold text-ps-primary'
-                    : 'text-ps-fg',
-                ]
-                  .filter(Boolean)
-                  .join(' ')}
-              >
-                <PeopleIcon className="h-4 w-4" />
-                People
-              </Link>
-              <Link
-                href="/shifts"
-                className={[
-                  'flex items-center gap-2 rounded-ps px-3 py-2 text-sm',
-                  pathname === '/shifts'
-                    ? 'bg-ps-primary-muted font-semibold text-ps-primary'
-                    : 'text-ps-fg',
-                ]
-                  .filter(Boolean)
-                  .join(' ')}
-              >
-                <ShiftsIcon className="h-4 w-4" />
-                Shifts
-              </Link>
-              <Link
-                href="/on-duty"
-                className={[
-                  'flex items-center gap-2 rounded-ps px-3 py-2 text-sm',
-                  pathname === '/on-duty'
-                    ? 'bg-ps-primary-muted font-semibold text-ps-primary'
-                    : 'text-ps-fg',
-                ]
-                  .filter(Boolean)
-                  .join(' ')}
-              >
-                <OnDutyIcon className="h-4 w-4" />
-                On-duty
-              </Link>
-              <Link
-                href="/fairness"
-                className={[
-                  'flex items-center gap-2 rounded-ps px-3 py-2 text-sm',
-                  pathname === '/fairness'
-                    ? 'bg-ps-primary-muted font-semibold text-ps-primary'
-                    : 'text-ps-fg',
-                ]
-                  .filter(Boolean)
-                  .join(' ')}
-              >
-                <FairnessIcon className="h-4 w-4" />
-                Fairness
-              </Link>
-              <Link
-                href="/approvals"
-                className={[
-                  'flex items-center gap-2 rounded-ps px-3 py-2 text-sm',
-                  pathname === '/approvals'
-                    ? 'bg-ps-primary-muted font-semibold text-ps-primary'
-                    : 'text-ps-fg',
-                ]
-                  .filter(Boolean)
-                  .join(' ')}
-              >
-                <ApprovalsIcon className="h-4 w-4" />
-                Approvals
-              </Link>
-              <Link
-                href="/overtime"
-                className={[
-                  'flex items-center gap-2 rounded-ps px-3 py-2 text-sm',
-                  pathname === '/overtime'
-                    ? 'bg-ps-primary-muted font-semibold text-ps-primary'
-                    : 'text-ps-fg',
-                ]
-                  .filter(Boolean)
-                  .join(' ')}
-              >
-                <OvertimeIcon className="h-4 w-4" />
-                Overtime
-              </Link>
-              <Link
-                href="/audit"
-                className={[
-                  'flex items-center gap-2 rounded-ps px-3 py-2 text-sm',
-                  pathname === '/audit'
-                    ? 'bg-ps-primary-muted font-semibold text-ps-primary'
-                    : 'text-ps-fg',
-                ]
-                  .filter(Boolean)
-                  .join(' ')}
-              >
-                <AuditIcon className="h-4 w-4" />
-                Audit
-              </Link>
-            </>
-          )}
-        </nav>
-        <div className="mt-auto border-t border-ps-border pt-6">
-          <p className="mb-1 text-ps-sm text-ps-fg-muted">
-            {user?.email}
-          </p>
-          <p className="mb-3 text-ps-sm">
-            {user?.name ?? '—'} · {user?.role}
-          </p>
-          <Link
-            href="/profile"
-            className="mb-2 inline-block text-ps-xs text-ps-primary"
-          >
-            View profile
-          </Link>
-          <button
-            type="button"
-            onClick={logout}
-            className="inline-flex w-full items-center justify-center rounded-ps border border-ps-border px-3 py-2 text-sm font-medium text-ps-fg transition-colors hover:border-ps-fg-subtle hover:bg-ps-surface-hover disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            Sign out
-          </button>
+        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+          <DashboardNavLinks pathname={pathname} sections={navSections} />
         </div>
+        {renderUserFooter()}
       </aside>
-      <main className="flex-1 bg-ps-bg p-6">
-        {children}
-      </main>
+
+      <main className="flex-1 bg-ps-bg p-4 sm:p-6">{children}</main>
     </div>
   );
 }

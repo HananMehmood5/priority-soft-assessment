@@ -50,7 +50,7 @@ yarn install
 
 (API and web run on the host; they use `DATABASE_URL` from `.env` to connect to the Docker Postgres.)
 
-**Real-time**: The API serves WebSocket (Socket.io) on the same host and port as HTTP. Set `WS_URL` in `.env` (e.g. `ws://localhost:3001`) for the frontend to connect for real-time updates (Phase 2+).
+**Real-time**: The API serves WebSocket (Socket.io) on the same host and port as HTTP. Set `WS_URL` / `NEXT_PUBLIC_WS_URL` in `.env` so the web app can subscribe to schedule and notification events.
 
 ## Deployment (summary)
 
@@ -67,10 +67,13 @@ See `docs/ASSUMPTIONS_AND_DECISIONS.md` for full deployment assumptions.
 
 ## Submission checklist
 
-- **Live app URL**: add deployed URL before submission (TBD in local-only review state).
-- **Role credentials**: see `docs/SEED_AND_SCENARIOS.md`.
-- **Evaluator walkthrough**: see `docs/README.md`.
-- **Assumptions/tradeoffs**: see `docs/ASSUMPTIONS_AND_DECISIONS.md`.
+Send the hiring contact what they asked for (typically **live URL**, **repo access**, **this codebase**, and **documentation**). Before you send:
+
+- **Live app URL**: insert your deployed web URL (and confirm API + WebSocket URLs in Vercel/Railway env).
+- **Role credentials**: `docs/SEED_AND_SCENARIOS.md` (production DB should be migrated + seeded if evaluators use seeded accounts).
+- **Evaluator walkthrough**: `docs/README.md` (run, proof checklist, limitations).
+- **Assumptions / ambiguous brief items**: `docs/ASSUMPTIONS_AND_DECISIONS.md`.
+- **Original assessment PDF/spec**: not committed in this repo—keep your own copy; submission is this implementation + docs above.
 
 ## Verification commands
 
@@ -80,12 +83,13 @@ Run from repo root (except where noted):
 yarn lint
 yarn api:build
 yarn web:build
-cd apps/api && yarn test:e2e
+cd apps/api && CI=true yarn test:e2e
+yarn web:test
 ```
 
-Expected result before submission: all commands exit successfully with no failing tests.
+Expected result before submission: all commands exit successfully with no failing tests (use `CI=true` for e2e if watchman causes issues locally).
 
-## Requirement coverage (mapped to `requirements.md`)
+## Feature coverage (assessment scope)
 
 | Requirement area | Status | Notes |
 | --- | --- | --- |
@@ -95,13 +99,16 @@ Expected result before submission: all commands exit successfully with no failin
 | Overtime & labor warnings | Implemented | Overtime dashboard, what-if calculations, warning/block rules |
 | Fairness analytics | Implemented | Distribution, premium fairness, desired-vs-actual reports |
 | Real-time features | Implemented | Socket.io update events for schedule/request changes and on-duty views |
-| Notifications | Implemented | In-app notifications and preference handling |
-| Calendar/time handling | Partial | Overnight shifts supported; broad multi-timezone edge behavior is documented as out of scope |
+| Notifications | Mostly implemented | In-app notification center + realtime push; GraphQL for preferences exists, **no settings UI**; **email simulation** not implemented |
+| Calendar/time handling | Implemented (location TZ) | Calendar expands shifts in each shift’s **location** timezone (`apps/web/lib/calendar-location-time.ts`); per-user TZ prefs and exhaustive DST fixtures deferred |
 | Audit trail | Implemented | Shift history and audit logging available |
 
 ## Project layout
 
-- `apps/api` — NestJS backend (Sequelize, REST + Socket.io WebSocket; events/rooms in Phase 2)
-- `apps/web` — Next.js frontend
-- `docs/README.md` — evaluator-facing run + usage instructions
-- `docs/ASSUMPTIONS_AND_DECISIONS.md` — key product/technical decisions and deployment assumptions
+- `apps/api` — NestJS GraphQL API + Socket.io (same port as HTTP)
+- `apps/web` — Next.js App Router frontend
+- `docs/README.md` — evaluator-facing runbook + proof checklist
+- `docs/ASSUMPTIONS_AND_DECISIONS.md` — ambiguous-brief decisions + deployment notes
+- `docs/SEED_AND_SCENARIOS.md` — test accounts and manual scenarios
+- `docs/REPOSITORY_PATTERN.md` — API data-access conventions
+- `docs/THEMING.md` — frontend visual tokens and components

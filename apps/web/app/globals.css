@@ -87,3 +87,8 @@ a:hover {
   text-decoration: underline;
 }
 
+/* Sidebar / drawer nav: avoid underline fighting AppNavLink styles */
+nav a:hover {
+  text-decoration: none;
+}
+

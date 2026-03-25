@@ -5,6 +5,12 @@ import { useQuery, useMutation } from '@apollo/client';
 import { useAuth } from '@/lib/auth-context';
 import { AVAILABLE_DROPS_QUERY, ACCEPT_DROP_MUTATION, LOCATIONS_QUERY } from '@/lib/apollo/operations';
 import { useSocket } from '@/lib/use-socket';
+import { PageHeader } from '@/libs/ui/PageHeader';
+import { ErrorState } from '@/libs/ui/ErrorState';
+import { PageSkeleton } from '@/libs/ui/PageSkeleton';
+
+const DROPS_DESCRIPTION =
+  'Pick up shifts other staff have dropped, subject to skills and scheduling rules.';
 
 type DropRequest = {
   id: string;
@@ -85,12 +91,26 @@ export default function DropsPage() {
     }
   };
 
-  if (loading) return <p className="text-ps-fg-muted">Loading…</p>;
-  if (error) return <p className="text-ps-error">{error.message}</p>;
+  if (loading) {
+    return (
+      <div>
+        <PageHeader title="Available drops" description={DROPS_DESCRIPTION} />
+        <PageSkeleton />
+      </div>
+    );
+  }
+  if (error) {
+    return (
+      <div>
+        <PageHeader title="Available drops" description={DROPS_DESCRIPTION} />
+        <ErrorState message={error.message} onRetry={() => refetch()} variant="card" />
+      </div>
+    );
+  }
 
   return (
     <div>
-      <h1 className="mb-6 text-2xl font-bold">Available drops</h1>
+      <PageHeader title="Available drops" description={DROPS_DESCRIPTION} />
       {constraintError && (
         <div className="mb-4 rounded-ps border border-ps-primary bg-ps-primary-muted p-3 text-ps-warning">
           {constraintError}

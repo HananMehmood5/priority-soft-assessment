@@ -15,6 +15,12 @@ import { EditIcon } from '@/src/components/icons/EditIcon';
 import { TrashIcon } from '@/src/components/icons/TrashIcon';
 import { PlusIcon } from '@/src/components/icons/PlusIcon';
 import { Modal } from '@/src/components/Modal';
+import { PageHeader } from '@/libs/ui/PageHeader';
+import { ErrorState } from '@/libs/ui/ErrorState';
+import { PageSkeleton } from '@/libs/ui/PageSkeleton';
+
+const SKILLS_DESCRIPTION =
+  'Skills represent the roles staff can work (e.g. bartender, line cook, server) and are used to match staff to shift requirements.';
 
 type EditState = { id: string; name: string } | null;
 
@@ -30,9 +36,12 @@ export default function SkillsPage() {
   const [search, setSearch] = useState('');
   const [createOpen, setCreateOpen] = useState(false);
 
-  const { data, loading, error } = useQuery<{ skills: SkillAttributes[] }>(SKILLS_QUERY, {
-    skip: !token,
-  });
+  const { data, loading, error, refetch } = useQuery<{ skills: SkillAttributes[] }>(
+    SKILLS_QUERY,
+    {
+      skip: !token,
+    },
+  );
   const allSkills = data?.skills ?? [];
   const skills = allSkills.filter((skill) => {
     const q = search.trim().toLowerCase();
@@ -99,33 +108,46 @@ export default function SkillsPage() {
     }
   };
 
-  if (loading) return <p className="text-ps-fg-muted">Loading skills…</p>;
-  if (error) return <p className="text-ps-error">{error.message}</p>;
+  if (loading) {
+    return (
+      <div>
+        <PageHeader title="Skills" description={SKILLS_DESCRIPTION} />
+        <PageSkeleton lines={5} />
+      </div>
+    );
+  }
+  if (error) {
+    return (
+      <div>
+        <PageHeader title="Skills" description={SKILLS_DESCRIPTION} />
+        <ErrorState message={error.message} onRetry={() => refetch()} variant="card" />
+      </div>
+    );
+  }
 
   return (
     <div>
-      <div className="mb-3 flex items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold">Skills</h1>
-        {isAdmin && (
-          <button
-            type="button"
-            onClick={() => {
-              setCreateError(null);
-              setNewName('');
-              setCreateOpen(true);
-            }}
-            className="inline-flex items-center gap-2 rounded-ps bg-ps-primary px-4 py-2 text-sm font-semibold text-ps-primary-foreground shadow-ps transition-colors hover:bg-ps-primary-hover"
-          >
-            <PlusIcon className="h-3.5 w-3.5" />
-            <span>Add skill</span>
-          </button>
-        )}
-      </div>
+      <PageHeader
+        title="Skills"
+        description={SKILLS_DESCRIPTION}
+        action={
+          isAdmin ? (
+            <button
+              type="button"
+              onClick={() => {
+                setCreateError(null);
+                setNewName('');
+                setCreateOpen(true);
+              }}
+              className="inline-flex items-center gap-2 rounded-ps bg-ps-primary px-4 py-2 text-sm font-semibold text-ps-primary-foreground shadow-ps transition-colors hover:bg-ps-primary-hover"
+            >
+              <PlusIcon className="h-3.5 w-3.5" />
+              <span>Add skill</span>
+            </button>
+          ) : undefined
+        }
+      />
       <div className="mb-6 flex flex-col gap-3">
-        <p className="max-w-2xl text-ps-sm text-ps-fg-muted">
-          Skills represent the roles staff can work (e.g. bartender, line cook, server) and are used
-          to match staff to shift requirements.
-        </p>
         <div className="flex justify-end">
           <input
             value={search}

@@ -9,6 +9,12 @@ import { formatDate, parseCalendarDateInput } from '@/lib/format-date';
 import { SHIFTS_WITH_LOCATIONS_QUERY } from '@/lib/apollo/operations';
 import { useSocket } from '@/lib/use-socket';
 import { expandShiftOccurrencesForCalendar, type CalendarOccurrence } from '@/lib/calendar-location-time';
+import { PageHeader } from '@/libs/ui/PageHeader';
+import { ErrorState } from '@/libs/ui/ErrorState';
+import { PageSkeleton } from '@/libs/ui/PageSkeleton';
+
+const CALENDAR_DESCRIPTION =
+  "Week/day shift view with times rendered in each shift's location timezone.";
 
 type ViewMode = 'week' | 'day';
 
@@ -118,15 +124,26 @@ export default function CalendarPage() {
     };
   }, [socket, refetch, locationIds]);
 
-  if (loading) return <p className="text-ps-fg-muted">Loading calendar…</p>;
-  if (error) return <p className="text-ps-error">{error.message}</p>;
+  if (loading) {
+    return (
+      <div>
+        <PageHeader title="Calendar" description={CALENDAR_DESCRIPTION} />
+        <PageSkeleton lines={6} />
+      </div>
+    );
+  }
+  if (error) {
+    return (
+      <div>
+        <PageHeader title="Calendar" description={CALENDAR_DESCRIPTION} />
+        <ErrorState message={error.message} onRetry={() => refetch()} variant="card" />
+      </div>
+    );
+  }
 
   return (
     <div>
-      <h1 className="mb-3 text-2xl font-bold">Calendar</h1>
-      <p className="mb-4 text-ps-fg-muted">
-        Week/day shift view with times rendered in each shift&apos;s location timezone.
-      </p>
+      <PageHeader title="Calendar" description={CALENDAR_DESCRIPTION} className="mb-5" />
       <form
         onSubmit={(e) => e.preventDefault()}
         className="mb-5 flex flex-wrap gap-3"
@@ -161,13 +178,19 @@ export default function CalendarPage() {
           <label htmlFor="locationId" className="mb-1 block text-ps-sm">
             Location (optional)
           </label>
-          <input
+          <select
             id="locationId"
             value={locationId}
             onChange={(e) => setLocationId(e.target.value)}
-            placeholder="Filter by location ID…"
-            className="rounded-ps border border-ps-border bg-ps-bg-card px-3 py-2 text-sm text-ps-fg outline-none focus:border-ps-border-focus focus:ring-2 focus:ring-ps-border-focus"
-          />
+            className="min-w-[10rem] rounded-ps border border-ps-border bg-ps-bg-card px-3 py-2 text-sm text-ps-fg outline-none focus:border-ps-border-focus focus:ring-2 focus:ring-ps-border-focus"
+          >
+            <option value="">All locations</option>
+            {locations.map((loc) => (
+              <option key={loc.id} value={loc.id}>
+                {loc.name}
+              </option>
+            ))}
+          </select>
         </div>
       </form>
       {view === 'day' ? (
@@ -197,7 +220,8 @@ export default function CalendarPage() {
           )}
         </div>
       ) : (
-        <div className="grid grid-cols-7 gap-2">
+        <div className="-mx-1 overflow-x-auto px-1 pb-2 md:mx-0 md:overflow-visible md:px-0">
+          <div className="grid min-w-[640px] grid-cols-7 gap-2 md:min-w-0">
           {daysForWeekIso.map((colIso) => {
             const list = filtered.filter((s) => {
               const tz = locations.find((l) => l.id === s.locationId)?.timezone ?? 'UTC';
@@ -206,7 +230,7 @@ export default function CalendarPage() {
             return (
               <div
                 key={colIso}
-          className="min-h-[80px] rounded-ps border border-ps-border bg-ps-bg-card p-2"
+                className="min-h-[80px] rounded-ps border border-ps-border bg-ps-bg-card p-2"
               >
                 <div className="mb-1 text-ps-xs font-semibold">
                   {formatDate(parseCalendarDateInput(colIso))}
@@ -234,6 +258,7 @@ export default function CalendarPage() {
               </div>
             );
           })}
+          </div>
         </div>
       )}
     </div>

@@ -12,6 +12,12 @@ import {
   REJECT_MUTATION,
   LOCATIONS_QUERY,
 } from '@/lib/apollo/operations';
+import { PageHeader } from '@/libs/ui/PageHeader';
+import { ErrorState } from '@/libs/ui/ErrorState';
+import { PageSkeleton } from '@/libs/ui/PageSkeleton';
+
+const APPROVALS_DESCRIPTION =
+  'Review accepted swap and drop requests before they are finalized on the schedule.';
 
 type RequestRow = {
   id: string;
@@ -104,12 +110,26 @@ export default function ApprovalsPage() {
     return <p className="text-ps-error">You do not have access to the approval queue.</p>;
   }
 
-  if (loading) return <p className="text-ps-fg-muted">Loading…</p>;
-  if (error) return <p className="text-ps-error">{error.message}</p>;
+  if (loading) {
+    return (
+      <div>
+        <PageHeader title="Approval queue" description={APPROVALS_DESCRIPTION} />
+        <PageSkeleton lines={5} />
+      </div>
+    );
+  }
+  if (error) {
+    return (
+      <div>
+        <PageHeader title="Approval queue" description={APPROVALS_DESCRIPTION} />
+        <ErrorState message={error.message} onRetry={() => refetch()} variant="card" />
+      </div>
+    );
+  }
 
   return (
     <div>
-      <h1 className="mb-6 text-2xl font-bold">Approval queue</h1>
+      <PageHeader title="Approval queue" description={APPROVALS_DESCRIPTION} />
       {requests.length === 0 ? (
         <p className="text-ps-fg-muted">No pending or accepted requests.</p>
       ) : (

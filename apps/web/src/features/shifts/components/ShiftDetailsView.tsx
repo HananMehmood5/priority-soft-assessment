@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ShiftAttributes } from "@shiftsync/shared";
 import { Button } from "@/libs/ui/Button";
+import { PageHeader } from "@/libs/ui/PageHeader";
 import { formatDate } from "@/lib/format-date";
 
 type Props = {
@@ -51,14 +52,11 @@ export function ShiftDetailsView({
           <span>Back to shifts</span>
         </Link>
       </div>
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold">Shift details</h1>
-          <p className="mt-1 text-ps-sm text-ps-fg-muted">
-            Review the shift timing and status before assigning staff.
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
+      <PageHeader
+        title="Shift details"
+        description="Review the shift timing and status before assigning staff."
+        action={
+          <div className="flex flex-wrap items-center gap-3">
           <span
             className={[
               "inline-flex items-center rounded-full px-3 py-1 text-ps-xs font-medium",
@@ -118,8 +116,9 @@ export function ShiftDetailsView({
               </Button>
             )}
           </div>
-        </div>
-      </div>
+          </div>
+        }
+      />
       <div className="rounded-ps border border-ps-border bg-ps-bg-card p-4">
         <dl className="grid gap-4 sm:grid-cols-2">
           <div>

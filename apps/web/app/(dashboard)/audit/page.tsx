@@ -9,6 +9,10 @@ import { AUDIT_EXPORT_QUERY } from "@/lib/apollo/operations";
 
 import type { AuditEntry } from "@/features/shifts/types/AuditEntry";
 import { Table } from "@/libs/ui/Table/Table";
+import { PageHeader } from "@/libs/ui/PageHeader";
+import { PageSkeleton } from "@/libs/ui/PageSkeleton";
+
+const AUDIT_DESCRIPTION = "Export and review audit entries by date range.";
 
 function getDefaultRange() {
   const now = new Date();
@@ -81,18 +85,15 @@ export default function AuditPage() {
   if (!dateStart || !dateEnd) {
     return (
       <div>
-        <h1 className="mb-3 text-2xl font-bold">Audit logs</h1>
-        <p className="text-ps-fg-muted">Loading…</p>
+        <PageHeader title="Audit logs" description={AUDIT_DESCRIPTION} />
+        <PageSkeleton lines={2} />
       </div>
     );
   }
 
   return (
     <div>
-      <h1 className="mb-3 text-2xl font-bold">Audit logs</h1>
-      <p className="mb-4 text-ps-fg-muted">
-        Export and review audit entries by date range.
-      </p>
+      <PageHeader title="Audit logs" description={AUDIT_DESCRIPTION} />
       <form
         onSubmit={(e) => {
           e.preventDefault();

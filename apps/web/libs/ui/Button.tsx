@@ -9,6 +9,8 @@ type CommonProps = {
   variant?: ButtonVariant;
   size?: ButtonSize;
   loading?: boolean;
+  /** Shown while `loading` is true. */
+  loadingLabel?: string;
   className?: string;
 };
 
@@ -47,6 +49,7 @@ export function Button(props: Props) {
     variant = "primary",
     size = "md",
     loading,
+    loadingLabel = "Loading...",
     className = "",
     ...rest
   } = props as CommonProps & (ButtonProps | LinkButtonProps);
@@ -60,7 +63,7 @@ export function Button(props: Props) {
     .filter(Boolean)
     .join(" ");
 
-  const content = loading ? "Loading..." : children;
+  const content = loading ? loadingLabel : children;
 
   if ("href" in rest && rest.href) {
     const { href, ...linkProps } = rest;

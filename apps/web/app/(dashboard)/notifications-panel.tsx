@@ -80,6 +80,9 @@ export function NotificationsPanel({ placement = 'header' }: { placement?: Place
         type="button"
         className="relative inline-flex items-center justify-center gap-2 rounded-ps border border-ps-border px-3 py-1.5 text-sm font-medium text-ps-fg transition-colors hover:border-ps-fg-subtle hover:bg-ps-surface-hover disabled:cursor-not-allowed disabled:opacity-60"
         onClick={() => setOpen(true)}
+        aria-expanded={open}
+        aria-haspopup="dialog"
+        aria-controls="notifications-popover"
       >
         <BellIcon className="h-4 w-4" />
         <span>Notifications</span>
@@ -96,10 +99,11 @@ export function NotificationsPanel({ placement = 'header' }: { placement?: Place
       >
         <div className="fixed inset-0 bg-transparent" aria-hidden="true" />
         <div
-          className={`fixed max-h-[420px] w-[360px] overflow-auto rounded-ps border border-ps-border bg-ps-bg-card shadow-ps-lg ${
+          id="notifications-popover"
+          className={`fixed z-[60] max-h-[min(420px,70vh)] w-[min(360px,calc(100vw-1rem))] overflow-auto rounded-ps border border-ps-border bg-ps-bg-card shadow-ps-lg ${
             placement === 'sidebar'
               ? 'left-[15rem] top-20'
-              : 'right-6 top-16'
+              : 'right-2 top-14 sm:right-6 sm:top-16'
           }`}
         >
           <DialogPanel className="w-full">

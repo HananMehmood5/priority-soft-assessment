@@ -14,6 +14,12 @@ import { Modal } from '@/src/components/Modal';
 import { EditIcon } from '@/src/components/icons/EditIcon';
 import { TrashIcon } from '@/src/components/icons/TrashIcon';
 import { PlusIcon } from '@/src/components/icons/PlusIcon';
+import { PageHeader } from '@/libs/ui/PageHeader';
+import { ErrorState } from '@/libs/ui/ErrorState';
+import { PageSkeleton } from '@/libs/ui/PageSkeleton';
+
+const LOCATIONS_DESCRIPTION =
+  'Coastal Eats currently operates four locations across two time zones. Admins can use this page to manage the official list of locations.';
 
 type FormMode = { type: 'create' } | { type: 'edit'; location: LocationAttributes };
 
@@ -35,7 +41,7 @@ export default function LocationsPage() {
 
   const isAdmin = useMemo(() => user?.role === ('Admin' as UserRole), [user]);
 
-  const { data, loading, error } = useQuery<{
+  const { data, loading, error, refetch } = useQuery<{
     locations: LocationAttributes[];
   }>(LOCATIONS_QUERY, { skip: !token });
   const allLocations = data?.locations ?? [];
@@ -119,29 +125,42 @@ export default function LocationsPage() {
     }
   };
 
-  if (loading) return <p className="text-ps-fg-muted">Loading locations…</p>;
-  if (error) return <p className="text-ps-error">{error.message}</p>;
+  if (loading) {
+    return (
+      <div>
+        <PageHeader title="Locations" description={LOCATIONS_DESCRIPTION} />
+        <PageSkeleton lines={5} />
+      </div>
+    );
+  }
+  if (error) {
+    return (
+      <div>
+        <PageHeader title="Locations" description={LOCATIONS_DESCRIPTION} />
+        <ErrorState message={error.message} onRetry={() => refetch()} variant="card" />
+      </div>
+    );
+  }
 
   return (
     <div>
-      <div className="mb-3 flex items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold">Locations</h1>
-        {isAdmin && (
-          <button
-            type="button"
-            onClick={openCreate}
-            className="inline-flex items-center gap-2 rounded-ps bg-ps-primary px-4 py-2 text-sm font-semibold text-ps-primary-foreground shadow-ps transition-colors hover:bg-ps-primary-hover"
-          >
-            <PlusIcon className="h-3.5 w-3.5" />
-            <span>Add location</span>
-          </button>
-        )}
-      </div>
+      <PageHeader
+        title="Locations"
+        description={LOCATIONS_DESCRIPTION}
+        action={
+          isAdmin ? (
+            <button
+              type="button"
+              onClick={openCreate}
+              className="inline-flex items-center gap-2 rounded-ps bg-ps-primary px-4 py-2 text-sm font-semibold text-ps-primary-foreground shadow-ps transition-colors hover:bg-ps-primary-hover"
+            >
+              <PlusIcon className="h-3.5 w-3.5" />
+              <span>Add location</span>
+            </button>
+          ) : undefined
+        }
+      />
       <div className="mb-6 flex flex-col gap-3">
-        <p className="max-w-2xl text-ps-sm text-ps-fg-muted">
-          Coastal Eats currently operates four locations across two time zones. Admins can use this
-          page to manage the official list of locations.
-        </p>
         <div className="flex justify-end">
           <input
             value={search}

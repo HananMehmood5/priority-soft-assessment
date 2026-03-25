@@ -18,6 +18,12 @@ import { Modal } from '@/src/components/Modal';
 import { EditIcon } from '@/src/components/icons/EditIcon';
 import { PlusIcon } from '@/src/components/icons/PlusIcon';
 import { useSearchParams } from 'next/navigation';
+import { PageHeader } from '@/libs/ui/PageHeader';
+import { ErrorState } from '@/libs/ui/ErrorState';
+import { PageSkeleton } from '@/libs/ui/PageSkeleton';
+
+const PEOPLE_DESCRIPTION =
+  'View and manage staff: certify them for locations and assign skills so they can be scheduled.';
 
 type StaffMember = {
   id: string;
@@ -54,7 +60,12 @@ export default function PeoplePage() {
     setSkillFilter(skillId ?? '');
   }, [searchParams]);
 
-  const { data: staffData, loading: staffLoading, error: staffError } = useQuery<{
+  const {
+    data: staffData,
+    loading: staffLoading,
+    error: staffError,
+    refetch: refetchStaff,
+  } = useQuery<{
     staff: StaffMember[];
   }>(STAFF_QUERY, {
     variables: {
@@ -238,36 +249,53 @@ export default function PeoplePage() {
     );
   }
 
-  if (staffLoading) return <p className="text-ps-fg-muted">Loading people…</p>;
-  if (staffError) return <p className="text-ps-error">{staffError.message}</p>;
+  if (staffLoading) {
+    return (
+      <div>
+        <PageHeader title="People" description={PEOPLE_DESCRIPTION} />
+        <PageSkeleton lines={6} />
+      </div>
+    );
+  }
+  if (staffError) {
+    return (
+      <div>
+        <PageHeader title="People" description={PEOPLE_DESCRIPTION} />
+        <ErrorState
+          message={staffError.message}
+          onRetry={() => refetchStaff()}
+          variant="card"
+        />
+      </div>
+    );
+  }
 
   return (
     <div>
-      <div className="mb-3 flex items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold">People</h1>
-        {user?.role === UserRole.Admin && (
-          <button
-            type="button"
-            onClick={() => {
-              setCreateError(null);
-              setNewEmail('');
-              setNewName('');
-              setNewPassword('');
-              setNewRole(UserRole.Staff);
-              setCreateOpen(true);
-            }}
-            className="inline-flex items-center gap-2 rounded-ps bg-ps-primary px-4 py-2 text-sm font-semibold text-ps-primary-foreground shadow-ps transition-colors hover:bg-ps-primary-hover"
-          >
-            <PlusIcon className="h-3.5 w-3.5" />
-            <span>Add person</span>
-          </button>
-        )}
-      </div>
+      <PageHeader
+        title="People"
+        description={PEOPLE_DESCRIPTION}
+        action={
+          user?.role === UserRole.Admin ? (
+            <button
+              type="button"
+              onClick={() => {
+                setCreateError(null);
+                setNewEmail('');
+                setNewName('');
+                setNewPassword('');
+                setNewRole(UserRole.Staff);
+                setCreateOpen(true);
+              }}
+              className="inline-flex items-center gap-2 rounded-ps bg-ps-primary px-4 py-2 text-sm font-semibold text-ps-primary-foreground shadow-ps transition-colors hover:bg-ps-primary-hover"
+            >
+              <PlusIcon className="h-3.5 w-3.5" />
+              <span>Add person</span>
+            </button>
+          ) : undefined
+        }
+      />
       <div className="mb-6 flex flex-col gap-3">
-        <p className="max-w-2xl text-ps-sm text-ps-fg-muted">
-          View and manage staff: certify them for locations and assign skills so
-          they can be scheduled.
-        </p>
         <div className="flex flex-wrap items-center gap-3">
           <input
             value={search}

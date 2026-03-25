@@ -7,6 +7,12 @@ import type { LocationAttributes, ShiftAssignmentAttributes, ShiftAttributes } f
 import { UserRole } from '@shiftsync/shared';
 import { useSocket } from '@/lib/use-socket';
 import { LOCATIONS_QUERY, ON_DUTY_QUERY } from '@/lib/apollo/operations';
+import { PageHeader } from '@/libs/ui/PageHeader';
+import { ErrorState } from '@/libs/ui/ErrorState';
+import { PageSkeleton } from '@/libs/ui/PageSkeleton';
+
+const ON_DUTY_DESCRIPTION =
+  'Who is currently on duty, by location. Updates automatically as the schedule changes.';
 
 type AssignmentWithUser = ShiftAssignmentAttributes & {
   user?: {
@@ -85,7 +91,12 @@ export default function OnDutyPage() {
   const canAccess =
     user?.role === UserRole.Admin || user?.role === UserRole.Manager;
 
-  const { data, loading, error, refetch } = useQuery<OnDutyQueryResult>(ON_DUTY_QUERY, {
+  const {
+    data,
+    loading,
+    error,
+    refetch: refetchOnDuty,
+  } = useQuery<OnDutyQueryResult>(ON_DUTY_QUERY, {
     variables: { locationId: locationId || null },
     skip: !token || !canAccess,
   });
@@ -94,6 +105,7 @@ export default function OnDutyPage() {
     data: locationsData,
     loading: locationsLoading,
     error: locationsError,
+    refetch: refetchLocations,
   } = useQuery<LocationsQueryResult>(LOCATIONS_QUERY, {
     skip: !token || !canAccess,
   });
@@ -119,16 +131,39 @@ export default function OnDutyPage() {
       'drop_resolved',
       'assignment_conflict',
     ];
-    const handler = () => refetch();
+    const handler = () => refetchOnDuty();
     refreshEvents.forEach((ev) => socket.on(ev, handler));
     return () => {
       refreshEvents.forEach((ev) => socket.off(ev, handler));
     };
-  }, [socket, refetch, locationsData]);
+  }, [socket, refetchOnDuty, locationsData]);
 
   if (!user) return <p className="text-ps-fg-muted">Loading…</p>;
   if (!canAccess) {
     return <p className="text-ps-error">You do not have access to the on-duty dashboard.</p>;
+  }
+
+  const refetchAll = () => {
+    void refetchOnDuty();
+    void refetchLocations();
+  };
+
+  if (isLoading && !data && !locationsData) {
+    return (
+      <div>
+        <PageHeader title="On-duty dashboard" description={ON_DUTY_DESCRIPTION} />
+        <PageSkeleton lines={5} />
+      </div>
+    );
+  }
+
+  if (queryError) {
+    return (
+      <div>
+        <PageHeader title="On-duty dashboard" description={ON_DUTY_DESCRIPTION} />
+        <ErrorState message={queryError.message} onRetry={() => refetchAll()} variant="card" />
+      </div>
+    );
   }
 
   const grouped = shifts.reduce<Record<string, ShiftWithAssignments[]>>((acc, shift) => {
@@ -140,15 +175,12 @@ export default function OnDutyPage() {
 
   return (
     <div>
-      <h1 className="mb-2 text-2xl font-bold">On-duty dashboard</h1>
-      <p className="mb-5 text-ps-fg-muted">
-        Who is currently on duty, by location. Updates automatically as the schedule changes.
-      </p>
+      <PageHeader title="On-duty dashboard" description={ON_DUTY_DESCRIPTION} />
 
       <form
         onSubmit={(e) => {
           e.preventDefault();
-          refetch();
+          void refetchOnDuty();
         }}
         className="mb-6 flex flex-col gap-3 rounded-ps border border-ps-border bg-ps-bg-card p-4 sm:flex-row sm:items-end"
       >

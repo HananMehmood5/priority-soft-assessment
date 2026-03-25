@@ -11,6 +11,12 @@ import {
   LOCATIONS_QUERY,
 } from '@/lib/apollo/operations';
 import { useSocket } from '@/lib/use-socket';
+import { PageHeader } from '@/libs/ui/PageHeader';
+import { ErrorState } from '@/libs/ui/ErrorState';
+import { PageSkeleton } from '@/libs/ui/PageSkeleton';
+
+const MY_SHIFTS_DESCRIPTION =
+  'Your assigned shifts. Request a swap to trade with another staff member, or drop to release for others to pick up.';
 
 type AssignmentWithShift = ShiftAssignmentAttributes & {
   shift?: {
@@ -93,12 +99,26 @@ export default function MyShiftsPage() {
     }
   };
 
-  if (loading) return <p className="text-ps-fg-muted">Loading…</p>;
-  if (error) return <p className="text-ps-error">{error.message}</p>;
+  if (loading) {
+    return (
+      <div>
+        <PageHeader title="My shifts" description={MY_SHIFTS_DESCRIPTION} />
+        <PageSkeleton />
+      </div>
+    );
+  }
+  if (error) {
+    return (
+      <div>
+        <PageHeader title="My shifts" description={MY_SHIFTS_DESCRIPTION} />
+        <ErrorState message={error.message} onRetry={() => refetch()} variant="card" />
+      </div>
+    );
+  }
 
   return (
     <div>
-      <h1 className="mb-6 text-2xl font-bold">My shifts</h1>
+      <PageHeader title="My shifts" description={MY_SHIFTS_DESCRIPTION} />
       {assignments.length === 0 ? (
         <p className="text-ps-fg-muted">You have no assigned shifts.</p>
       ) : (

@@ -4,11 +4,24 @@ type Props = {
   title: ReactNode;
   description?: ReactNode;
   action?: ReactNode;
+  className?: string;
 };
 
-export function PageHeader({ title, description, action }: Props) {
+export function PageHeader({
+  title,
+  description,
+  action,
+  className = "",
+}: Props) {
   return (
-    <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+    <div
+      className={[
+        "mb-6 flex flex-wrap items-center justify-between gap-4",
+        className,
+      ]
+        .filter(Boolean)
+        .join(" ")}
+    >
       <div>
         <h1 className="m-0 text-2xl font-bold">{title}</h1>
         {description && (

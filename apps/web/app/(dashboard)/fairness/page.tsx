@@ -11,6 +11,12 @@ import {
   DESIRED_HOURS_QUERY,
   LOCATIONS_QUERY,
 } from '@/lib/apollo/operations';
+import { PageHeader } from '@/libs/ui/PageHeader';
+import { ErrorState } from '@/libs/ui/ErrorState';
+import { PageSkeleton } from '@/libs/ui/PageSkeleton';
+
+const FAIRNESS_DESCRIPTION =
+  'Compare distribution of hours, premium shifts, and desired vs actual hours for your staff.';
 
 type DistributionEntry = {
   userId: string;
@@ -127,10 +133,7 @@ export default function FairnessPage() {
 
   return (
     <div>
-      <h1 className="mb-2 text-2xl font-bold">Fairness reports</h1>
-      <p className="mb-4 text-ps-fg-muted">
-        Compare distribution of hours, premium shifts, and desired vs actual hours for your staff.
-      </p>
+      <PageHeader title="Fairness reports" description={FAIRNESS_DESCRIPTION} />
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -207,12 +210,12 @@ export default function FairnessPage() {
         </div>
       </form>
       {error && (
-        <p className="mb-4 rounded-ps border border-ps-error bg-ps-error/10 p-3 text-sm text-ps-error">
-          {error}
-        </p>
+        <div className="mb-4">
+          <ErrorState message={error} onRetry={() => refetchAll()} variant="card" />
+        </div>
       )}
       {loading ? (
-        <p className="text-ps-fg-muted">Loading…</p>
+        <PageSkeleton lines={6} />
       ) : (
         <>
           <section className="mb-6">

@@ -10,6 +10,12 @@ import {
   LOCATIONS_QUERY,
 } from '@/lib/apollo/operations';
 import { useSocket } from '@/lib/use-socket';
+import { PageHeader } from '@/libs/ui/PageHeader';
+import { ErrorState } from '@/libs/ui/ErrorState';
+import { PageSkeleton } from '@/libs/ui/PageSkeleton';
+
+const SWAPS_DESCRIPTION =
+  'Accept open swap requests and offer one of your assignments as the trade counterpart.';
 
 type SwapRequest = {
   id: string;
@@ -126,12 +132,31 @@ export default function SwapsPage() {
     }
   };
 
-  if (loading) return <p className="text-ps-fg-muted">Loading…</p>;
-  if (error) return <p className="text-ps-error">{error}</p>;
+  const refetchSwapsData = () => {
+    void refetchSwaps();
+    void refetchAssignments();
+  };
+
+  if (loading) {
+    return (
+      <div>
+        <PageHeader title="Available swaps" description={SWAPS_DESCRIPTION} />
+        <PageSkeleton />
+      </div>
+    );
+  }
+  if (error) {
+    return (
+      <div>
+        <PageHeader title="Available swaps" description={SWAPS_DESCRIPTION} />
+        <ErrorState message={error} onRetry={() => refetchSwapsData()} variant="card" />
+      </div>
+    );
+  }
 
   return (
     <div>
-      <h1 className="mb-6 text-2xl font-bold">Available swaps</h1>
+      <PageHeader title="Available swaps" description={SWAPS_DESCRIPTION} />
       {constraintError && (
         <div className="mb-4 rounded-ps border border-ps-primary bg-ps-primary-muted p-3 text-ps-warning">
           {constraintError}
