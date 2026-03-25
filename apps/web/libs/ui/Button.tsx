@@ -1,7 +1,13 @@
 import Link from "next/link";
 import { ComponentProps, ReactNode } from "react";
 
-type ButtonVariant = "primary" | "secondary" | "ghost" | "danger" | "destructive";
+type ButtonVariant =
+  | "primary"
+  | "secondary"
+  | "ghost"
+  | "ghostLink"
+  | "danger"
+  | "destructive";
 type ButtonSize = "sm" | "md";
 
 type CommonProps = {
@@ -36,6 +42,8 @@ const variantClasses: Record<ButtonVariant, string> = {
     "font-medium border border-ps-border hover:border-ps-fg-subtle hover:bg-ps-surface-hover text-ps-fg",
   ghost:
     "font-medium bg-transparent hover:bg-ps-surface-hover text-ps-fg-muted border border-transparent",
+  ghostLink:
+    "font-normal text-ps-sm text-ps-fg-muted bg-transparent border border-transparent hover:bg-ps-surface-hover underline-offset-2 hover:underline",
   danger:
     "font-semibold border border-ps-error text-ps-error hover:bg-ps-error/10",
   destructive:

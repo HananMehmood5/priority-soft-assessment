@@ -10,8 +10,7 @@ import { SHIFTS_WITH_LOCATIONS_QUERY } from '@/lib/apollo/operations';
 import { useSocket } from '@/lib/use-socket';
 import { expandShiftOccurrencesForCalendar, type CalendarOccurrence } from '@/lib/calendar-location-time';
 import { PageHeader } from '@/libs/ui/PageHeader';
-import { ErrorState } from '@/libs/ui/ErrorState';
-import { PageSkeleton } from '@/libs/ui/PageSkeleton';
+import { QueryStateBoundary } from '@/libs/ui/QueryStateBoundary';
 import { Input } from '@/libs/ui/Input';
 import { Select } from '@/libs/ui/Select';
 
@@ -126,26 +125,15 @@ export default function CalendarPage() {
     };
   }, [socket, refetch, locationIds]);
 
-  if (loading) {
-    return (
-      <div>
-        <PageHeader title="Calendar" description={CALENDAR_DESCRIPTION} />
-        <PageSkeleton lines={6} />
-      </div>
-    );
-  }
-  if (error) {
-    return (
-      <div>
-        <PageHeader title="Calendar" description={CALENDAR_DESCRIPTION} />
-        <ErrorState message={error.message} onRetry={() => refetch()} variant="card" />
-      </div>
-    );
-  }
-
   return (
     <div>
       <PageHeader title="Calendar" description={CALENDAR_DESCRIPTION} className="mb-5" />
+      <QueryStateBoundary
+        loading={loading}
+        error={error}
+        skeletonLines={6}
+        onRetry={() => refetch()}
+      >
       <form
         onSubmit={(e) => e.preventDefault()}
         className="mb-5 flex flex-wrap gap-3"
@@ -251,6 +239,7 @@ export default function CalendarPage() {
           </div>
         </div>
       )}
+      </QueryStateBoundary>
     </div>
   );
 }

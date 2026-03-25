@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useQuery } from "@apollo/client";
 import { useAuth } from "@/lib/auth-context";
 import { formatDateTime } from "@/lib/format-date";
-import { UserRole } from "@shiftsync/shared";
+import { useIsAdmin } from '@/lib/hooks/use-role';
 import { AUDIT_EXPORT_QUERY } from "@/lib/apollo/operations";
 
 import type { AuditEntry } from "@/features/shifts/types/AuditEntry";
@@ -40,7 +40,7 @@ export default function AuditPage() {
     setDateEnd(range.end);
   }, []);
 
-  const isAdmin = user?.role === UserRole.Admin;
+  const isAdmin = useIsAdmin();
 
   const { data, loading, error, refetch } = useQuery<{
     auditExport: AuditEntry[];

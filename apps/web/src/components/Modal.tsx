@@ -1,7 +1,13 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { Dialog, DialogPanel, DialogTitle } from '@headlessui/react';
+import {
+  Dialog,
+  DialogPanel,
+  DialogTitle,
+  Transition,
+  TransitionChild,
+} from '@headlessui/react';
 import { Button } from '@/libs/ui/Button';
 
 interface ModalProps {
@@ -21,6 +27,24 @@ const maxWidthClasses: Record<NonNullable<ModalProps['maxWidth']>, string> = {
   '2xl': 'max-w-2xl',
 };
 
+const backdropTransition = {
+  enter: 'ease-out duration-200',
+  enterFrom: 'opacity-0',
+  enterTo: 'opacity-100',
+  leave: 'ease-in duration-150',
+  leaveFrom: 'opacity-100',
+  leaveTo: 'opacity-0',
+} as const;
+
+const panelTransition = {
+  enter: 'ease-out duration-200',
+  enterFrom: 'opacity-0 scale-95',
+  enterTo: 'opacity-100 scale-100',
+  leave: 'ease-in duration-150',
+  leaveFrom: 'opacity-100 scale-100',
+  leaveTo: 'opacity-0 scale-95',
+} as const;
+
 export function Modal({
   open,
   onClose,
@@ -30,35 +54,45 @@ export function Modal({
   maxWidth = 'lg',
 }: ModalProps) {
   return (
-    <Dialog open={open} onClose={onClose} className="relative z-50">
-      <div className="fixed inset-0 bg-black/40" aria-hidden="true" />
-      <div className="fixed inset-0 flex items-center justify-center p-4">
-        <DialogPanel
-          className={`w-full ${maxWidthClasses[maxWidth]} rounded-ps border border-ps-border bg-ps-bg-card shadow-ps`}
-        >
-          <div className="flex items-start justify-between border-b border-ps-border px-4 py-3">
-            <DialogTitle className="text-lg font-semibold text-ps-fg">
-              {title}
-            </DialogTitle>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={onClose}
-              className="text-xs text-ps-fg-muted"
+    <Transition show={open}>
+      <Dialog
+        onClose={() => {
+          onClose();
+        }}
+        className="relative z-50"
+      >
+        <TransitionChild {...backdropTransition}>
+          <div className="fixed inset-0 bg-black/40" aria-hidden="true" />
+        </TransitionChild>
+        <div className="fixed inset-0 flex items-center justify-center p-4">
+          <TransitionChild {...panelTransition}>
+            <DialogPanel
+              className={`w-full ${maxWidthClasses[maxWidth]} rounded-ps border border-ps-border bg-ps-bg-card shadow-ps`}
             >
-              Close
-            </Button>
-          </div>
+              <div className="flex items-start justify-between border-b border-ps-border px-4 py-3">
+                <DialogTitle className="text-lg font-semibold text-ps-fg">
+                  {title}
+                </DialogTitle>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={onClose}
+                  className="text-xs text-ps-fg-muted"
+                >
+                  Close
+                </Button>
+              </div>
 
-          <div className="px-4 py-3">{children}</div>
+              <div className="px-4 py-3">{children}</div>
 
-          {footer && (
-            <div className="border-t border-ps-border px-4 py-3">{footer}</div>
-          )}
-        </DialogPanel>
-      </div>
-    </Dialog>
+              {footer && (
+                <div className="border-t border-ps-border px-4 py-3">{footer}</div>
+              )}
+            </DialogPanel>
+          </TransitionChild>
+        </div>
+      </Dialog>
+    </Transition>
   );
 }
-

@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react';
 import { useQuery, useMutation } from '@apollo/client';
 import { useAuth } from '@/lib/auth-context';
 import { formatDateTime } from '@/lib/format-date';
-import { RequestType, RequestStatus, UserRole } from '@shiftsync/shared';
+import { RequestType, RequestStatus } from '@shiftsync/shared';
+import { useCanAccessManagerNav } from '@/lib/hooks/use-role';
 import { useSocket } from '@/lib/use-socket';
 import {
   PENDING_REQUESTS_QUERY,
@@ -13,8 +14,7 @@ import {
   LOCATIONS_QUERY,
 } from '@/lib/apollo/operations';
 import { PageHeader } from '@/libs/ui/PageHeader';
-import { ErrorState } from '@/libs/ui/ErrorState';
-import { PageSkeleton } from '@/libs/ui/PageSkeleton';
+import { QueryStateBoundary } from '@/libs/ui/QueryStateBoundary';
 import { Button } from '@/libs/ui/Button';
 
 const APPROVALS_DESCRIPTION =
@@ -35,8 +35,7 @@ export default function ApprovalsPage() {
   const { token, user } = useAuth();
   const [acting, setActing] = useState<string | null>(null);
 
-  const canAccess =
-    user?.role === UserRole.Admin || user?.role === UserRole.Manager;
+  const canAccess = useCanAccessManagerNav();
 
   const socket = useSocket();
 
@@ -111,26 +110,15 @@ export default function ApprovalsPage() {
     return <p className="text-ps-error">You do not have access to the approval queue.</p>;
   }
 
-  if (loading) {
-    return (
-      <div>
-        <PageHeader title="Approval queue" description={APPROVALS_DESCRIPTION} />
-        <PageSkeleton lines={5} />
-      </div>
-    );
-  }
-  if (error) {
-    return (
-      <div>
-        <PageHeader title="Approval queue" description={APPROVALS_DESCRIPTION} />
-        <ErrorState message={error.message} onRetry={() => refetch()} variant="card" />
-      </div>
-    );
-  }
-
   return (
     <div>
       <PageHeader title="Approval queue" description={APPROVALS_DESCRIPTION} />
+      <QueryStateBoundary
+        loading={loading}
+        error={error}
+        skeletonLines={5}
+        onRetry={() => refetch()}
+      >
       {requests.length === 0 ? (
         <p className="text-ps-fg-muted">No pending or accepted requests.</p>
       ) : (
@@ -183,6 +171,7 @@ export default function ApprovalsPage() {
           </table>
         </div>
       )}
+      </QueryStateBoundary>
     </div>
   );
 }

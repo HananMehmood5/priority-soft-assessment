@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useQuery } from '@apollo/client';
 import { useAuth } from '@/lib/auth-context';
 import type { LocationAttributes, ShiftAssignmentAttributes, ShiftAttributes } from '@/app/types';
-import { UserRole } from '@shiftsync/shared';
+import { useCanAccessManagerNav } from '@/lib/hooks/use-role';
 import { useSocket } from '@/lib/use-socket';
 import { LOCATIONS_QUERY, ON_DUTY_QUERY } from '@/lib/apollo/operations';
 import { PageHeader } from '@/libs/ui/PageHeader';
@@ -87,11 +87,9 @@ function formatAssignee(assignment: AssignmentWithUser): string {
 
 export default function OnDutyPage() {
   const { token, user } = useAuth();
+  const canAccess = useCanAccessManagerNav();
   const socket = useSocket();
   const [locationId, setLocationId] = useState('');
-
-  const canAccess =
-    user?.role === UserRole.Admin || user?.role === UserRole.Manager;
 
   const {
     data,

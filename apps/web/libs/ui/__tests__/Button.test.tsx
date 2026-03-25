@@ -11,5 +11,11 @@ describe("Button", () => {
     render(<Button loading>Save</Button>);
     expect(screen.getByText("Loading...")).toBeInTheDocument();
   });
+
+  it("renders ghostLink cancel affordance", () => {
+    render(<Button variant="ghostLink">Cancel</Button>);
+    const btn = screen.getByRole("button", { name: "Cancel" });
+    expect(btn).toHaveClass("underline-offset-2");
+  });
 });
 

@@ -1,4 +1,5 @@
 import type { OvertimeWhatIf } from "@/features/shifts/types/OvertimeWhatIf";
+import { Textarea } from "@/libs/ui/Textarea";
 
 type Props = {
   overtime: OvertimeWhatIf | null;
@@ -58,22 +59,14 @@ export function OvertimeWhatIfPanel({
       )}
       {error && <p className="m-0 text-ps-xs text-ps-error">{error}</p>}
       {showOverride && (
-        <div>
-          <label
-            htmlFor="overtimeOverrideReason"
-            className="mb-1.5 block font-medium"
-          >
-            Overtime override reason (required for 7th consecutive day)
-          </label>
-          <textarea
-            id="overtimeOverrideReason"
-            value={overrideReason}
-            onChange={(e) => onOverrideReasonChange(e.target.value)}
-            rows={3}
-            className="w-full resize-y rounded-ps border border-ps-border bg-ps-bg-card px-3 py-2.5 text-sm text-ps-fg outline-none focus:border-ps-border-focus focus:ring-2 focus:ring-ps-border-focus"
-            placeholder="Document why this overtime assignment is necessary…"
-          />
-        </div>
+        <Textarea
+          id="overtimeOverrideReason"
+          label="Overtime override reason (required for 7th consecutive day)"
+          value={overrideReason}
+          onChange={(e) => onOverrideReasonChange(e.target.value)}
+          rows={3}
+          placeholder="Document why this overtime assignment is necessary…"
+        />
       )}
     </>
   );

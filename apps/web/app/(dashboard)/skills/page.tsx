@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { useMutation, useQuery } from '@apollo/client';
 import { useAuth } from '@/lib/auth-context';
-import type { SkillAttributes, UserRole } from '@shiftsync/shared';
+import type { SkillAttributes } from '@shiftsync/shared';
+import { useIsAdmin } from '@/lib/hooks/use-role';
 import Link from 'next/link';
 import {
   SKILLS_QUERY,
@@ -19,6 +20,7 @@ import { PageHeader } from '@/libs/ui/PageHeader';
 import { ErrorState } from '@/libs/ui/ErrorState';
 import { PageSkeleton } from '@/libs/ui/PageSkeleton';
 import { Button } from '@/libs/ui/Button';
+import { Card } from '@/libs/ui/Card';
 import { Input } from '@/libs/ui/Input';
 
 const SKILLS_DESCRIPTION =
@@ -27,8 +29,8 @@ const SKILLS_DESCRIPTION =
 type EditState = { id: string; name: string } | null;
 
 export default function SkillsPage() {
-  const { token, user } = useAuth();
-  const isAdmin = useMemo(() => user?.role === ('Admin' as UserRole), [user]);
+  const { token } = useAuth();
+  const isAdmin = useIsAdmin();
 
   const [newName, setNewName] = useState('');
   const [createError, setCreateError] = useState<string | null>(null);
@@ -169,10 +171,8 @@ export default function SkillsPage() {
         {skills.map((skill) => {
           const isEditing = editState?.id === skill.id;
           return (
-            <li
-              key={skill.id}
-              className="flex items-center justify-between gap-4 rounded-ps border border-ps-border bg-ps-bg-card p-4"
-            >
+            <li key={skill.id}>
+              <Card className="flex items-center justify-between gap-4">
               <div className="flex-1">
                 {isEditing ? (
                   <form
@@ -219,10 +219,10 @@ export default function SkillsPage() {
                       </Button>
                       <Button
                         type="button"
-                        variant="ghost"
+                        variant="ghostLink"
                         size="sm"
                         onClick={() => setEditState(null)}
-                        className="font-normal text-ps-xs text-ps-fg-muted underline-offset-2 hover:underline"
+                        className="text-ps-xs"
                       >
                         Cancel
                       </Button>
@@ -254,6 +254,7 @@ export default function SkillsPage() {
                   )}
                 </div>
               )}
+              </Card>
             </li>
           );
         })}
@@ -274,9 +275,8 @@ export default function SkillsPage() {
             <div className="flex items-center justify-between gap-2">
               <Button
                 type="button"
-                variant="ghost"
+                variant="ghostLink"
                 onClick={() => !creating && setCreateOpen(false)}
-                className="font-normal text-ps-sm text-ps-fg-muted underline-offset-2 hover:underline"
               >
                 Cancel
               </Button>
@@ -315,9 +315,8 @@ export default function SkillsPage() {
             <div className="flex items-center justify-end gap-2">
               <Button
                 type="button"
-                variant="ghost"
+                variant="ghostLink"
                 onClick={() => setSkillToDelete(null)}
-                className="font-normal text-ps-sm text-ps-fg-muted underline-offset-2 hover:underline"
               >
                 Cancel
               </Button>

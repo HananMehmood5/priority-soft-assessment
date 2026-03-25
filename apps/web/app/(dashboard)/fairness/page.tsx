@@ -5,6 +5,7 @@ import { useQuery } from '@apollo/client';
 import { useAuth } from '@/lib/auth-context';
 import type { LocationAttributes } from '@/app/types';
 import { UserRole } from '@shiftsync/shared';
+import { useCanAccessManagerNav } from '@/lib/hooks/use-role';
 import {
   DISTRIBUTION_QUERY,
   PREMIUM_FAIRNESS_QUERY,
@@ -77,14 +78,13 @@ const vars = (dateStart: string, dateEnd: string, locationId: string) => {
 
 export default function FairnessPage() {
   const { token, user } = useAuth();
+  const canAccess = useCanAccessManagerNav();
   const [locationId, setLocationId] = useState('');
   const [role, setRole] = useState<UserRole | ''>('');
   const [dateStart, setDateStart] = useState(getDefaultRange().start);
   const [dateEnd, setDateEnd] = useState(getDefaultRange().end);
 
   const baseVars = useMemo(() => vars(dateStart, dateEnd, locationId), [dateStart, dateEnd, locationId]);
-  const canAccess =
-    user?.role === UserRole.Admin || user?.role === UserRole.Manager;
   const shouldSkipReportQueries = !token || !baseVars || !canAccess;
 
   const distQuery = useQuery<{ reportDistribution: DistributionEntry[] }>(

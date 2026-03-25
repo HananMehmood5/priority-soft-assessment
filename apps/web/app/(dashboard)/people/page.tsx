@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery } from '@apollo/client';
 import { useAuth } from '@/lib/auth-context';
 import { UserRole } from '@shiftsync/shared';
+import { useCanAccessManagerNav, useIsAdmin } from '@/lib/hooks/use-role';
 import {
   STAFF_QUERY,
   LOCATIONS_QUERY,
@@ -22,6 +23,7 @@ import { PageHeader } from '@/libs/ui/PageHeader';
 import { ErrorState } from '@/libs/ui/ErrorState';
 import { PageSkeleton } from '@/libs/ui/PageSkeleton';
 import { Button } from '@/libs/ui/Button';
+import { Card } from '@/libs/ui/Card';
 import { Input } from '@/libs/ui/Input';
 import { Select } from '@/libs/ui/Select';
 
@@ -38,7 +40,7 @@ type StaffMember = {
 };
 
 export default function PeoplePage() {
-  const { token, user } = useAuth();
+  const { token } = useAuth();
   const searchParams = useSearchParams();
   const [search, setSearch] = useState('');
   const [locationFilter, setLocationFilter] = useState('');
@@ -55,8 +57,8 @@ export default function PeoplePage() {
   const [newRole, setNewRole] = useState<UserRole>(UserRole.Staff);
   const [createError, setCreateError] = useState<string | null>(null);
 
-  const canAccess =
-    user?.role === UserRole.Admin || user?.role === UserRole.Manager;
+  const canAccess = useCanAccessManagerNav();
+  const isAdmin = useIsAdmin();
 
   useEffect(() => {
     const skillId = searchParams.get('skillId');
@@ -279,7 +281,7 @@ export default function PeoplePage() {
         title="People"
         description={PEOPLE_DESCRIPTION}
         action={
-          user?.role === UserRole.Admin ? (
+          isAdmin ? (
             <Button
               type="button"
               variant="primary"
@@ -349,10 +351,8 @@ export default function PeoplePage() {
 
       <ul className="m-0 flex list-none flex-col gap-3 p-0">
         {staff.map((s) => (
-          <li
-            key={s.id}
-            className="flex items-center justify-between gap-4 rounded-ps border border-ps-border bg-ps-bg-card p-4"
-          >
+          <li key={s.id}>
+            <Card className="flex items-center justify-between gap-4">
             <div>
               <div className="flex items-center gap-2">
                 <div className="font-semibold">{s.name ?? s.email}</div>
@@ -384,6 +384,7 @@ export default function PeoplePage() {
               <EditIcon className="h-3.5 w-3.5" />
               Manage
             </Button>
+            </Card>
           </li>
         ))}
       </ul>
@@ -402,9 +403,8 @@ export default function PeoplePage() {
           footer={
             <Button
               type="button"
-              variant="ghost"
+              variant="ghostLink"
               onClick={() => setDetailUser(null)}
-              className="font-normal text-ps-sm text-ps-fg-muted underline-offset-2 hover:underline"
             >
               Close
             </Button>
@@ -542,9 +542,8 @@ export default function PeoplePage() {
             <div className="flex items-center justify-between gap-2">
               <Button
                 type="button"
-                variant="ghost"
+                variant="ghostLink"
                 onClick={() => !registering && setCreateOpen(false)}
-                className="font-normal text-ps-sm text-ps-fg-muted underline-offset-2 hover:underline"
               >
                 Cancel
               </Button>

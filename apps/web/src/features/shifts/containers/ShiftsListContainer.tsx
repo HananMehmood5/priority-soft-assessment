@@ -112,9 +112,8 @@ export function ShiftsListContainer() {
             <div className="flex items-center justify-between gap-2">
               <Button
                 type="button"
-                variant="ghost"
+                variant="ghostLink"
                 onClick={() => !creating && setCreateOpen(false)}
-                className="font-normal text-ps-sm text-ps-fg-muted underline-offset-2 hover:underline"
               >
                 Cancel
               </Button>

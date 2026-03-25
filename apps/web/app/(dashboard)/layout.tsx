@@ -4,9 +4,16 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
-import { UserRole } from '@shiftsync/shared';
+import { useCanAccessManagerNav } from '@/lib/hooks/use-role';
 import { useEffect, useMemo, useState } from 'react';
-import { Dialog, DialogBackdrop, DialogPanel, DialogTitle } from '@headlessui/react';
+import {
+  Dialog,
+  DialogBackdrop,
+  DialogPanel,
+  DialogTitle,
+  Transition,
+  TransitionChild,
+} from '@headlessui/react';
 import { NotificationsPanel } from './notifications-panel';
 import { MenuIcon, CloseIcon } from '@/src/components/icons/NavIcons';
 import {
@@ -15,6 +22,7 @@ import {
   type NavSection,
 } from './dashboard-nav-config';
 import { DashboardNavLinks } from './DashboardNavLinks';
+import { Button } from '@/libs/ui/Button';
 
 function buildNavSections(showManager: boolean): NavSection[] {
   const sections = [...EMPLOYEE_NAV_SECTIONS];
@@ -34,8 +42,7 @@ export default function DashboardLayout({
   const router = useRouter();
   const [navOpen, setNavOpen] = useState(false);
 
-  const showManager =
-    user?.role === UserRole.Admin || user?.role === UserRole.Manager;
+  const showManager = useCanAccessManagerNav();
   const navSections = useMemo(
     () => buildNavSections(!!showManager),
     [showManager],
@@ -78,16 +85,17 @@ export default function DashboardLayout({
       >
         View profile
       </Link>
-      <button
+      <Button
         type="button"
+        variant="secondary"
+        className="w-full"
         onClick={() => {
           onNavigate?.();
           logout();
         }}
-        className="inline-flex w-full items-center justify-center rounded-ps border border-ps-border px-3 py-2 text-sm font-medium text-ps-fg transition-colors hover:border-ps-fg-subtle hover:bg-ps-surface-hover disabled:cursor-not-allowed disabled:opacity-60"
       >
         Sign out
-      </button>
+      </Button>
     </div>
   );
 
@@ -120,16 +128,34 @@ export default function DashboardLayout({
         </div>
       </header>
 
-      <Dialog
-        open={navOpen}
-        onClose={setNavOpen}
-        className="relative z-40 lg:hidden"
-      >
-        <DialogBackdrop className="fixed inset-0 bg-black/60" />
-        <DialogPanel
-          id="dashboard-mobile-nav"
-          className="fixed inset-y-0 left-0 flex w-[min(18rem,88vw)] flex-col overflow-y-auto border-r border-ps-border bg-ps-bg-card p-6 shadow-ps-lg"
+      <Transition show={navOpen}>
+        <Dialog
+          open={navOpen}
+          onClose={setNavOpen}
+          className="relative z-40 lg:hidden"
         >
+          <TransitionChild
+            enter="ease-out duration-200"
+            enterFrom="opacity-0"
+            enterTo="opacity-100"
+            leave="ease-in duration-150"
+            leaveFrom="opacity-100"
+            leaveTo="opacity-0"
+          >
+            <DialogBackdrop className="fixed inset-0 bg-black/60" />
+          </TransitionChild>
+          <TransitionChild
+            enter="ease-out duration-200"
+            enterFrom="-translate-x-full"
+            enterTo="translate-x-0"
+            leave="ease-in duration-150"
+            leaveFrom="translate-x-0"
+            leaveTo="-translate-x-full"
+          >
+            <DialogPanel
+              id="dashboard-mobile-nav"
+              className="fixed inset-y-0 left-0 flex w-[min(18rem,88vw)] flex-col overflow-y-auto border-r border-ps-border bg-ps-bg-card p-6 shadow-ps-lg"
+            >
           <div className="mb-6 flex items-center justify-between gap-2">
             <DialogTitle className="text-lg font-semibold text-ps-fg">
               Menu
@@ -149,8 +175,10 @@ export default function DashboardLayout({
             onNavigate={() => setNavOpen(false)}
           />
           {renderUserFooter(() => setNavOpen(false))}
-        </DialogPanel>
-      </Dialog>
+            </DialogPanel>
+          </TransitionChild>
+        </Dialog>
+      </Transition>
 
       <aside className="hidden w-60 shrink-0 flex-col gap-4 border-r border-ps-border bg-ps-bg-card p-6 lg:flex">
         <div className="mb-3">

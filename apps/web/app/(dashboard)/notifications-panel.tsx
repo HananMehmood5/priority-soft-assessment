@@ -1,7 +1,16 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Dialog, DialogPanel } from '@headlessui/react';
+import {
+  Popover,
+  PopoverButton,
+  PopoverPanel,
+  TabGroup,
+  TabList,
+  Tab,
+  TabPanels,
+  TabPanel,
+} from '@headlessui/react';
 import { useQuery, useMutation } from '@apollo/client';
 import { useAuth } from '@/lib/auth-context';
 import type { NotificationAttributes } from '@/app/types';
@@ -20,10 +29,17 @@ function formatDate(value: string | Date): string {
   return d.toLocaleString();
 }
 
+const tabClass = ({ selected }: { selected: boolean }) =>
+  [
+    'rounded-none border-0 bg-transparent px-0 py-1 text-ps-xs font-medium outline-none focus:outline-none',
+    selected
+      ? 'border-b-2 border-ps-primary text-ps-primary'
+      : 'border-b-2 border-transparent text-ps-fg-muted hover:text-ps-fg',
+  ].join(' ');
+
 export function NotificationsPanel({ placement = 'header' }: { placement?: Placement }) {
   const { token } = useAuth();
   const socket = useSocket();
-  const [open, setOpen] = useState(false);
   const [unreadOnly, setUnreadOnly] = useState(false);
 
   const { data, loading, error, refetch } = useQuery<{
@@ -74,15 +90,48 @@ export function NotificationsPanel({ placement = 'header' }: { placement?: Place
     }
   };
 
-  return (
+  const listSection = (
     <>
-      <button
+      {loading && <p className="p-3 text-ps-fg-muted">Loading…</p>}
+      {error && <p className="p-3 text-ps-error">{error.message}</p>}
+      {!loading && !error && items.length === 0 && (
+        <p className="p-3 text-ps-fg-muted">No notifications.</p>
+      )}
+      <div className="p-2">
+        {items.map((n) => (
+          <button
+            key={n.id}
+            type="button"
+            onClick={() => !n.read && handleMarkRead(n.id)}
+            className={`mb-1 block w-full cursor-pointer rounded-ps px-2 py-2 text-left transition-colors ${
+              n.read ? 'bg-transparent' : 'bg-ps-primary-muted'
+            }`}
+          >
+            <div className="flex items-center justify-between gap-2">
+              <div>
+                <div className={`text-ps-sm ${n.read ? 'font-normal' : 'font-semibold'}`}>
+                  {n.title ?? n.type}
+                </div>
+                {n.body && (
+                  <div className="text-ps-xs text-ps-fg-muted">{n.body}</div>
+                )}
+              </div>
+              <div className="whitespace-nowrap text-ps-xs text-ps-fg-muted">
+                {formatDate(n.createdAt as unknown as string)}
+              </div>
+            </div>
+          </button>
+        ))}
+      </div>
+    </>
+  );
+
+  return (
+    <Popover className="relative">
+      <PopoverButton
         type="button"
+        disabled={!token}
         className="relative inline-flex items-center justify-center gap-2 rounded-ps border border-ps-border px-3 py-1.5 text-sm font-medium text-ps-fg transition-colors hover:border-ps-fg-subtle hover:bg-ps-surface-hover disabled:cursor-not-allowed disabled:opacity-60"
-        onClick={() => setOpen(true)}
-        aria-expanded={open}
-        aria-haspopup="dialog"
-        aria-controls="notifications-popover"
       >
         <BellIcon className="h-4 w-4" />
         <span>Notifications</span>
@@ -91,92 +140,44 @@ export function NotificationsPanel({ placement = 'header' }: { placement?: Place
             {unreadCount}
           </span>
         )}
-      </button>
-      <Dialog
-        open={open}
-        onClose={() => setOpen(false)}
-        className="relative z-50"
+      </PopoverButton>
+
+      <PopoverPanel
+        id="notifications-popover"
+        anchor={
+          placement === 'sidebar'
+            ? { to: 'right start', gap: '0.5rem' }
+            : { to: 'bottom end', gap: '0.5rem' }
+        }
+        transition
+        className="z-[60] max-h-[min(420px,70vh)] w-[min(360px,calc(100vw-1rem))] overflow-auto rounded-ps border border-ps-border bg-ps-bg-card shadow-ps-lg data-[closed]:scale-95 data-[closed]:opacity-0 data-[enter]:duration-150 data-[leave]:duration-100"
       >
-        <div className="fixed inset-0 bg-transparent" aria-hidden="true" />
-        <div
-          id="notifications-popover"
-          className={`fixed z-[60] max-h-[min(420px,70vh)] w-[min(360px,calc(100vw-1rem))] overflow-auto rounded-ps border border-ps-border bg-ps-bg-card shadow-ps-lg ${
-            placement === 'sidebar'
-              ? 'left-[15rem] top-20'
-              : 'right-2 top-14 sm:right-6 sm:top-16'
-          }`}
-        >
-          <DialogPanel className="w-full">
-          <div className="flex flex-col border-b border-ps-border px-3 pt-3">
-            <span className="mb-2 text-ps-sm font-semibold">Notifications</span>
-            <div className="flex items-center justify-between gap-3">
-              <div className="inline-flex gap-4 text-ps-xs font-medium">
-                <button
-                  type="button"
-                  onClick={() => setUnreadOnly(true)}
-                  className={
-                    unreadOnly
-                      ? 'border-b-2 border-ps-primary pb-1 text-ps-primary'
-                      : 'pb-1 text-ps-fg-muted hover:text-ps-fg'
-                  }
-                >
-                  Unread
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setUnreadOnly(false)}
-                  className={
-                    !unreadOnly
-                      ? 'border-b-2 border-ps-primary pb-1 text-ps-primary'
-                      : 'pb-1 text-ps-fg-muted hover:text-ps-fg'
-                  }
-                >
-                  All
-                </button>
-              </div>
+        <div className="flex flex-col border-b border-ps-border px-3 pt-3">
+          <span className="mb-2 text-ps-sm font-semibold">Notifications</span>
+          <TabGroup
+            selectedIndex={unreadOnly ? 0 : 1}
+            onChange={(index) => setUnreadOnly(index === 0)}
+          >
+            <div className="mb-2 flex items-center justify-between gap-3">
+              <TabList className="flex gap-4">
+                <Tab className={tabClass}>Unread</Tab>
+                <Tab className={tabClass}>All</Tab>
+              </TabList>
               <button
                 type="button"
-                className="text-ps-xs font-medium text-ps-primary hover:underline"
+                className="shrink-0 text-ps-xs font-medium text-ps-primary hover:underline"
                 onClick={handleMarkAll}
               >
                 Mark all read
               </button>
             </div>
-          </div>
-          {loading && <p className="p-3 text-ps-fg-muted">Loading…</p>}
-          {error && <p className="p-3 text-ps-error">{error.message}</p>}
-          {!loading && !error && items.length === 0 && (
-            <p className="p-3 text-ps-fg-muted">No notifications.</p>
-          )}
-          <div className="p-2">
-            {items.map((n) => (
-              <button
-                key={n.id}
-                type="button"
-                onClick={() => !n.read && handleMarkRead(n.id)}
-                className={`mb-1 block w-full cursor-pointer rounded-ps px-2 py-2 text-left transition-colors ${
-                  n.read ? 'bg-transparent' : 'bg-ps-primary-muted'
-                }`}
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <div>
-                    <div className={`text-ps-sm ${n.read ? 'font-normal' : 'font-semibold'}`}>
-                      {n.title ?? n.type}
-                    </div>
-                    {n.body && (
-                      <div className="text-ps-xs text-ps-fg-muted">{n.body}</div>
-                    )}
-                  </div>
-                  <div className="whitespace-nowrap text-ps-xs text-ps-fg-muted">
-                    {formatDate(n.createdAt as unknown as string)}
-                  </div>
-                </div>
-              </button>
-            ))}
-          </div>
-          </DialogPanel>
+            <TabPanels>
+              <TabPanel>{listSection}</TabPanel>
+              <TabPanel>{listSection}</TabPanel>
+            </TabPanels>
+          </TabGroup>
         </div>
-      </Dialog>
-    </>
+      </PopoverPanel>
+    </Popover>
   );
 }

@@ -16,6 +16,7 @@ import type { OvertimeWhatIf } from "@/features/shifts/types/OvertimeWhatIf";
 import type { ConstraintError } from "@/features/shifts/types/ConstraintError";
 import type { AuditEntry } from "@/features/shifts/types/AuditEntry";
 import { UserRole } from "@shiftsync/shared";
+import { useCanAccessManagerNav, useIsAdmin } from "@/lib/hooks/use-role";
 import { Button } from "@/libs/ui/Button";
 import {
   SHIFT_QUERY,
@@ -40,9 +41,9 @@ type AddAssignmentResult = {
 export function ShiftDetailsContainer() {
   const params = useParams();
   const id = params.id as string;
-  const { token, user } = useAuth();
-  const canManageAssignments =
-    user?.role === UserRole.Admin || user?.role === UserRole.Manager;
+  const { token } = useAuth();
+  const canManageAssignments = useCanAccessManagerNav();
+  const isAdminUser = useIsAdmin();
   const [userId, setUserId] = useState("");
   const [skillId, setSkillId] = useState("");
   const [constraintError, setConstraintError] = useState<ConstraintError | null>(null);
@@ -253,7 +254,7 @@ export function ShiftDetailsContainer() {
     <div>
       <ShiftDetailsView
         shift={shift}
-        canEdit={user?.role === UserRole.Admin || user?.role === UserRole.Manager}
+        canEdit={canManageAssignments}
         onEdit={openEditDetailsModal}
         editing={updatingShift}
         onTogglePublish={handleTogglePublish}
@@ -262,7 +263,7 @@ export function ShiftDetailsContainer() {
         onUnpublish={disableUnpublishDueToCutoff ? undefined : handleUnpublish}
         unpublishing={unpublishing}
         unpublishError={unpublishError}
-        canDelete={user?.role === UserRole.Admin}
+        canDelete={isAdminUser}
         onDelete={() => setConfirmDeleteOpen(true)}
         deleting={deleting}
       />
@@ -289,9 +290,8 @@ export function ShiftDetailsContainer() {
             <div className="flex items-center justify-between gap-2">
               <Button
                 type="button"
-                variant="ghost"
+                variant="ghostLink"
                 onClick={() => !assigning && setAddAssignmentOpen(false)}
-                className="font-normal text-ps-sm text-ps-fg-muted underline-offset-2 hover:underline"
               >
                 Cancel
               </Button>
@@ -347,9 +347,8 @@ export function ShiftDetailsContainer() {
             <div className="flex items-center justify-between gap-3">
               <Button
                 type="button"
-                variant="ghost"
+                variant="ghostLink"
                 onClick={() => !updatingShift && setEditDetailsOpen(false)}
-                className="text-ps-sm text-ps-fg-muted hover:bg-ps-surface-hover hover:text-ps-fg"
               >
                 Cancel
               </Button>
@@ -407,9 +406,8 @@ export function ShiftDetailsContainer() {
             <div className="flex items-center justify-end gap-2">
               <Button
                 type="button"
-                variant="ghost"
+                variant="ghostLink"
                 onClick={() => !deleting && setConfirmDeleteOpen(false)}
-                className="font-normal text-ps-sm text-ps-fg-muted underline-offset-2 hover:underline"
               >
                 Cancel
               </Button>

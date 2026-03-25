@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useQuery } from '@apollo/client';
-import { UserRole } from '@shiftsync/shared';
+import { useCanAccessManagerNav } from '@/lib/hooks/use-role';
 import { useAuth } from '@/lib/auth-context';
 import type { LocationAttributes } from '@/app/types';
 import { PageHeader } from '@/libs/ui/PageHeader';
@@ -55,8 +55,7 @@ export default function OvertimeDashboardPage() {
   const startIso = toISOStringOrNull(dateStart);
   const endIso = toISOStringOrNull(dateEnd);
   const hasValidRange = Boolean(startIso && endIso);
-  const canAccess =
-    user?.role === UserRole.Admin || user?.role === UserRole.Manager;
+  const canAccess = useCanAccessManagerNav();
 
   const { data, loading, error, refetch } = useQuery<{
     overtimeDashboard: DashboardOvertimeEntry[];

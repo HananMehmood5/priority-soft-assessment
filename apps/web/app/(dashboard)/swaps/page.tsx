@@ -11,8 +11,7 @@ import {
 } from '@/lib/apollo/operations';
 import { useSocket } from '@/lib/use-socket';
 import { PageHeader } from '@/libs/ui/PageHeader';
-import { ErrorState } from '@/libs/ui/ErrorState';
-import { PageSkeleton } from '@/libs/ui/PageSkeleton';
+import { QueryStateBoundary } from '@/libs/ui/QueryStateBoundary';
 import { Button } from '@/libs/ui/Button';
 import { Select } from '@/libs/ui/Select';
 
@@ -139,26 +138,14 @@ export default function SwapsPage() {
     void refetchAssignments();
   };
 
-  if (loading) {
-    return (
-      <div>
-        <PageHeader title="Available swaps" description={SWAPS_DESCRIPTION} />
-        <PageSkeleton />
-      </div>
-    );
-  }
-  if (error) {
-    return (
-      <div>
-        <PageHeader title="Available swaps" description={SWAPS_DESCRIPTION} />
-        <ErrorState message={error} onRetry={() => refetchSwapsData()} variant="card" />
-      </div>
-    );
-  }
-
   return (
     <div>
       <PageHeader title="Available swaps" description={SWAPS_DESCRIPTION} />
+      <QueryStateBoundary
+        loading={loading}
+        error={error}
+        onRetry={() => refetchSwapsData()}
+      >
       {constraintError && (
         <div className="mb-4 rounded-ps border border-ps-primary bg-ps-primary-muted p-3 text-ps-warning">
           {constraintError}
@@ -227,6 +214,7 @@ export default function SwapsPage() {
           ))}
         </div>
       )}
+      </QueryStateBoundary>
     </div>
   );
 }

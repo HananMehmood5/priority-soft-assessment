@@ -1,8 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useAuth } from '@/lib/auth-context';
-import { UserRole } from '@shiftsync/shared';
+import { useCanAccessManagerNav } from '@/lib/hooks/use-role';
 import { PageHeader } from '@/libs/ui/PageHeader';
 
 const STAFF_LINKS = [
@@ -21,9 +20,7 @@ const MANAGER_LINKS = [
 ] as const;
 
 export default function DashboardHome() {
-  const { user } = useAuth();
-  const showManagement =
-    user?.role === UserRole.Admin || user?.role === UserRole.Manager;
+  const showManagement = useCanAccessManagerNav();
 
   return (
     <div>

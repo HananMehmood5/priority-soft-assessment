@@ -1,6 +1,7 @@
 import { Select } from "@/libs/ui/Select";
 import { Button } from "@/libs/ui/Button";
 import { IconButton } from "@/libs/ui/IconButton";
+import { NativePickerInput } from "@/libs/ui/NativePickerInput";
 import type { LocationAttributes } from "@shiftsync/shared";
 
 type Props = {
@@ -109,13 +110,12 @@ export function ShiftForm({
             Start date
           </label>
           <div className="relative">
-            <input
+            <NativePickerInput
               id="startDate"
               type="date"
               value={startDate}
               onChange={(e) => onStartDateChange(e.target.value)}
               required
-              className="w-full rounded-ps border border-ps-border bg-ps-bg-card px-3 py-2.5 pr-11 text-sm text-ps-fg focus:border-ps-border-focus focus:outline-none focus:ring-2 focus:ring-ps-border-focus [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:pointer-events-none"
             />
             <IconButton
               className="absolute inset-y-1 right-1"
@@ -136,13 +136,12 @@ export function ShiftForm({
             End date
           </label>
           <div className="relative">
-            <input
+            <NativePickerInput
               id="endDate"
               type="date"
               value={endDate}
               onChange={(e) => onEndDateChange(e.target.value)}
               required
-              className="w-full rounded-ps border border-ps-border bg-ps-bg-card px-3 py-2.5 pr-11 text-sm text-ps-fg focus:border-ps-border-focus focus:outline-none focus:ring-2 focus:ring-ps-border-focus [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:pointer-events-none"
             />
             <IconButton
               className="absolute inset-y-1 right-1"
@@ -201,14 +200,13 @@ export function ShiftForm({
             Daily start time
           </label>
           <div className="relative">
-            <input
+            <NativePickerInput
               id="dailyStartTime"
               type="time"
               step={300}
               value={dailyStartTime}
               onChange={(e) => onDailyStartTimeChange(e.target.value)}
               required
-              className="w-full rounded-ps border border-ps-border bg-ps-bg-card px-3 py-2.5 pr-11 text-sm text-ps-fg focus:border-ps-border-focus focus:outline-none focus:ring-2 focus:ring-ps-border-focus [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:pointer-events-none"
             />
             <IconButton
               className="absolute inset-y-1 right-1"
@@ -228,14 +226,13 @@ export function ShiftForm({
             Daily end time
           </label>
           <div className="relative">
-            <input
+            <NativePickerInput
               id="dailyEndTime"
               type="time"
               step={300}
               value={dailyEndTime}
               onChange={(e) => onDailyEndTimeChange(e.target.value)}
               required
-              className="w-full rounded-ps border border-ps-border bg-ps-bg-card px-3 py-2.5 pr-11 text-sm text-ps-fg focus:border-ps-border-focus focus:outline-none focus:ring-2 focus:ring-ps-border-focus [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:pointer-events-none"
             />
             <IconButton
               className="absolute inset-y-1 right-1"

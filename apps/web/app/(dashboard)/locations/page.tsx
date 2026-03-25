@@ -1,9 +1,10 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { useMutation, useQuery } from '@apollo/client';
 import { useAuth } from '@/lib/auth-context';
-import type { LocationAttributes, UserRole } from '@shiftsync/shared';
+import type { LocationAttributes } from '@shiftsync/shared';
+import { useIsAdmin } from '@/lib/hooks/use-role';
 import {
   LOCATIONS_QUERY,
   CREATE_LOCATION_MUTATION,
@@ -15,9 +16,9 @@ import { EditIcon } from '@/src/components/icons/EditIcon';
 import { TrashIcon } from '@/src/components/icons/TrashIcon';
 import { PlusIcon } from '@/src/components/icons/PlusIcon';
 import { PageHeader } from '@/libs/ui/PageHeader';
-import { ErrorState } from '@/libs/ui/ErrorState';
-import { PageSkeleton } from '@/libs/ui/PageSkeleton';
+import { QueryStateBoundary } from '@/libs/ui/QueryStateBoundary';
 import { Button } from '@/libs/ui/Button';
+import { Card } from '@/libs/ui/Card';
 import { Input } from '@/libs/ui/Input';
 import { Select } from '@/libs/ui/Select';
 
@@ -34,7 +35,7 @@ const SUPPORTED_TIMEZONES: readonly string[] = [
 ];
 
 export default function LocationsPage() {
-  const { token, user } = useAuth();
+  const { token } = useAuth();
   const [formMode, setFormMode] = useState<FormMode | null>(null);
   const [locationToDelete, setLocationToDelete] = useState<LocationAttributes | null>(null);
   const [name, setName] = useState('');
@@ -42,7 +43,7 @@ export default function LocationsPage() {
   const [formError, setFormError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
 
-  const isAdmin = useMemo(() => user?.role === ('Admin' as UserRole), [user]);
+  const isAdmin = useIsAdmin();
 
   const { data, loading, error, refetch } = useQuery<{
     locations: LocationAttributes[];
@@ -128,23 +129,6 @@ export default function LocationsPage() {
     }
   };
 
-  if (loading) {
-    return (
-      <div>
-        <PageHeader title="Locations" description={LOCATIONS_DESCRIPTION} />
-        <PageSkeleton lines={5} />
-      </div>
-    );
-  }
-  if (error) {
-    return (
-      <div>
-        <PageHeader title="Locations" description={LOCATIONS_DESCRIPTION} />
-        <ErrorState message={error.message} onRetry={() => refetch()} variant="card" />
-      </div>
-    );
-  }
-
   return (
     <div>
       <PageHeader
@@ -159,6 +143,12 @@ export default function LocationsPage() {
           ) : undefined
         }
       />
+      <QueryStateBoundary
+        loading={loading}
+        error={error}
+        skeletonLines={5}
+        onRetry={() => refetch()}
+      >
       <div className="mb-6 flex flex-col gap-3">
         <div className="flex justify-end">
           <Input
@@ -172,10 +162,8 @@ export default function LocationsPage() {
       </div>
       <ul className="m-0 flex list-none flex-col gap-3 p-0">
         {locations.map((loc) => (
-          <li
-            key={loc.id}
-            className="flex items-center justify-between gap-4 rounded-ps border border-ps-border bg-ps-bg-card p-4"
-          >
+          <li key={loc.id}>
+            <Card className="flex items-center justify-between gap-4">
             <div>
               <div className="font-semibold">{loc.name}</div>
               <div className="mt-1 text-ps-sm text-ps-fg-muted">{loc.timezone}</div>
@@ -205,10 +193,12 @@ export default function LocationsPage() {
                 </Button>
               </div>
             )}
+            </Card>
           </li>
         ))}
       </ul>
       {locations.length === 0 && <p className="text-ps-fg-muted">No locations.</p>}
+      </QueryStateBoundary>
 
       {isAdmin && formMode && (
         <Modal
@@ -230,9 +220,8 @@ export default function LocationsPage() {
               </Button>
               <Button
                 type="button"
-                variant="ghost"
+                variant="ghostLink"
                 onClick={resetForm}
-                className="font-normal text-ps-sm text-ps-fg-muted underline-offset-2 hover:underline"
               >
                 Cancel
               </Button>
@@ -275,9 +264,8 @@ export default function LocationsPage() {
             <div className="flex items-center justify-end gap-2">
               <Button
                 type="button"
-                variant="ghost"
+                variant="ghostLink"
                 onClick={() => setLocationToDelete(null)}
-                className="font-normal text-ps-sm text-ps-fg-muted underline-offset-2 hover:underline"
               >
                 Cancel
               </Button>
