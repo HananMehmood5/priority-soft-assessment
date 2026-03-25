@@ -6,6 +6,8 @@ import { ConstraintsModule } from '../constraints/constraints.module';
 import { RequestsModule } from '../requests/requests.module';
 import { OvertimeModule } from '../overtime/overtime.module';
 import { AuditModule } from '../audit/audit.module';
+import { NotificationsModule } from '../notifications/notifications.module';
+import { EventsModule } from '../events/events.module';
 import { ShiftsResolver, ShiftAssignmentResolver } from './shifts.resolver';
 import { ShiftsService } from './shifts.service';
 
@@ -18,6 +20,8 @@ import { ShiftsService } from './shifts.service';
     RequestsModule,
     OvertimeModule,
     AuditModule,
+    NotificationsModule,
+    EventsModule,
   ],
   providers: [ShiftsResolver, ShiftAssignmentResolver, ShiftsService],
   exports: [ShiftsService],

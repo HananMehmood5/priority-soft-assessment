@@ -1,14 +1,20 @@
 import { Injectable, ForbiddenException, NotFoundException, BadRequestException } from '@nestjs/common';
+import { InjectConnection } from '@nestjs/sequelize';
 import { ConfigService } from '@nestjs/config';
 import { AuditAction, AuditEntityType, UserRole } from '@shiftsync/shared';
+import { Sequelize } from 'sequelize-typescript';
+import { Transaction } from 'sequelize';
 import { Shift, ShiftAssignment, User } from '../database/models';
 import { ShiftRepository } from '../database/repositories/shift.repository';
 import { ShiftAssignmentRepository } from '../database/repositories/shift-assignment.repository';
+import { LocationRepository } from '../database/repositories/location.repository';
 import { PermissionsService } from '../permissions/permissions.service';
 import { ConstraintsService, ConstraintResult } from '../constraints/constraints.service';
 import { RequestsService } from '../requests/requests.service';
 import { OvertimeService } from '../overtime/overtime.service';
 import { AuditService } from '../audit/audit.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import { EventsGateway, WS_EVENTS } from '../events/events.gateway';
 import { expandShiftToIntervals, getShiftTimeZone } from '../common/shift-time.utils';
 import { addDays } from '../common/utils/date.utils';
 
@@ -17,14 +23,19 @@ const DEFAULT_CUTOFF_HOURS = 48;
 @Injectable()
 export class ShiftsService {
   constructor(
+    @InjectConnection()
+    private readonly sequelize: Sequelize,
     private readonly shiftRepository: ShiftRepository,
     private readonly assignmentRepository: ShiftAssignmentRepository,
+    private readonly locationRepository: LocationRepository,
     private readonly permissions: PermissionsService,
     private readonly constraints: ConstraintsService,
     private readonly config: ConfigService,
     private readonly requestsService: RequestsService,
     private readonly overtimeService: OvertimeService,
     private readonly auditService: AuditService,
+    private readonly notifications: NotificationsService,
+    private readonly eventsGateway: EventsGateway,
   ) { }
 
   private getCutoffHours(): number {
@@ -45,6 +56,21 @@ export class ShiftsService {
       return value.toISOString().slice(0, 10);
     }
     return value.includes('T') ? value.slice(0, 10) : value;
+  }
+
+  private async notifyManagersForLocation(
+    locationId: string,
+    type: string,
+    title: string,
+    body: string,
+    payload: Record<string, unknown>,
+  ): Promise<void> {
+    const managerIds = await this.locationRepository.getManagerUserIdsByLocationId(locationId);
+    await Promise.all(
+      managerIds.map((managerId) =>
+        this.notifications.createAndPush(managerId, type, title, body, payload),
+      ),
+    );
   }
 
   /** Derive a single concrete interval covering the whole shift template. */
@@ -116,6 +142,17 @@ export class ShiftsService {
       null,
       shift.toJSON() as unknown as Record<string, unknown>,
     );
+    this.eventsGateway.emitToLocation(shift.locationId, WS_EVENTS.SCHEDULE_UPDATED, {
+      shiftId: shift.id,
+      action: 'created',
+    });
+    await this.notifyManagersForLocation(
+      shift.locationId,
+      'schedule_created',
+      'New shift created',
+      `A new shift was created for location ${shift.locationId}.`,
+      { shiftId: shift.id, locationId: shift.locationId },
+    );
     return shift;
   }
 
@@ -179,6 +216,17 @@ export class ShiftsService {
       shift.toJSON() as unknown as Record<string, unknown>,
     );
     await this.requestsService.cancelPendingByShiftId(shift.id);
+    this.eventsGateway.emitToLocation(shift.locationId, WS_EVENTS.SCHEDULE_UPDATED, {
+      shiftId: shift.id,
+      action: 'updated',
+    });
+    await this.notifyManagersForLocation(
+      shift.locationId,
+      'schedule_updated',
+      'Shift updated',
+      `A shift was updated for location ${shift.locationId}.`,
+      { shiftId: shift.id, locationId: shift.locationId },
+    );
     return shift;
   }
 
@@ -194,44 +242,57 @@ export class ShiftsService {
     if (shift.published && this.isPastCutoff(start)) {
       throw new BadRequestException('Cannot change assignment after cutoff');
     }
-    const result = await this.constraints.validateAssignment(
-      data.userId,
-      shift.locationId,
-      data.skillId,
-      shift,
-    );
-    if (!result.valid) {
-      const alternatives = await this.constraints.getAlternatives(
+    const txnResult = await this.sequelize.transaction(async (transaction) => {
+      // Serialize concurrent assignment attempts for the same staff member.
+      await User.findByPk(data.userId, { transaction, lock: Transaction.LOCK.UPDATE });
+
+      const result = await this.constraints.validateAssignment(
+        data.userId,
         shift.locationId,
         data.skillId,
         shift,
-        data.userId,
       );
-      return {
-        assignment: null as any,
-        constraintError: { ...result, alternatives },
-      };
-    }
-    const whatIf = await this.overtimeService.whatIfTemplate(
-      data.userId,
-      shift.id,
-      data.overtimeOverrideReason ?? undefined,
-    );
-    if (!whatIf.canAssign) {
-      const onlyOverride = whatIf.consecutiveRequireOverride && !whatIf.weeklyBlock && !whatIf.dailyBlock;
-      if (onlyOverride && data.overtimeOverrideReason) {
-        // Allow with documented reason
-      } else {
-        throw new BadRequestException(whatIf.message ?? 'Assignment would violate overtime rules.');
+      if (!result.valid) {
+        this.eventsGateway.emitToUser(data.userId, WS_EVENTS.ASSIGNMENT_CONFLICT, {
+          shiftId,
+          reason: result.message,
+        });
+        const alternatives = await this.constraints.getAlternatives(
+          shift.locationId,
+          data.skillId,
+          shift,
+          data.userId,
+        );
+        return { constraintError: { ...result, alternatives } };
       }
-    }
-    const assignment = await this.assignmentRepository.create({
-      shiftId,
-      userId: data.userId,
-      skillId: data.skillId,
-      version: 1,
-      overtimeOverrideReason: data.overtimeOverrideReason ?? null,
+      const whatIf = await this.overtimeService.whatIfTemplate(
+        data.userId,
+        shift.id,
+        data.overtimeOverrideReason ?? undefined,
+      );
+      if (!whatIf.canAssign) {
+        const onlyOverride =
+          whatIf.consecutiveRequireOverride && !whatIf.weeklyBlock && !whatIf.dailyBlock;
+        if (!onlyOverride || !data.overtimeOverrideReason) {
+          throw new BadRequestException(whatIf.message ?? 'Assignment would violate overtime rules.');
+        }
+      }
+      const created = await this.assignmentRepository.create(
+        {
+          shiftId,
+          userId: data.userId,
+          skillId: data.skillId,
+          version: 1,
+          overtimeOverrideReason: data.overtimeOverrideReason ?? null,
+        },
+        { transaction },
+      );
+      return { assignment: created };
     });
+    if ('constraintError' in txnResult && txnResult.constraintError) {
+      return { assignment: null as any, constraintError: txnResult.constraintError };
+    }
+    const assignment = txnResult.assignment;
     await this.auditService.log(
       user.id,
       AuditAction.Create,
@@ -239,6 +300,18 @@ export class ShiftsService {
       assignment.id,
       null,
       assignment.toJSON() as unknown as Record<string, unknown>,
+    );
+    this.eventsGateway.emitToLocation(shift.locationId, WS_EVENTS.SCHEDULE_UPDATED, {
+      shiftId: shift.id,
+      action: 'assignment_added',
+      userId: data.userId,
+    });
+    await this.notifications.createAndPush(
+      data.userId,
+      'shift_assigned',
+      'New shift assignment',
+      'You were assigned to a shift.',
+      { shiftId: shift.id, locationId: shift.locationId, assignmentId: assignment.id },
     );
     return { assignment };
   }
@@ -263,6 +336,11 @@ export class ShiftsService {
       before,
       null,
     );
+    this.eventsGateway.emitToLocation(shift.locationId, WS_EVENTS.SCHEDULE_UPDATED, {
+      shiftId: shift.id,
+      action: 'assignment_removed',
+      assignmentId,
+    });
     return true;
   }
 
@@ -270,7 +348,20 @@ export class ShiftsService {
     const shift = await this.shiftRepository.findByIdOrFail(shiftId);
     const can = await this.permissions.canManageLocation(user, shift.locationId);
     if (!can) throw new ForbiddenException('You cannot publish this shift');
-    return this.shiftRepository.updatePublished(shiftId, true);
+    const updated = await this.shiftRepository.updatePublished(shiftId, true);
+    this.eventsGateway.emitToLocation(updated.locationId, WS_EVENTS.SCHEDULE_PUBLISHED, {
+      shiftId: updated.id,
+      locationId: updated.locationId,
+      published: true,
+    });
+    await this.notifyManagersForLocation(
+      updated.locationId,
+      'schedule_published',
+      'Schedule published',
+      `Shift ${updated.id} has been published.`,
+      { shiftId: updated.id, locationId: updated.locationId },
+    );
+    return updated;
   }
 
   async publishWeek(locationId: string, weekStart: Date, user: User): Promise<number> {
@@ -278,7 +369,71 @@ export class ShiftsService {
     if (!can) throw new ForbiddenException('You cannot publish shifts for this location');
     const weekEnd = new Date(weekStart);
     weekEnd.setDate(weekEnd.getDate() + 7);
-    return this.shiftRepository.updateWeekPublished(locationId, weekStart, weekEnd, true);
+    const count = await this.shiftRepository.updateWeekPublished(locationId, weekStart, weekEnd, true);
+    this.eventsGateway.emitToLocation(locationId, WS_EVENTS.SCHEDULE_PUBLISHED, {
+      locationId,
+      weekStart,
+      publishedCount: count,
+    });
+    await this.notifyManagersForLocation(
+      locationId,
+      'schedule_week_published',
+      'Weekly schedule published',
+      `${count} shifts were published for the selected week.`,
+      { locationId, weekStart, publishedCount: count },
+    );
+    return count;
+  }
+
+  async unpublish(shiftId: string, user: User): Promise<Shift> {
+    const shift = await this.shiftRepository.findByIdOrFail(shiftId);
+    const can = await this.permissions.canManageLocation(user, shift.locationId);
+    if (!can) throw new ForbiddenException('You cannot unpublish this shift');
+
+    // Enforce the same cutoff policy as edits: only allow unpublish before cutoff.
+    if (shift.published) {
+      const boundsBefore = this.getTemplateBounds(shift);
+      if (this.isPastCutoff(boundsBefore.start)) {
+        throw new BadRequestException('Cannot unpublish shift after cutoff (default 48h before start)');
+      }
+    }
+
+    const updated = await this.shiftRepository.updatePublished(shiftId, false);
+
+    // Cancels any pending swap/drop requests related to this schedule change.
+    await this.requestsService.cancelPendingByShiftId(updated.id);
+
+    this.eventsGateway.emitToLocation(updated.locationId, WS_EVENTS.SCHEDULE_UPDATED, {
+      shiftId: updated.id,
+      locationId: updated.locationId,
+      action: 'unpublished',
+      published: false,
+    });
+
+    await this.notifyManagersForLocation(
+      updated.locationId,
+      'schedule_unpublished',
+      'Schedule unpublished',
+      `Shift ${updated.id} has been unpublished.`,
+      { shiftId: updated.id, locationId: updated.locationId },
+    );
+
+    // Notify staff who currently have assignments on this shift.
+    const assignments = await this.assignmentRepository.findAllByShiftId(updated.id, ['userId']);
+    const uniqueUserIds = [...new Set(assignments.map((a) => (a as { userId: string }).userId))];
+    await Promise.all(
+      uniqueUserIds.map((uid) =>
+        this.notifications.createAndPush(
+          uid,
+          'shift_unpublished',
+          'Shift unpublished',
+          'A published shift was unpublished and is no longer visible to staff.',
+          { shiftId: updated.id, locationId: updated.locationId },
+        ),
+      ),
+    );
+
+    return updated;
   }
 
   async delete(id: string, user: User): Promise<void> {

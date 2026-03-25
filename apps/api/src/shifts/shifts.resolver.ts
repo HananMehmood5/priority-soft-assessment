@@ -140,6 +140,16 @@ export class ShiftsResolver {
     return this.shiftsService.publish(shiftId, user);
   }
 
+  @Mutation(() => ShiftEntity)
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.Admin, UserRole.Manager)
+  async unpublishShift(
+    @Args('shiftId') shiftId: string,
+    @CurrentUser() user: import('../database/models').User,
+  ): Promise<Shift> {
+    return this.shiftsService.unpublish(shiftId, user);
+  }
+
   @Mutation(() => Number)
   @UseGuards(RolesGuard)
   @Roles(UserRole.Admin, UserRole.Manager)

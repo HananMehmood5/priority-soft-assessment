@@ -11,6 +11,9 @@ type Props = {
   onTogglePublish?: () => void;
   publishing?: boolean;
   publishError?: string | null;
+  onUnpublish?: () => void;
+  unpublishing?: boolean;
+  unpublishError?: string | null;
   canDelete?: boolean;
   onDelete?: () => void;
   deleting?: boolean;
@@ -24,6 +27,9 @@ export function ShiftDetailsView({
   onTogglePublish,
   publishing,
   publishError,
+  onUnpublish,
+  unpublishing,
+  unpublishError,
   canDelete,
   onDelete,
   deleting,
@@ -88,6 +94,17 @@ export function ShiftDetailsView({
                 Publish
               </Button>
             )}
+            {shift.published && onUnpublish && (
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={onUnpublish}
+                loading={unpublishing}
+              >
+                Unpublish
+              </Button>
+            )}
             {canDelete && onDelete && (
               <Button
                 type="button"
@@ -129,6 +146,7 @@ export function ShiftDetailsView({
           </div>
         </dl>
         {publishError && <p className="mt-3 text-ps-xs text-ps-error">{publishError}</p>}
+        {unpublishError && <p className="mt-3 text-ps-xs text-ps-error">{unpublishError}</p>}
       </div>
     </div>
   );

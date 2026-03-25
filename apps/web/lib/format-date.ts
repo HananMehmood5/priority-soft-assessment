@@ -1,6 +1,6 @@
 'use client';
 
-import { format, formatDistanceToNow } from 'date-fns';
+import { format } from 'date-fns';
 
 /** Parse `YYYY-MM-DD` as a local calendar date (avoids UTC drift from `new Date('YYYY-MM-DD')`). */
 export function parseCalendarDateInput(value: string): Date {
@@ -30,10 +30,5 @@ export function formatDate(value: string | Date): string {
   const d = toDate(value);
   // Example: 17 Mar 2026
   return format(d, 'd MMM yyyy');
-}
-
-export function formatRelativeDateTime(value: string | Date): string {
-  const d = toDate(value);
-  return formatDistanceToNow(d, { addSuffix: true });
 }
 

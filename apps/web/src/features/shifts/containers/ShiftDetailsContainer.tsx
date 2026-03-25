@@ -25,6 +25,7 @@ import {
   OVERTIME_WHAT_IF_QUERY,
   SHIFT_HISTORY_QUERY,
   PUBLISH_SHIFT_MUTATION,
+  UNPUBLISH_SHIFT_MUTATION,
   DELETE_SHIFT_MUTATION,
   LOCATIONS_QUERY,
   UPDATE_SHIFT_MUTATION,
@@ -46,6 +47,7 @@ export function ShiftDetailsContainer() {
   const [constraintError, setConstraintError] = useState<ConstraintError | null>(null);
   const [overtimeOverrideReason, setOvertimeOverrideReason] = useState("");
   const [publishError, setPublishError] = useState<string | null>(null);
+  const [unpublishError, setUnpublishError] = useState<string | null>(null);
   const [assignmentError, setAssignmentError] = useState<string | null>(null);
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [addAssignmentOpen, setAddAssignmentOpen] = useState(false);
@@ -115,6 +117,9 @@ export function ShiftDetailsContainer() {
   const [publishShift, { loading: publishing }] = useMutation(PUBLISH_SHIFT_MUTATION, {
     refetchQueries: [{ query: SHIFT_QUERY, variables: { id } }],
   });
+  const [unpublishShift, { loading: unpublishing }] = useMutation(UNPUBLISH_SHIFT_MUTATION, {
+    refetchQueries: [{ query: SHIFT_QUERY, variables: { id } }],
+  });
   const [updateShift, { loading: updatingShift }] = useMutation(UPDATE_SHIFT_MUTATION, {
     refetchQueries: [
       { query: SHIFT_QUERY, variables: { id } },
@@ -169,10 +174,22 @@ export function ShiftDetailsContainer() {
   const handleTogglePublish = async () => {
     if (!shift || shift.published) return;
     setPublishError(null);
+    setUnpublishError(null);
     try {
       await publishShift({ variables: { shiftId: shift.id } });
     } catch (err: unknown) {
       setPublishError((err as Error)?.message ?? "Unable to update publish status.");
+    }
+  };
+
+  const handleUnpublish = async () => {
+    if (!shift || !shift.published) return;
+    setUnpublishError(null);
+    setPublishError(null);
+    try {
+      await unpublishShift({ variables: { shiftId: shift.id } });
+    } catch (err: unknown) {
+      setUnpublishError((err as Error)?.message ?? "Unable to unpublish shift.");
     }
   };
 
@@ -228,6 +245,9 @@ export function ShiftDetailsContainer() {
   if (loading) return <p className="text-ps-fg-muted">Loading…</p>;
   if (error || !shift) return <p className="text-ps-error">{error ?? "Shift not found"}</p>;
 
+  const disableUnpublishDueToCutoff =
+    !!unpublishError && unpublishError.toLowerCase().includes("after cutoff");
+
   return (
     <div>
       <ShiftDetailsView
@@ -238,6 +258,9 @@ export function ShiftDetailsContainer() {
         onTogglePublish={handleTogglePublish}
         publishError={publishError}
         publishing={publishing}
+        onUnpublish={disableUnpublishDueToCutoff ? undefined : handleUnpublish}
+        unpublishing={unpublishing}
+        unpublishError={unpublishError}
         canDelete={user?.role === UserRole.Admin}
         onDelete={() => setConfirmDeleteOpen(true)}
         deleting={deleting}

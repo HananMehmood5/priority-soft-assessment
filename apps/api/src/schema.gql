@@ -149,6 +149,7 @@ type Mutation {
   removeSkillFromStaff(skillId: String!, staffId: String!): Boolean!
   removeStaffFromLocation(locationId: String!, staffId: String!): Boolean!
   setNotificationPreference(channel: String!, enabled: Boolean!): NotificationPreferenceEntity!
+  unpublishShift(shiftId: String!): ShiftEntity!
   updateLocation(id: String!, input: UpdateLocationInput!): LocationEntity!
   updateMyProfile(input: UpdateProfileInput!): UserEntity!
   updateShift(id: String!, input: UpdateShiftInput!): ShiftEntity!

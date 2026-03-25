@@ -86,6 +86,93 @@ describe('Shifts (e2e)', () => {
     expect(res.body.data.createShift.published).toBe(false);
   });
 
+  test('unpublishShift as manager succeeds before cutoff', async () => {
+    const startDate = new Date(Date.now() + 10 * 24 * 3600 * 1000).toISOString().slice(0, 10);
+    const endDate = startDate;
+    const res = await graphqlRequest(
+      app,
+      {
+        query: `mutation CreateShift($input: CreateShiftInput!) {
+          createShift(input: $input) { id published }
+        }`,
+        variables: {
+          input: {
+            locationId,
+            startDate,
+            endDate,
+            daysOfWeek: [0, 1, 2, 3, 4, 5, 6],
+            dailyStartTime: '09:00',
+            dailyEndTime: '17:00',
+          },
+        },
+      },
+      managerToken,
+    ).expect(200);
+
+    expect(res.body.errors).toBeUndefined();
+    const shiftId = res.body.data?.createShift?.id;
+    expect(shiftId).toBeTruthy();
+
+    await graphqlRequest(
+      app,
+      { query: `mutation PublishShift($shiftId: String!) { publishShift(shiftId: $shiftId) { id published } }`, variables: { shiftId } },
+      managerToken,
+    ).expect(200);
+
+    const unpubRes = await graphqlRequest(
+      app,
+      { query: `mutation UnpublishShift($shiftId: String!) { unpublishShift(shiftId: $shiftId) { id published } }`, variables: { shiftId } },
+      managerToken,
+    ).expect(200);
+
+    expect(unpubRes.body.errors).toBeUndefined();
+    expect(unpubRes.body.data?.unpublishShift?.published).toBe(false);
+  });
+
+  test('unpublishShift as manager fails after cutoff', async () => {
+    const startDate = new Date(Date.now() + 1 * 24 * 3600 * 1000).toISOString().slice(0, 10);
+    const endDate = startDate;
+    const res = await graphqlRequest(
+      app,
+      {
+        query: `mutation CreateShift($input: CreateShiftInput!) {
+          createShift(input: $input) { id published }
+        }`,
+        variables: {
+          input: {
+            locationId,
+            startDate,
+            endDate,
+            daysOfWeek: [0, 1, 2, 3, 4, 5, 6],
+            dailyStartTime: '09:00',
+            dailyEndTime: '17:00',
+          },
+        },
+      },
+      managerToken,
+    ).expect(200);
+
+    expect(res.body.errors).toBeUndefined();
+    const shiftId = res.body.data?.createShift?.id;
+    expect(shiftId).toBeTruthy();
+
+    await graphqlRequest(
+      app,
+      { query: `mutation PublishShift($shiftId: String!) { publishShift(shiftId: $shiftId) { id published } }`, variables: { shiftId } },
+      managerToken,
+    ).expect(200);
+
+    const unpubRes = await graphqlRequest(
+      app,
+      { query: `mutation UnpublishShift($shiftId: String!) { unpublishShift(shiftId: $shiftId) { id published } }`, variables: { shiftId } },
+      managerToken,
+    ).expect(200);
+
+    expect(unpubRes.body.errors).toBeDefined();
+    const errorsText = JSON.stringify(unpubRes.body.errors);
+    expect(errorsText).toContain('Cannot unpublish shift after cutoff');
+  });
+
   test('query shifts without token returns unauthorized', async () => {
     const res = await graphqlRequest(app, {
       query: `query Shifts { shifts { id } }`,

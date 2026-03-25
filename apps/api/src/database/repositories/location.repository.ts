@@ -25,6 +25,14 @@ export class LocationRepository {
     return rows.map((r) => r.locationId);
   }
 
+  async getManagerUserIdsByLocationId(locationId: string): Promise<string[]> {
+    const rows = await this.managerLocationModel.findAll({
+      where: { locationId },
+      attributes: ['userId'],
+    });
+    return [...new Set(rows.map((r) => r.userId))];
+  }
+
   async getStaffLocationIdsByUserId(userId: string): Promise<string[]> {
     const rows = await this.staffLocationModel.findAll({
       where: { userId },

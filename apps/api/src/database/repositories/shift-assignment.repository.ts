@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/sequelize';
 import type { ShiftAssignmentBaseAttributes } from '@shiftsync/shared';
 import { Op } from 'sequelize';
 import { WhereOptions } from 'sequelize';
+import { Transaction } from 'sequelize';
 import { ShiftAssignment } from '../models/shift-assignment.model';
 import { Shift } from '../models/shift.model';
 import { Location } from '../models/location.model';
@@ -63,12 +64,15 @@ export class ShiftAssignmentRepository {
     });
   }
 
-  async create(data: ShiftAssignmentBaseAttributes): Promise<ShiftAssignment> {
+  async create(
+    data: ShiftAssignmentBaseAttributes,
+    options?: { transaction?: Transaction },
+  ): Promise<ShiftAssignment> {
     return this.assignmentModel.create({
       ...data,
       version: data.version ?? 1,
       overtimeOverrideReason: data.overtimeOverrideReason ?? null,
-    });
+    }, options);
   }
 
   async updateUserAndVersion(

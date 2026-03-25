@@ -13,8 +13,11 @@ import { ShiftRequest, ShiftAssignment, Shift, User } from '../database/models';
 import { ShiftRepository } from '../database/repositories/shift.repository';
 import { ShiftAssignmentRepository } from '../database/repositories/shift-assignment.repository';
 import { ShiftRequestRepository } from '../database/repositories/shift-request.repository';
+import { LocationRepository } from '../database/repositories/location.repository';
 import { PermissionsService } from '../permissions/permissions.service';
 import { ConstraintsService, ConstraintResult } from '../constraints/constraints.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import { EventsGateway, WS_EVENTS } from '../events/events.gateway';
 import { getShiftFirstStart, getShiftTimeZone } from '../common/shift-time.utils';
 
 const MAX_PENDING_PER_STAFF = 3;
@@ -28,9 +31,27 @@ export class RequestsService {
     private readonly requestRepository: ShiftRequestRepository,
     private readonly assignmentRepository: ShiftAssignmentRepository,
     private readonly shiftRepository: ShiftRepository,
+    private readonly locationRepository: LocationRepository,
     private readonly permissions: PermissionsService,
     private readonly constraints: ConstraintsService,
+    private readonly notifications: NotificationsService,
+    private readonly eventsGateway: EventsGateway,
   ) { }
+
+  private async notifyManagersForLocation(
+    locationId: string,
+    type: string,
+    title: string,
+    body: string,
+    payload: Record<string, unknown>,
+  ): Promise<void> {
+    const managerIds = await this.locationRepository.getManagerUserIdsByLocationId(locationId);
+    await Promise.all(
+      managerIds.map((managerId) =>
+        this.notifications.createAndPush(managerId, type, title, body, payload),
+      ),
+    );
+  }
 
   private async countPendingForStaff(userId: string): Promise<number> {
     const assignments = await this.assignmentRepository.findAllByUserId(userId, ['id']);
@@ -60,11 +81,24 @@ export class RequestsService {
     if (count >= MAX_PENDING_PER_STAFF) {
       throw new BadRequestException(`Maximum ${MAX_PENDING_PER_STAFF} pending swap/drop requests per staff`);
     }
-    return this.requestRepository.create({
+    const created = await this.requestRepository.create({
       type: RequestType.Swap,
       assignmentId,
       status: RequestStatus.Pending,
     });
+    const shift = (assignment as { shift: Shift }).shift;
+    this.eventsGateway.emitToLocation(shift.locationId, WS_EVENTS.SWAP_REQUEST, {
+      requestId: created.id,
+      assignmentId,
+    });
+    await this.notifyManagersForLocation(
+      shift.locationId,
+      'swap_requested',
+      'Swap request submitted',
+      'A staff member requested a shift swap.',
+      { requestId: created.id, assignmentId, locationId: shift.locationId },
+    );
+    return created;
   }
 
   async createDrop(assignmentId: string, user: User): Promise<ShiftRequest> {
@@ -84,11 +118,23 @@ export class RequestsService {
     if (count >= MAX_PENDING_PER_STAFF) {
       throw new BadRequestException(`Maximum ${MAX_PENDING_PER_STAFF} pending swap/drop requests per staff`);
     }
-    return this.requestRepository.create({
+    const created = await this.requestRepository.create({
       type: RequestType.Drop,
       assignmentId,
       status: RequestStatus.Pending,
     });
+    this.eventsGateway.emitToLocation(shift.locationId, WS_EVENTS.DROP_REQUEST, {
+      requestId: created.id,
+      assignmentId,
+    });
+    await this.notifyManagersForLocation(
+      shift.locationId,
+      'drop_requested',
+      'Drop request submitted',
+      'A staff member offered a shift for coverage.',
+      { requestId: created.id, assignmentId, locationId: shift.locationId },
+    );
+    return created;
   }
 
   async acceptSwap(
@@ -145,6 +191,17 @@ export class RequestsService {
       throw new ConflictException('Swap request is no longer pending or was already processed');
     }
     const updated = await this.requestRepository.findByPkWithAssignmentAndCounterpartAndClaimer(requestId);
+    await this.notifications.createAndPush(
+      fromUser,
+      'swap_accepted',
+      'Swap accepted',
+      'Your swap request has been accepted and awaits manager approval.',
+      { requestId, counterpartAssignmentId },
+    );
+    this.eventsGateway.emitToLocation(fromShift.locationId, WS_EVENTS.SWAP_RESOLVED, {
+      requestId,
+      status: 'accepted',
+    });
     return { request: updated as ShiftRequest };
   }
 
@@ -184,6 +241,17 @@ export class RequestsService {
       throw new ConflictException('Drop request is no longer pending or was already processed');
     }
     const updated = await this.requestRepository.findByPkWithAssignmentAndCounterpartAndClaimer(requestId);
+    await this.notifications.createAndPush(
+      assignment.userId,
+      'drop_claimed',
+      'Drop request claimed',
+      'Your drop request has been claimed and awaits manager approval.',
+      { requestId, claimerUserId: user.id },
+    );
+    this.eventsGateway.emitToLocation(shift.locationId, WS_EVENTS.DROP_RESOLVED, {
+      requestId,
+      status: 'accepted',
+    });
     return { request: updated as ShiftRequest };
   }
 
@@ -217,6 +285,28 @@ export class RequestsService {
       await request.update({ status: RequestStatus.Approved }, { transaction });
     });
     const updated = await this.requestRepository.findByPkWithFullForApprove(requestId);
+    if (updated?.type === RequestType.Drop) {
+      const assignment = (updated as { assignment?: ShiftAssignment })?.assignment;
+      const claimer = (updated as { claimer?: User })?.claimer;
+      if (assignment?.userId) {
+        await this.notifications.createAndPush(
+          assignment.userId,
+          'request_approved',
+          'Request approved',
+          'Your coverage request was approved by a manager.',
+          { requestId },
+        );
+      }
+      if (claimer?.id) {
+        await this.notifications.createAndPush(
+          claimer.id,
+          'request_approved',
+          'Request approved',
+          'Your accepted coverage request was approved.',
+          { requestId },
+        );
+      }
+    }
     return updated as ShiftRequest;
   }
 
@@ -227,6 +317,17 @@ export class RequestsService {
     if (!can) throw new ForbiddenException('You cannot reject this request');
     await this.requestRepository.updateStatus(requestId, RequestStatus.Rejected);
     const updated = await this.requestRepository.findByPk(requestId);
+    const withAssignment = await this.requestRepository.findByPkWithAssignmentAndShift(requestId);
+    const ownerUserId = (withAssignment as { assignment?: ShiftAssignment })?.assignment?.userId;
+    if (ownerUserId) {
+      await this.notifications.createAndPush(
+        ownerUserId,
+        'request_rejected',
+        'Request rejected',
+        'Your request was rejected by a manager.',
+        { requestId },
+      );
+    }
     return updated as ShiftRequest;
   }
 
@@ -244,13 +345,38 @@ export class RequestsService {
     }
     await this.requestRepository.updateStatus(requestId, RequestStatus.Cancelled);
     const updated = await this.requestRepository.findByPk(requestId);
+    const withAssignment = await this.requestRepository.findByPkWithAssignmentAndShift(requestId);
+    const shift = (withAssignment as { assignment?: ShiftAssignment & { shift?: Shift } })?.assignment?.shift;
+    if (shift) {
+      this.eventsGateway.emitToLocation(shift.locationId, WS_EVENTS.SWAP_RESOLVED, {
+        requestId,
+        status: 'cancelled',
+      });
+    }
     return updated as ShiftRequest;
   }
 
   async cancelPendingByShiftId(shiftId: string): Promise<number> {
     const assignments = await this.assignmentRepository.findAllByShiftId(shiftId, ['id']);
     const ids = assignments.map((a) => a.id);
-    return this.requestRepository.cancelPendingByAssignmentIds(ids);
+    if (ids.length === 0) return 0;
+    const active = await this.requestRepository.findAllPendingAndAcceptedByAssignmentIds(ids);
+    await Promise.all(
+      active.map(async (request) => {
+        await this.requestRepository.updateStatus(request.id, RequestStatus.Cancelled);
+        const ownerId = (request as { assignment?: ShiftAssignment })?.assignment?.userId;
+        if (ownerId) {
+          await this.notifications.createAndPush(
+            ownerId,
+            'request_auto_cancelled',
+            'Request cancelled',
+            'Your pending/accepted request was cancelled because the shift was edited.',
+            { requestId: request.id, shiftId },
+          );
+        }
+      }),
+    );
+    return active.length;
   }
 
   async findMyRequests(user: User): Promise<ShiftRequest[]> {

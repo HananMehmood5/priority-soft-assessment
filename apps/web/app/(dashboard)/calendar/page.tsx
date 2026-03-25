@@ -2,9 +2,10 @@
 
 import { useMemo, useState } from 'react';
 import { useQuery } from '@apollo/client';
+import { formatInTimeZone } from 'date-fns-tz';
 import { useAuth } from '@/lib/auth-context';
 import type { ShiftAttributes, LocationAttributes } from '@/app/types';
-import { formatDateTime, formatDate, parseCalendarDateInput } from '@/lib/format-date';
+import { formatDate, parseCalendarDateInput } from '@/lib/format-date';
 import { SHIFTS_WITH_LOCATIONS_QUERY } from '@/lib/apollo/operations';
 
 type ViewMode = 'week' | 'day';
@@ -104,6 +105,10 @@ export default function CalendarPage() {
 
   const locationName = (id: string) =>
     locations.find((l) => l.id === id)?.name ?? id;
+  const locationTz = (id: string) =>
+    locations.find((l) => l.id === id)?.timezone ?? 'UTC';
+  const formatAtLocation = (value: Date, locId: string) =>
+    formatInTimeZone(value, locationTz(locId), 'd MMM yyyy, h:mm a zzz');
 
   if (loading) return <p className="text-ps-fg-muted">Loading calendar…</p>;
   if (error) return <p className="text-ps-error">{error.message}</p>;
@@ -112,8 +117,7 @@ export default function CalendarPage() {
     <div>
       <h1 className="mb-3 text-2xl font-bold">Calendar</h1>
       <p className="mb-4 text-ps-fg-muted">
-        Simple week/day view of shifts. All times are shown in your browser&apos;s local timezone;
-        each shift includes its location ID.
+        Week/day shift view with times rendered in each shift&apos;s location timezone.
       </p>
       <form
         onSubmit={(e) => e.preventDefault()}
@@ -173,8 +177,8 @@ export default function CalendarPage() {
                 .map((s) => (
                   <li key={s.key} className="border-b border-ps-border py-2">
                     <div className="font-medium">
-                      {locationName(s.locationId)} – {formatDateTime(s.startAt)} –{' '}
-                      {formatDateTime(s.endAt)}
+                      {locationName(s.locationId)} – {formatAtLocation(s.startAt, s.locationId)} –{' '}
+                      {formatAtLocation(s.endAt, s.locationId)}
                     </div>
                     <div className="text-ps-xs text-ps-fg-muted">
                       Shift {s.templateId} · {s.published ? 'Published' : 'Draft'}
@@ -212,7 +216,7 @@ export default function CalendarPage() {
                       .map((s) => (
                         <li key={s.key} className="mb-1">
                           <span className="text-ps-fg-muted">
-                            {formatDateTime(s.startAt)} – {formatDateTime(s.endAt)}
+                            {formatAtLocation(s.startAt, s.locationId)} – {formatAtLocation(s.endAt, s.locationId)}
                           </span>
                           <br />
                           <span>
